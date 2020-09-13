@@ -13,8 +13,8 @@ class SimulatedAsset:
         :param kwargs:
         :return:
         """
-        if method=="GMB":
-            returns=self.simulate_returns(**kwargs)
+        if method=="GBM":
+            returns=self.simulate_returns_GBM(**kwargs)
         else:
             raise NotImplementedError
 
@@ -28,7 +28,7 @@ class SimulatedAsset:
 
         T = time_in_years
         I = n_returns
-        returns= np.exp((self.mean - 0.5 * self.sigma ** 2) * T + self.sigma * np.sqrt(T) * npr.standard_normal(I))
+        returns= np.exp((mean - 0.5 * sigma ** 2) * T + sigma * np.sqrt(T) * npr.standard_normal(I))
 
         return returns
 

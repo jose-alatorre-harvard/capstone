@@ -4,7 +4,7 @@ import numpy as np
 import os
 import datetime
 from tqdm import tqdm
-from .Benchmarks import SimulatedAsset
+from lib.Benchmarks import SimulatedAsset
 
 
 class State:
@@ -136,6 +136,8 @@ class DeepTradingEnvironment(gym.Env):
             new_asset=SimulatedAsset()
             asset_prices[asset]=new_asset.simulate_returns(time_in_years=1/(252*570),n_returns=periods,**asset_simulation_details)
 
+        asset_prices=asset_prices.cumprod()
+        a=5
     @staticmethod
     def _buid_close_returns(assets_prices, out_reward_window):
         """
@@ -334,7 +336,7 @@ env=DeepTradingEnvironment.from_dirs_and_transform(meta_parameters=meta_paramete
 action=np.random.rand(2)
 env.generate_episodes()
 
-simulation_details={"asset_1":{"method":"GBM","sigma":.1,"mean":1},
+simulation_details={"asset_1":{"method":"GBM","sigma":.1,"mean":.1},
                     "asset_2":{"method":"GBM","sigma":.2,"mean":.2}}
 
 env_2=DeepTradingEnvironment.build_from_simulated_assets(asset_kwargs=simulation_details)
