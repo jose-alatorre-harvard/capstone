@@ -4,7 +4,7 @@ import numpy as np
 import os
 import datetime
 from tqdm import tqdm
-
+from .Benchmarks import SimulatedAsset
 
 
 class State:
@@ -122,13 +122,19 @@ class DeepTradingEnvironment(gym.Env):
     metadata = {'render.modes': ['human']}
 
     @classmethod
-    def build_from_simulated_assets(cls,number_of_assets,simulation_method="GBM"):
+    def build_from_simulated_assets(cls,asset_kwargs,periods=100000,simulation_method="GBM"):
         """
         builds environment from simulated assets
         :param number_of_assets:
         :param simulation_method:
         :return:
         """
+
+        date_range=pd.date_range(start=datetime.datetime.utcnow(),periods=periods,freq="1min")
+        asset_prices=pd.DataFrame(index=date_range,columns=list(asset_kwargs.keys()))
+        for asset,asset_simulation_details in asset_kwargs.items():
+            new_asset=SimulatedAsset()
+            asset_prices[asset]=new_asset.simulate_returns(time_in_years=1/(252*570),n_returns=periods,**asset_simulation_details)
 
     @staticmethod
     def _buid_close_returns(assets_prices, out_reward_window):
@@ -320,7 +326,15 @@ print(meta_parameters)
 print("===Objective Parameters===")
 print(objective_parameters)
 
+
+
 env=DeepTradingEnvironment.from_dirs_and_transform(meta_parameters=meta_parameters,objective_parameters=objective_parameters)
+
 
 action=np.random.rand(2)
 env.generate_episodes()
+
+simulation_details={"asset_1":{"method":"GBM","sigma":.1,"mean":1},
+                    "asset_2":{"method":"GBM","sigma":.2,"mean":.2}}
+
+env_2=DeepTradingEnvironment.build_from_simulated_assets(asset_kwargs=simulation_details)

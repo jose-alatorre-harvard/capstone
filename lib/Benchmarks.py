@@ -4,10 +4,6 @@ import numpy.random as npr
 class SimulatedAsset:
 
 
-    def __init__ (self,sigma,mean):
-
-        self.sigma=sigma
-        self.mean=mean
 
     def simulate_returns(self,method,*args,**kwargs):
         """
@@ -22,7 +18,9 @@ class SimulatedAsset:
         else:
             raise NotImplementedError
 
-    def simulate_returns_GBM(self,time_in_years,n_returns):
+        return returns
+
+    def simulate_returns_GBM(self,time_in_years,n_returns,sigma,mean):
 
 
 
