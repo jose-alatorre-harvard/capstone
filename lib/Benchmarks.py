@@ -1,6 +1,10 @@
 
 import numpy as np
 import numpy.random as npr
+
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Asset Simulation >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 class SimulatedAsset:
 
 
@@ -58,3 +62,58 @@ class SimulatedAsset:
             returns.append(r)
 
         return returns
+
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Portfolio Construction >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+class PortfolioBacktest:
+
+    def __init__(self, asset_prices, commission):
+        pass
+
+    def build_portfolio_backtest(self, weights):
+        """
+        builds backtest of the selected weights.  important to notice that weights correspond to end of period
+        :return:
+        """
+        pass
+
+    def create_rolling_high_sharpe(self, rolling_window):
+        """
+
+        :param rolling_window: datetime.timedelta
+        :return: pd.DataFrame rolling_weights
+        """
+        pass
+
+    def create_rolling_min_vol(self, rolling_window):
+        """
+
+               :param rolling_window:datetime.timedelta
+               :return: pd.DataFrame rolling_weights
+               """
+        pass
+
+    def create_rolling_max_return(self, rolling_window):
+        """
+
+           :param rolling_window:datetime.timedelta
+           :return: pd.DataFrame rolling_weights
+       """
+        pass
+
+    def plot_asset_turnover(self, historical_weights):
+        """
+        plots assets turnover. Idea: Box plot of each asset weights with time as hue.
+        :param historical_weights:
+        :return:
+        """
+
+    def plot_efficient_frontier(self, expected_returns, covariance, portfolios_weights):
+        """
+        plots and efficient frontier and the location of the portfolios.
+        :param expected_returns:
+        :param covariance:
+        :param portfolios_weights: pd.DataFrame each row is a portfolio and columns are the asset weights
+        :return:
+        """
