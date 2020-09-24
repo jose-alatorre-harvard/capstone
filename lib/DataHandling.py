@@ -131,12 +131,18 @@ class DailySeries2Features:
     EWMA_VOL_ALPHA = .98
     ANUALIZING_FACTOR = 252
 
-    def __init__(self, serie_or_df, features_list=None, exclude_features=None):
-
+    def __init__(self, serie_or_df, features_list=None, exclude_features=None, forward_returns_time_delta=None):
         """
-        This can be modified to not be daily by adding the default parameters to a dict [RSI_TIME_FRAME...etc]
-       :param serie: pandas.Serie
-       """
+
+        :param serie: pandas.Serie
+        :param serie_or_df:
+        :param features_list:
+        :param exclude_features:
+        :param forward_returns_time_delta:
+        """
+
+        if exclude_features == None:
+            exclude_features = []
 
         self.feature_list = features_list
 
@@ -155,16 +161,38 @@ class DailySeries2Features:
         else:
             for method in inspect.getmembers(self, predicate=inspect.ismethod):
 
-                if "_add_" in method[0]:
-                    feature_name = method[0].replace("_add_", "")
-                    technical = method[1](serie)
-                    self._update_feature(technical=technical, feature_name=feature_name)
-                elif "_addhlc_" in method[0]:
-                    # methods that require high low and close
-                    if isinstance(serie_or_df, pd.DataFrame):
-                        feature_name = method[0].replace("_add_", "")
-                        technical = method[1](serie_or_df)
+                feature_name = method[0].replace("_add_", "")
+
+                if not "_add_" + feature_name in exclude_features:
+
+                    if "_add_" in method[0]:
+
+                        technical = method[1](serie)
                         self._update_feature(technical=technical, feature_name=feature_name)
+                    elif "_addhlc_" in method[0]:
+                        # methods that require high low and close
+                        if isinstance(serie_or_df, pd.DataFrame):
+                            technical = method[1](serie_or_df)
+                            self._update_feature(technical=technical, feature_name=feature_name)
+
+        if forward_returns_time_delta is not None:
+            # add forward returns
+            for forward_td in forward_returns_time_delta:
+                feature = self._set_forward_return(forward_td)
+                feature_name = str(forward_td)
+                self._update_feature(technical=feature, feature_name=feature_name)
+
+    def _set_forward_return(self,serie, forward_return_td):
+        """
+        adds a forward return
+        :param forward_return_td:
+        :return:
+        """
+        origin_time_delta = datetime.timedelta(days=0)
+        finish_time_delta = -forward_return_td
+        forward_limit_time_delta = forward_return_td
+        forward_return = get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta)
+        return forward_return
 
     def _update_feature(self, technical, feature_name):
         try:
