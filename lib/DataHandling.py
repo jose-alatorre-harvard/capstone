@@ -1,5 +1,5 @@
 
-from fdaccess.quant_research.stats import ts_differencing
+
 from statsmodels.tsa.stattools import adfuller
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -11,6 +11,25 @@ import numpy as np
 import talib
 import inspect
 import datetime
+
+
+def getWeights(d, lags):
+    # return the weights from the series expansion of the differencing operator
+    # for real orders d and up to lags coefficients
+    w = [1]
+    for k in range(1, lags):
+        w.append(-w[-1] * ((d - k + 1)) / k)
+    w = np.array(w).reshape(-1, 1)
+    return w
+def ts_differencing(series, order, lag_cutoff):
+    # return the time series resulting from (fractional) differencing
+    # for real orders order up to lag_cutoff coefficients
+
+    weights = getWeights(order, lag_cutoff)
+    res = 0
+    for k in range(lag_cutoff):
+        res += weights[k] * series.shift(k).fillna(0)
+    return res[lag_cutoff:]
 
 def get_fractional_stationary_series(series, lag_cutoff=100):
     interval = np.linspace(0, 1, 100)
@@ -77,7 +96,7 @@ class DailyDataFrame2Features:
 
     """
 
-    def __init__(self, bars_dict, configuration_dict, features_list=None, exclude_features=None, ):
+    def __init__(self, bars_dict, configuration_dict, features_list=None, exclude_features=None,forward_returns_time_delta=None ):
         """
         feature_list and exclude_list should be by column
         :param bars_dict: keys:asset_name, value:pd.DataFrame bars
@@ -88,7 +107,8 @@ class DailyDataFrame2Features:
         self.configuration_dict = configuration_dict
         all_features = pd.DataFrame()
         for asset_name, bars_time_serie_df in bars_dict.items():
-            features_instance = DailySeries2Features(bars_time_serie_df, features_list, exclude_features)
+            features_instance = DailySeries2Features(bars_time_serie_df, features_list, exclude_features,
+                                                     forward_returns_time_delta)
             technical_features = features_instance.technical_features.copy()
             technical_features.columns = [asset_name + "_" + i for i in technical_features.columns]
             all_features = pd.concat([all_features, technical_features], axis=1)
@@ -96,7 +116,7 @@ class DailyDataFrame2Features:
         # todo: Save properties from feature instance like  d of fractional diff
 
         # we drop N/A because there are no features available on certains dates like moving averages
-        self.all_features = all_features.dropna()
+        self.all_features = all_features#.dropna()
 
         self.windsorized_data = self.all_features.clip(lower=self.all_features.quantile(q=.025),
                                                        upper=self.all_features.quantile(q=.975),
@@ -178,7 +198,7 @@ class DailySeries2Features:
         if forward_returns_time_delta is not None:
             # add forward returns
             for forward_td in forward_returns_time_delta:
-                feature = self._set_forward_return(forward_td)
+                feature = self._set_forward_return(serie=serie,forward_return_td=forward_td)
                 feature_name = str(forward_td)
                 self._update_feature(technical=feature, feature_name=feature_name)
 
@@ -345,3 +365,4 @@ class DailySeries2Features:
         technical = get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta)
 
         return technical
+
