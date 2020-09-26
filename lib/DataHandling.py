@@ -122,6 +122,17 @@ class DailyDataFrame2Features:
                                                        upper=self.all_features.quantile(q=.975),
                                                        axis=1)
 
+    def separate_features_from_forward_returns(self,features):
+        """
+        separates input features from forward returns
+        :param features:
+        :return:
+        """
+        only_features=features[[col for col in features.columns if "forward_return" not in col]]
+        only_forwad_returns=features[[col for col in features.columns if "forward_return"  in col]]
+
+        return only_features, only_forwad_returns
+
     def create_pca_projection(self, exclude_feature_columns, var_limit=.02):
         """
         Create PCA features
@@ -198,11 +209,11 @@ class DailySeries2Features:
         if forward_returns_time_delta is not None:
             # add forward returns
             for forward_td in forward_returns_time_delta:
-                feature = self._set_forward_return(serie=serie,forward_return_td=forward_td)
-                feature_name = str(forward_td)
+                feature = self._set_forward_return(serie=serie, forward_return_td=forward_td)
+                feature_name = feature.name
                 self._update_feature(technical=feature, feature_name=feature_name)
 
-    def _set_forward_return(self,serie, forward_return_td):
+    def _set_forward_return(self, serie, forward_return_td):
         """
         adds a forward return
         :param forward_return_td:
@@ -212,6 +223,9 @@ class DailySeries2Features:
         finish_time_delta = -forward_return_td
         forward_limit_time_delta = forward_return_td
         forward_return = get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta)
+
+        forward_return.name = ("forward_return_" + str(forward_return_td)).replace(" ", "_")
+
         return forward_return
 
     def _update_feature(self, technical, feature_name):
