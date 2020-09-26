@@ -5,11 +5,11 @@ import os
 import datetime
 from tqdm import tqdm
 from lib.Benchmarks import SimulatedAsset
-
+from lib.DataHandling import DailyDataFrame2Features
 
 class State:
 
-    def __init__(self, features, in_bars_count, objective_parameters):
+    def __init__(self, features,forward_returns, in_bars_count, objective_parameters):
         """
 
         :param features: (dict)
@@ -19,6 +19,7 @@ class State:
         """
 
         self.features = features
+        self.forward_returns=forward_returns
         self.in_bars_count = in_bars_count
         self._set_helper_functions()
         self._set_objective_function_parameters(objective_parameters)
@@ -35,11 +36,8 @@ class State:
         :return:
         """
 
-        self.log_close_returns = self.features["log_close_returns"]
-        self.assets_names=self.log_close_returns.columns
-        self.number_of_assets=len(self.assets_names)
-
-        self.state_features_shape=(self.in_bars_count,self.features["input_features"].shape[1])
+        self.number_of_assets=len(self.forward_returns.columns)
+        self.state_features_shape=(self.in_bars_count,self.features.shape[1])
 
     def _set_objective_function_parameters(self,objective_parameters):
         self.percent_commission = objective_parameters["percent_commission"]
@@ -52,13 +50,22 @@ class State:
 
         self._initialize_weights_buffer()
 
+
+    @property
+    def asset_names(self):
+        """
+               Todo: Make proper parsing
+               :return:
+               """
+        return self.forward_returns.columns
+
     def _initialize_weights_buffer(self):
-        # TODO: Should this be part of state or environment?
+
         """
          :return:
         """
 
-        self.weight_buffer = pd.DataFrame(index=self.log_close_returns.index,columns=self.assets_names).fillna(0)+ 1 / self.number_of_assets
+        self.weight_buffer = pd.DataFrame(index=self.features.index,columns=self.asset_names).fillna(0)+ 1 / self.number_of_assets
 
     @property
     def shape(self):
@@ -87,7 +94,7 @@ class State:
         commision_percent_cost = -weight_difference.sum(axis = 1) * self.percent_commission
 
         # get period_ahead_returns
-        t_plus_one_returns = self.log_close_returns.iloc[action_date_index]
+        t_plus_one_returns = self.forward_returns.iloc[action_date_index]
         one_period_mtm_reward = (t_plus_one_returns * action).sum()
 
         reward = one_period_mtm_reward - commision_percent_cost
@@ -110,10 +117,10 @@ class State:
            :return: in_window_features, weights_on_date
         """
         #TODO: what happens for  different features for example ("Non Time Series Returns")?
-        assert target_date >= self.features["input_features"].index[self.in_bars_count]
+        assert target_date >= self.features.index[self.in_bars_count]
 
-        date_index = self.features["input_features"].index.searchsorted(target_date)
-        state_features =self.features["input_features"].iloc[date_index - self.in_bars_count + 1:date_index + 1]
+        date_index = self.features.index.searchsorted(target_date)
+        state_features =self.features.iloc[date_index - self.in_bars_count + 1:date_index + 1]
         weights_on_date = self.weight_buffer.iloc[date_index]
 
         return state_features, weights_on_date
@@ -124,7 +131,7 @@ class DeepTradingEnvironment(gym.Env):
     RESAMPLE_DATA_FREQUENCY="5min"
 
     @staticmethod
-    def _buid_close_returns(assets_prices, out_reward_window,data_hash):
+    def _build_and_persist_features(assets_prices, out_reward_window,data_hash):
         """
          builds close-to-close returns for a specif
          :param self:
@@ -135,47 +142,34 @@ class DeepTradingEnvironment(gym.Env):
 
         PERSISTED_DATA_DIRECTORY = "temp_persisted_data"
         # Todo: Hash csv file
-        if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/log_close_returns_"+data_hash):
-            try:
-                log_close_returns = assets_prices.copy() * np.nan
-                cross_over_day = log_close_returns[log_close_returns.columns[0]].fillna(0)
-                next_return_time_stamp = log_close_returns[log_close_returns.columns[0]].fillna(0)
-                for counter, date in tqdm(enumerate(assets_prices.index)):
-                    next_date = date + out_reward_window
+        if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash):
+            features_instance=DailyDataFrame2Features(bars_dict={col:assets_prices[col] for col in assets_prices.columns}
+                                                      ,configuration_dict={},
+                                                      forward_returns_time_delta=[out_reward_window])
 
-                    next_date_index = assets_prices.index.searchsorted(next_date)
-                    log_close_returns.iloc[counter] = np.log(
-                        assets_prices.iloc[next_date_index] / assets_prices.iloc[counter])
+            features=features_instance.all_features
 
-                    next_return_time_stamp.iloc[counter] = assets_prices.index[next_date_index]
-                    if assets_prices.index[next_date_index].date() != assets_prices.index[counter].date():
-                        # cross over date
-                        cross_over_day.iloc[counter] = 1
+            only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
 
+            #Todo: get all features
+            only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
 
-            except:
-                log_close_returns.iloc[counter] = np.nan
+            only_features.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_" + data_hash)
+            only_forward_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_" + data_hash)
 
-            log_close_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/log_close_returns_"+data_hash)
-            cross_over_day = pd.DataFrame(cross_over_day)
-            cross_over_day.to_parquet(PERSISTED_DATA_DIRECTORY + "/cross_over_day_"+data_hash)
-            next_return_time_stamp = pd.DataFrame(next_return_time_stamp)
-            next_return_time_stamp.to_parquet(PERSISTED_DATA_DIRECTORY + "/next_return_time_stamp_"+data_hash)
-            assets_prices.to_parquet(PERSISTED_DATA_DIRECTORY + "/assets_prices"+data_hash)
         else:
 
-            log_close_returns = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/log_close_returns_"+data_hash)
-            cross_over_day = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/cross_over_day_"+data_hash)
-            next_return_time_stamp = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/next_return_time_stamp_"+data_hash)
-            assets_prices= pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/assets_prices"+data_hash)
+            only_features = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash)
+            only_forward_returns=pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_"+data_hash)
 
-        return {"input_features": log_close_returns,"assets_prices":assets_prices,
-                "log_close_returns": log_close_returns, "cross_over_day": cross_over_day,
-                "next_return_time_stamp": next_return_time_stamp}
+
+
+        return only_features, only_forward_returns
+
 
     @classmethod
     def build_environment_from_simulated_assets(cls,assets_simulation_details,data_hash,
-                                                meta_parameters,objective_parameters,periods=100000):
+                                                meta_parameters,objective_parameters,periods=1000):
         """
         Simulates Continous 1 minute data
         :param assets_simulation_details: (dict)
@@ -188,11 +182,12 @@ class DeepTradingEnvironment(gym.Env):
         """
 
 
-        date_range=pd.date_range(start=datetime.datetime.utcnow(),periods=periods,freq="1min")
+        date_range=pd.date_range(start=datetime.datetime.utcnow(),periods=periods,freq="1d") #change period to 1Min
         asset_prices=pd.DataFrame(index=date_range,columns=list(assets_simulation_details.keys()))
         for asset,simulation_details in assets_simulation_details.items():
             new_asset=SimulatedAsset()
-            asset_prices[asset]=new_asset.simulate_returns(time_in_years=1/(252*570),n_returns=periods,**simulation_details)
+            #time in years in minutes=1/(252*570)
+            asset_prices[asset]=new_asset.simulate_returns(time_in_years=1/(252),n_returns=periods,**simulation_details)
 
         asset_prices=asset_prices.cumprod()
 
@@ -209,17 +204,15 @@ class DeepTradingEnvironment(gym.Env):
         # resample
         assets_prices = assets_prices.resample(cls.RESAMPLE_DATA_FREQUENCY).first()
         assets_prices = assets_prices.dropna()
-        input_data = cls._buid_close_returns(assets_prices=assets_prices,
+        features, forward_returns = cls._build_and_persist_features(assets_prices=assets_prices,
                                              out_reward_window=meta_parameters["out_reward_window"],
                                              data_hash=data_hash)
 
-        #rewrite asset prices for data consistency
-        assets_prices=input_data["assets_prices"]
 
         # transform features
 
-        return DeepTradingEnvironment(input_data=input_data,
-                               assets_prices=assets_prices, meta_parameters=meta_parameters,
+        return DeepTradingEnvironment(features=features,
+                               forward_returns=forward_returns, meta_parameters=meta_parameters,
                                objective_parameters=objective_parameters)
 
     @classmethod
@@ -240,22 +233,24 @@ class DeepTradingEnvironment(gym.Env):
 
         return environment
 
-    def __init__(self, input_data, assets_prices, objective_parameters,
+    def __init__(self, features, forward_returns, objective_parameters,
                  meta_parameters):
         """
-        features: pandas.DataFrame with features by time
-        asset_prices=pandas.DataFrame with asset prices by time
+          features and forward returns should be aligned by the time axis. The setup should resemble a supervised learning
+
+          :param features: pandas.DataFrame, historical features
+          :param forward_returns: pandas.DataFrame, assets forward returns
+          :param objective_parameters:
+          :param meta_parameters:
         """
 
-        assert input_data["log_close_returns"].index.equals(assets_prices.index)
-        assert input_data["input_features"].index.equals(assets_prices.index)
-        assert input_data["cross_over_day"].index.equals(assets_prices.index)
+        assert features.index.equals(forward_returns.index)
 
-        self.features = input_data
-        self.assets_prices = assets_prices
+        self.features = features
+        self.forward_returns = forward_returns
         # create helper variables
         self._set_environment_helpers()
-        self._set_reward_helpers(assets_prices, objective_parameters, meta_parameters)
+        self._set_reward_helpers(objective_parameters)
 
         self._set_state(meta_parameters=meta_parameters,objective_parameters=objective_parameters)
 
@@ -273,11 +268,12 @@ class DeepTradingEnvironment(gym.Env):
             self.state = State(features=self.features,
                                 in_bars_count=meta_parameters["in_bars_count"],
                                 objective_parameters=objective_parameters,
+                               forward_returns=self.forward_returns
 
                                 )
 
 
-    def _set_reward_helpers(self, assets_prices, objective_parameters, meta_parameters):
+    def _set_reward_helpers(self,objective_parameters):
         # case for interval return
         self.objective_parameters = objective_parameters
 
@@ -285,8 +281,8 @@ class DeepTradingEnvironment(gym.Env):
         """
         creates helper variables for the environment
         """
-        self.number_of_assets = len(self.assets_prices.columns)
-        self.number_of_features=len(self.features["input_features"])
+        self.number_of_assets = len(self.forward_returns.columns)
+        self.number_of_features=len(self.features)
 
 
     def reset(self):
