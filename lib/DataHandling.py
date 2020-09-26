@@ -354,29 +354,3 @@ class DailySeries2Features:
 
         return technical
 
-    def _add_1_day_forward_return(self, serie):
-        """
-        returns 1 day forward return
-        :param serie:
-        :return:
-        """
-        origin_time_delta = datetime.timedelta(days=0)
-        finish_time_delta = -datetime.timedelta(days=1)
-        forward_limit_time_delta = datetime.timedelta(days=1)
-        technical = get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta)
-
-        return technical
-
-    def _add_1_week_forward_return(self, serie):
-        """
-        returns 1 day forward return
-        :param serie:
-        :return:
-        """
-        origin_time_delta = datetime.timedelta(days=0)
-        finish_time_delta = -datetime.timedelta(days=7)
-        forward_limit_time_delta = datetime.timedelta(days=7)
-        technical = get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta)
-
-        return technical
-
