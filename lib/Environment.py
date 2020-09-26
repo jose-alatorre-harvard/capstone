@@ -39,6 +39,8 @@ class State:
         self.assets_names=self.log_close_returns.columns
         self.number_of_assets=len(self.assets_names)
 
+        self.state_features_shape=(self.in_bars_count,self.features["input_features"].shape[1])
+
     def _set_objective_function_parameters(self,objective_parameters):
         self.percent_commission = objective_parameters["percent_commission"]
 
@@ -99,7 +101,6 @@ class State:
         convert current state to tensor
 
         """
-
         pass
 
     def get_state_on_date(self, target_date):
@@ -108,11 +109,11 @@ class State:
            :param target_date:
            :return: in_window_features, weights_on_date
         """
+        #TODO: what happens for  different features for example ("Non Time Series Returns")?
+        assert target_date >= self.features["input_features"].index[self.in_bars_count]
 
-        assert target_date >= self._features.index[self.in_bars_count]
-
-        date_index = self._features.index.searchsorted(target_date)
-        state_features = self._features.iloc[date_index - self.in_bars_count + 1:date_index + 1]
+        date_index = self.features["input_features"].index.searchsorted(target_date)
+        state_features =self.features["input_features"].iloc[date_index - self.in_bars_count + 1:date_index + 1]
         weights_on_date = self.weight_buffer.iloc[date_index]
 
         return state_features, weights_on_date
@@ -120,26 +121,10 @@ class State:
 
 class DeepTradingEnvironment(gym.Env):
     metadata = {'render.modes': ['human']}
+    RESAMPLE_DATA_FREQUENCY="5min"
 
-    @classmethod
-    def build_from_simulated_assets(cls,asset_kwargs,periods=100000,simulation_method="GBM"):
-        """
-        builds environment from simulated assets
-        :param number_of_assets:
-        :param simulation_method:
-        :return:
-        """
-
-        date_range=pd.date_range(start=datetime.datetime.utcnow(),periods=periods,freq="1min")
-        asset_prices=pd.DataFrame(index=date_range,columns=list(asset_kwargs.keys()))
-        for asset,asset_simulation_details in asset_kwargs.items():
-            new_asset=SimulatedAsset()
-            asset_prices[asset]=new_asset.simulate_returns(time_in_years=1/(252*570),n_returns=periods,**asset_simulation_details)
-
-        asset_prices=asset_prices.cumprod()
-        a=5
     @staticmethod
-    def _buid_close_returns(assets_prices, out_reward_window):
+    def _buid_close_returns(assets_prices, out_reward_window,data_hash):
         """
          builds close-to-close returns for a specif
          :param self:
@@ -150,10 +135,10 @@ class DeepTradingEnvironment(gym.Env):
 
         PERSISTED_DATA_DIRECTORY = "temp_persisted_data"
         # Todo: Hash csv file
-        if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/log_close_returns"):
+        if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/log_close_returns_"+data_hash):
             try:
                 log_close_returns = assets_prices.copy() * np.nan
-                cross_over_day=log_close_returns[log_close_returns.columns[0]].fillna(0)
+                cross_over_day = log_close_returns[log_close_returns.columns[0]].fillna(0)
                 next_return_time_stamp = log_close_returns[log_close_returns.columns[0]].fillna(0)
                 for counter, date in tqdm(enumerate(assets_prices.index)):
                     next_date = date + out_reward_window
@@ -162,32 +147,83 @@ class DeepTradingEnvironment(gym.Env):
                     log_close_returns.iloc[counter] = np.log(
                         assets_prices.iloc[next_date_index] / assets_prices.iloc[counter])
 
-                    next_return_time_stamp.iloc[counter]=assets_prices.index[next_date_index]
+                    next_return_time_stamp.iloc[counter] = assets_prices.index[next_date_index]
                     if assets_prices.index[next_date_index].date() != assets_prices.index[counter].date():
-                         # cross over date
-                         cross_over_day.iloc[counter]=1
+                        # cross over date
+                        cross_over_day.iloc[counter] = 1
 
 
             except:
                 log_close_returns.iloc[counter] = np.nan
 
-
-            log_close_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/log_close_returns")
-            cross_over_day=pd.DataFrame(cross_over_day)
-            cross_over_day.to_parquet(PERSISTED_DATA_DIRECTORY + "/cross_over_day")
-            next_return_time_stamp=pd.DataFrame(next_return_time_stamp)
-            next_return_time_stamp.to_parquet(PERSISTED_DATA_DIRECTORY + "/next_return_time_stamp")
+            log_close_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/log_close_returns_"+data_hash)
+            cross_over_day = pd.DataFrame(cross_over_day)
+            cross_over_day.to_parquet(PERSISTED_DATA_DIRECTORY + "/cross_over_day_"+data_hash)
+            next_return_time_stamp = pd.DataFrame(next_return_time_stamp)
+            next_return_time_stamp.to_parquet(PERSISTED_DATA_DIRECTORY + "/next_return_time_stamp_"+data_hash)
+            assets_prices.to_parquet(PERSISTED_DATA_DIRECTORY + "/assets_prices"+data_hash)
         else:
 
-            log_close_returns = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/log_close_returns")
-            cross_over_day = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/cross_over_day")
-            next_return_time_stamp = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/next_return_time_stamp")
+            log_close_returns = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/log_close_returns_"+data_hash)
+            cross_over_day = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/cross_over_day_"+data_hash)
+            next_return_time_stamp = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/next_return_time_stamp_"+data_hash)
+            assets_prices= pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/assets_prices"+data_hash)
 
-        return {"input_features":assets_prices,
-            "log_close_returns":log_close_returns,"cross_over_day":cross_over_day,"next_return_time_stamp":next_return_time_stamp}
+        return {"input_features": log_close_returns,"assets_prices":assets_prices,
+                "log_close_returns": log_close_returns, "cross_over_day": cross_over_day,
+                "next_return_time_stamp": next_return_time_stamp}
 
     @classmethod
-    def from_dirs_and_transform(cls, meta_parameters, objective_parameters, data_dir="data_env", **kwargs):
+    def build_environment_from_simulated_assets(cls,assets_simulation_details,data_hash,
+                                                meta_parameters,objective_parameters,periods=100000):
+        """
+        Simulates Continous 1 minute data
+        :param assets_simulation_details: (dict)
+        :param simulation_details: (dict)
+        :param meta_parameters: (dict)
+        :param objective_parameters: (dict)
+        :param periods:
+        :param simulation_method:
+        :return: DeepTradingEnvironment
+        """
+
+
+        date_range=pd.date_range(start=datetime.datetime.utcnow(),periods=periods,freq="1min")
+        asset_prices=pd.DataFrame(index=date_range,columns=list(assets_simulation_details.keys()))
+        for asset,simulation_details in assets_simulation_details.items():
+            new_asset=SimulatedAsset()
+            asset_prices[asset]=new_asset.simulate_returns(time_in_years=1/(252*570),n_returns=periods,**simulation_details)
+
+        asset_prices=asset_prices.cumprod()
+
+        return cls._create_environment_from_asset_prices(assets_prices=asset_prices,data_hash=data_hash,
+                                                         meta_parameters=meta_parameters,objective_parameters=objective_parameters)
+    @classmethod
+    def _create_environment_from_asset_prices(cls,assets_prices,meta_parameters,objective_parameters,data_hash,*args,**kwargs):
+        """
+
+        :param assets_prices:  (pandas.DataFrame)
+        :return: DeepTradingEnvironment
+        """
+
+        # resample
+        assets_prices = assets_prices.resample(cls.RESAMPLE_DATA_FREQUENCY).first()
+        assets_prices = assets_prices.dropna()
+        input_data = cls._buid_close_returns(assets_prices=assets_prices,
+                                             out_reward_window=meta_parameters["out_reward_window"],
+                                             data_hash=data_hash)
+
+        #rewrite asset prices for data consistency
+        assets_prices=input_data["assets_prices"]
+
+        # transform features
+
+        return DeepTradingEnvironment(input_data=input_data,
+                               assets_prices=assets_prices, meta_parameters=meta_parameters,
+                               objective_parameters=objective_parameters)
+
+    @classmethod
+    def build_environment_from_dirs_and_transform(cls, meta_parameters, objective_parameters,data_hash, data_dir="data_env", **kwargs):
         """
         Do transformations that shouldnt be part of the class
 
@@ -195,25 +231,14 @@ class DeepTradingEnvironment(gym.Env):
 
 
         """
-
         # optimally this should be only features
         assets_prices = {file: pd.read_parquet(data_dir + "/" + file)["close"] for file in os.listdir(data_dir)}
-
         assets_prices = pd.DataFrame(assets_prices)
 
-        #resample
-        assets_prices=assets_prices.resample("5min").first()
-        assets_prices=assets_prices.dropna()
-        input_data=cls._buid_close_returns(assets_prices=assets_prices, out_reward_window=meta_parameters["out_reward_window"])
-        # transform features
+        environment=cls._create_environment_from_asset_prices(assets_prices=assets_prices,data_hash=data_hash,
+                                                              meta_parameters=meta_parameters,objective_parameters=objective_parameters)
 
-
-
-        return DeepTradingEnvironment(input_data=input_data,
-                                      assets_prices=assets_prices, meta_parameters=meta_parameters,
-                                      objective_parameters=objective_parameters, **kwargs)
-
-
+        return environment
 
     def __init__(self, input_data, assets_prices, objective_parameters,
                  meta_parameters):
@@ -232,7 +257,7 @@ class DeepTradingEnvironment(gym.Env):
         self._set_environment_helpers()
         self._set_reward_helpers(assets_prices, objective_parameters, meta_parameters)
 
-        self._set_state(meta_parameters=meta_parameters)
+        self._set_state(meta_parameters=meta_parameters,objective_parameters=objective_parameters)
 
 
         # action space is the portfolio weights at any time in our example it is bounded by [0,1]
@@ -240,15 +265,12 @@ class DeepTradingEnvironment(gym.Env):
         # features to be scaled normal scaler will bound them in -4,4
         self.observation_space = gym.spaces.Box(low=-4, high=4, shape=(self.number_of_features,))
 
-
-
-
-    def _set_state(self,meta_parameters):
+    def _set_state(self,meta_parameters,objective_parameters):
         # logic to create state
         state_type=meta_parameters["state_type"]
         if state_type =="in_window_out_window":
             # Will be good if meta parameters does not need to be passed even to the environment possible?
-            self._state = State(features=self.features,
+            self.state = State(features=self.features,
                                 in_bars_count=meta_parameters["in_bars_count"],
                                 objective_parameters=objective_parameters,
 
@@ -283,7 +305,7 @@ class DeepTradingEnvironment(gym.Env):
         """
 
         action = action_portfolio_weights
-        observation,reward,done,extra_info= self._state.step(action, action_date)
+        observation,reward,done,extra_info= self.state.step(action, action_date)
         # obs = self._state.encode()
         obs=observation
         info = {"action": action,
@@ -297,46 +319,105 @@ class DeepTradingEnvironment(gym.Env):
     def close(self):
         pass
 
-    def generate_episodes(self,observations=100):
+import math
+def sigmoid(x):
+        return 1 / (1 + math.exp(-x))
 
-        #generate random start
-        start=np.random.choice(range(self.assets_prices.shape[0]))
+class LinearAgent:
 
-        rewards=[]
-        #Todo: Note that sum of rewards assume that we take a bet on each step ok for training?
-        for iloc_date in range(start,start+observations,1):
+    def __init__(self,environment):
+        self.environment = environment
+        self._initialize_helper_properties()
+        self._initialize_linear_parameters()
 
-            action_portfolio_weights=np.random.rand(2)
-            obs, reward, done, info=self.step(action_portfolio_weights=action_portfolio_weights,action_date=self.assets_prices.index[iloc_date])
+    def _initialize_helper_properties(self):
+
+        self.number_of_assets=len(self.environment.assets_prices.columns)
+        self.state_features_shape=self.environment.state.state_features_shape
+    def _initialize_linear_parameters(self):
+        """
+        parameters are for mu and sigma
+        (features_rows*features_columns +number_of_assets(weights))*number of asssets
+        :return:
+        """
+
+
+        param_dim=(self.state_features_shape[0]\
+                                   *self.state_features_shape[1]+self.number_of_assets)*self.number_of_assets
+        self.theta_mu=np.random.rand(param_dim)
+        self.theta_sigma=np.random.rand(param_dim)
+
+
+    def _get_mus(self,theta_mu):
+
+        theta_mu_features=theta_mu[:-self.number_of_assets*self.number_of_assets].reshape(self.number_of_assets,
+                                                                    self.state_features_shape[0],self.state_features_shape[1])
+        theta_mu_weights=theta_mu[-self.number_of_assets*self.number_of_assets:].reshape(self.number_of_assets,
+                                                                                         self.number_of_assets)
+
+
+        return theta_mu_features, theta_mu_weights
+
+    def _get_sigmas(self,theta_sigma):
+
+        return  self._get_mus(theta_sigma)
+
+    def _policy_linear(self,state_features,weights_on_date):
+        """
+        return action give a linear policy
+        :param state:
+        :param action_date:
+        :return:
+        """
+        theta_mu_features, theta_mu_weights=self._get_mus(self.theta_mu)
+        theta_sigma_features, theta_sigma_weights = self._get_mus(self.theta_sigma)
+        mu_features=(theta_mu_features*state_features.values)
+        mu_features=mu_features.sum(axis=1).sum(axis=1)
+        mu_weights=(theta_mu_weights*weights_on_date.values).sum(axis=1)
+        mu=mu_features+mu_weights
+
+        sigma_features = (theta_sigma_features * state_features.values)
+        sigma_features = sigma_features.sum(axis=1).sum(axis=1)
+        sigma_weights = (theta_sigma_weights * weights_on_date.values).sum(axis=1)
+        #guarantee is always positive
+        log_sigma_squared = np.exp(sigma_features + sigma_weights)
+        # stabilize values
+        mu = np.array(list(map(sigmoid, mu)))
+        sigma_squared=np.array(list(map(sigmoid, np.log(log_sigma_squared))))
+
+
+        cov=np.zeros((self.number_of_assets,self.number_of_assets))
+        np.fill_diagonal(cov,sigma_squared)
+
+        action=np.random.multivariate_normal(mu,cov)
+
+        return action
+
+
+    def get_best_action(self,state,action_date):
+        """
+        returns best action given state (portfolio weights
+        :param state:
+        :param action_date:
+        :return:
+        """
+        state_features, weights_on_date = state.get_state_on_date(target_date=action_date)
+
+        action=self._policy_linear(state_features=state_features,weights_on_date=weights_on_date)
+
+
+        return np.random.rand(2)
+
+    def sample_env(self,observations=100):
+        start = np.random.choice(range(self.environment.assets_prices.shape[0]))
+
+        rewards = []
+        # Todo: Note that sum of rewards assume that we rebalance a bet on each step ok for training?
+        for iloc_date in range(start, start + observations, 1):
+            action_date = self.environment.assets_prices.index[iloc_date]
+            action_portfolio_weights = self.get_best_action(self.environment.state,action_date=action_date)
+            obs, reward, done, info = self.environment.step(action_portfolio_weights=action_portfolio_weights,
+                                                action_date=action_date)
 
             rewards.append(reward)
 
-class TraderTrainer:
-
-    def __init__(self,environment,agent):
-        pass
-
-# parameters related to the transformation of data, this parameters govern an step before the algorithm
-meta_parameters = {"in_bars_count": 30,
-                   "out_reward_window": datetime.timedelta(minutes=10),
-                   "state_type":"in_window_out_window"}
-
-# parameters that are related to the objective/reward function construction
-objective_parameters = {"percent_commission": .001}
-print("===Meta Parameters===")
-print(meta_parameters)
-print("===Objective Parameters===")
-print(objective_parameters)
-
-
-
-env=DeepTradingEnvironment.from_dirs_and_transform(meta_parameters=meta_parameters,objective_parameters=objective_parameters)
-
-
-action=np.random.rand(2)
-env.generate_episodes()
-
-simulation_details={"asset_1":{"method":"GBM","sigma":.1,"mean":.1},
-                    "asset_2":{"method":"GBM","sigma":.2,"mean":.2}}
-
-env_2=DeepTradingEnvironment.build_from_simulated_assets(asset_kwargs=simulation_details)
