@@ -87,8 +87,12 @@ def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_li
                                  data=serie.iloc[numerators].values / serie.iloc[divisors].values)
     period_return = period_return.reindex(serie.index)
 
-    numerators_df=pd.DataFrame(index=obs_dates,
-                                 data=serie.iloc[numerators].reset_index()["index"].values )
+    try:
+        index_name=serie.index.name
+        numerators_df=pd.DataFrame(index=obs_dates,
+                                     data=serie.iloc[numerators].reset_index()[index_name].values )
+    except:
+        raise
 
     numerators_df=numerators_df.reindex(serie.index)
 

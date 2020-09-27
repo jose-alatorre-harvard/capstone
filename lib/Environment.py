@@ -17,14 +17,11 @@ class State:
         :param objective_parameters:(dict)
 
         """
-
         self.features = features
         self.forward_returns=forward_returns
         self.forward_returns_dates=forward_returns_dates
-
         self._set_helper_functions()
         self._set_objective_function_parameters(objective_parameters)
-
 
         self._initialize_weights_buffer()
 
@@ -118,10 +115,6 @@ class State:
 
         reward = one_period_mtm_reward - commision_percent_cost
 
-
-
-
-
         done= False
         extra_info={"action_date":action_date,
             "forward_returns":t_plus_one_returns,
@@ -153,10 +146,10 @@ class State:
 
 class DeepTradingEnvironment(gym.Env):
     metadata = {'render.modes': ['human']}
-    RESAMPLE_DATA_FREQUENCY="5min"
+
 
     @staticmethod
-    def _build_and_persist_features(assets_prices, out_reward_window,data_hash):
+    def _build_and_persist_features(assets_dict, out_reward_window,data_hash):
         """
          builds close-to-close returns for a specif
          :param self:
@@ -168,7 +161,7 @@ class DeepTradingEnvironment(gym.Env):
         PERSISTED_DATA_DIRECTORY = "temp_persisted_data"
         # Todo: Hash csv file
         if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash):
-            features_instance=DailyDataFrame2Features(bars_dict={col:assets_prices[col] for col in assets_prices.columns}
+            features_instance=DailyDataFrame2Features(bars_dict=assets_dict
                                                       ,configuration_dict={},
                                                       forward_returns_time_delta=[out_reward_window])
 
@@ -193,7 +186,6 @@ class DeepTradingEnvironment(gym.Env):
 
         return only_features, only_forward_returns,forward_returns_dates
 
-
     @classmethod
     def build_environment_from_simulated_assets(cls,assets_simulation_details,data_hash,
                                                 meta_parameters,objective_parameters,periods=1000):
@@ -209,7 +201,7 @@ class DeepTradingEnvironment(gym.Env):
         """
 
 
-        date_range=pd.date_range(start=datetime.datetime.utcnow(),periods=periods,freq="1d") #change period to 1Min
+        date_range=pd.date_range(start=datetime.datetime.utcnow(),periods=periods,freq="1d",normalize=True) #change period to 1Min
         asset_prices=pd.DataFrame(index=date_range,columns=list(assets_simulation_details.keys()))
         for asset,simulation_details in assets_simulation_details.items():
             new_asset=SimulatedAsset()
@@ -217,11 +209,12 @@ class DeepTradingEnvironment(gym.Env):
             asset_prices[asset]=new_asset.simulate_returns(time_in_years=1/(252),n_returns=periods,**simulation_details)
 
         asset_prices=asset_prices.cumprod()
+        assets_dict={col :asset_prices[col] for col in asset_prices.columns}
 
-        return cls._create_environment_from_asset_prices(assets_prices=asset_prices,data_hash=data_hash,
+        return cls._create_environment_from_assets_dict(assets_dict=assets_dict,data_hash=data_hash,
                                                          meta_parameters=meta_parameters,objective_parameters=objective_parameters)
     @classmethod
-    def _create_environment_from_asset_prices(cls,assets_prices,meta_parameters,objective_parameters,data_hash,*args,**kwargs):
+    def _create_environment_from_assets_dict(cls,assets_dict,meta_parameters,objective_parameters,data_hash,*args,**kwargs):
         """
 
         :param assets_prices:  (pandas.DataFrame)
@@ -229,9 +222,7 @@ class DeepTradingEnvironment(gym.Env):
         """
 
         # resample
-        assets_prices = assets_prices.resample(cls.RESAMPLE_DATA_FREQUENCY).first()
-        assets_prices = assets_prices.dropna()
-        features, forward_returns,forward_returns_dates = cls._build_and_persist_features(assets_prices=assets_prices,
+        features, forward_returns,forward_returns_dates = cls._build_and_persist_features(assets_dict=assets_dict,
                                              out_reward_window=meta_parameters["out_reward_window"],
                                              data_hash=data_hash)
 
@@ -252,10 +243,22 @@ class DeepTradingEnvironment(gym.Env):
 
         """
         # optimally this should be only features
-        assets_prices = {file: pd.read_parquet(data_dir + "/" + file)["close"] for file in os.listdir(data_dir)}
-        assets_prices = pd.DataFrame(assets_prices)
+        #RESAMPLE NEEDS RE-CREATION OF TIME SERIE SO JUST USE THIS FOR TESTING
+        assets_dict = {file: pd.read_parquet(data_dir + "/" + file).resample("30min").first() for file in os.listdir(data_dir)}
+        counter=0
+        for key, value in assets_dict.items():
+            if counter==0:
+                main_index=value.index
+            else:
+                main_index=main_index.join(value.index,how="inner")
 
-        environment=cls._create_environment_from_asset_prices(assets_prices=assets_prices,data_hash=data_hash,
+        for key, value in assets_dict.items():
+            tmp_df=value.reindex(main_index)
+            tmp_df=tmp_df.fillna(method='ffill')
+            assets_dict[key]=tmp_df
+
+
+        environment=cls._create_environment_from_assets_dict(assets_dict=assets_dict,data_hash=data_hash,
                                                               meta_parameters=meta_parameters,objective_parameters=objective_parameters)
 
         return environment
