@@ -4,9 +4,11 @@ from lib.Environment import DeepTradingEnvironment, LinearAgent
 
 
 import datetime
+
+out_reward_window=datetime.timedelta(days=7)
 # parameters related to the transformation of data, this parameters govern an step before the algorithm
 meta_parameters = {"in_bars_count": 30,
-                   "out_reward_window": datetime.timedelta(days=7),
+                   "out_reward_window":out_reward_window ,
                    "state_type":"in_window_out_window"}
 
 # parameters that are related to the objective/reward function construction
@@ -27,5 +29,5 @@ env=DeepTradingEnvironment.build_environment_from_simulated_assets(assets_simula
 
 
 
-linear_agent=LinearAgent(environment=env)
+linear_agent=LinearAgent(environment=env,out_reward_window_td=out_reward_window)
 linear_agent.sample_env()

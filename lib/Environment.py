@@ -9,7 +9,7 @@ from lib.DataHandling import DailyDataFrame2Features
 
 class State:
 
-    def __init__(self, features,forward_returns, in_bars_count, objective_parameters):
+    def __init__(self, features,forward_returns,forward_returns_dates, in_bars_count, objective_parameters):
         """
 
         :param features: (dict)
@@ -20,6 +20,7 @@ class State:
 
         self.features = features
         self.forward_returns=forward_returns
+        self.forward_returns_dates=forward_returns_dates
         self.in_bars_count = in_bars_count
         self._set_helper_functions()
         self._set_objective_function_parameters(objective_parameters)
@@ -83,8 +84,13 @@ class State:
         """
         # get previous allocation
 
-        action_date_index = np.argmax(self.weight_buffer.index.isin([action_date]))
-        self._set_weights_on_date(weights=action, target_date=action_date)
+        action_date_index = self.weight_buffer.index.searchsorted(action_date)
+
+        next_observation_date = self.forward_returns_dates.iloc[action_date_index].values[0]
+        next_observation_date_index = self.weight_buffer.index.searchsorted(next_observation_date)
+        # on each step between  action_date and next observation date , the weights should be refilled
+        self.weight_buffer.iloc[action_date_index:next_observation_date_index,:]=action
+
 
         weight_difference = self.weight_buffer.iloc[action_date_index - 1:action_date_index + 1]
         # obtain the difference from the previous allocation, diff is done t_1 - t
@@ -98,10 +104,16 @@ class State:
         one_period_mtm_reward = (t_plus_one_returns * action).sum()
 
         reward = one_period_mtm_reward - commision_percent_cost
-        observation=t_plus_one_returns.values
+
+
+
+
+
         done= False
-        extra_info={}
-        return observation,reward,done,extra_info
+        extra_info={"action_date":action_date,
+            "forward_returns":t_plus_one_returns,
+                    "previous_weights":self.weight_buffer.iloc[action_date_index - 1]}
+        return next_observation_date,reward,done,extra_info
 
     def encode(self, date):
         """
@@ -153,25 +165,27 @@ class DeepTradingEnvironment(gym.Env):
 
             #Todo: get all features
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
+            forward_returns_dates = features_instance.forward_returns_dates[0]
 
             only_features.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_" + data_hash)
             only_forward_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_" + data_hash)
+            forward_returns_dates.to_parquet(PERSISTED_DATA_DIRECTORY + "/forward_return_dates_" + data_hash)
 
         else:
 
             only_features = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash)
             only_forward_returns=pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_"+data_hash)
+            forward_returns_dates=pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/forward_return_dates_" + data_hash)
 
 
-
-        return only_features, only_forward_returns
+        return only_features, only_forward_returns,forward_returns_dates
 
 
     @classmethod
     def build_environment_from_simulated_assets(cls,assets_simulation_details,data_hash,
                                                 meta_parameters,objective_parameters,periods=1000):
         """
-        Simulates Continous 1 minute data
+        Simulates continous 1 minute data
         :param assets_simulation_details: (dict)
         :param simulation_details: (dict)
         :param meta_parameters: (dict)
@@ -204,14 +218,14 @@ class DeepTradingEnvironment(gym.Env):
         # resample
         assets_prices = assets_prices.resample(cls.RESAMPLE_DATA_FREQUENCY).first()
         assets_prices = assets_prices.dropna()
-        features, forward_returns = cls._build_and_persist_features(assets_prices=assets_prices,
+        features, forward_returns,forward_returns_dates = cls._build_and_persist_features(assets_prices=assets_prices,
                                              out_reward_window=meta_parameters["out_reward_window"],
                                              data_hash=data_hash)
 
 
         # transform features
 
-        return DeepTradingEnvironment(features=features,
+        return DeepTradingEnvironment(features=features,forward_returns_dates=forward_returns_dates,
                                forward_returns=forward_returns, meta_parameters=meta_parameters,
                                objective_parameters=objective_parameters)
 
@@ -233,7 +247,7 @@ class DeepTradingEnvironment(gym.Env):
 
         return environment
 
-    def __init__(self, features, forward_returns, objective_parameters,
+    def __init__(self, features, forward_returns,forward_returns_dates, objective_parameters,
                  meta_parameters):
         """
           features and forward returns should be aligned by the time axis. The setup should resemble a supervised learning
@@ -248,6 +262,7 @@ class DeepTradingEnvironment(gym.Env):
 
         self.features = features
         self.forward_returns = forward_returns
+        self.forward_returns_dates=forward_returns_dates
         # create helper variables
         self._set_environment_helpers()
         self._set_reward_helpers(objective_parameters)
@@ -268,7 +283,8 @@ class DeepTradingEnvironment(gym.Env):
             self.state = State(features=self.features,
                                 in_bars_count=meta_parameters["in_bars_count"],
                                 objective_parameters=objective_parameters,
-                               forward_returns=self.forward_returns
+                               forward_returns=self.forward_returns,
+                               forward_returns_dates=self.forward_returns_dates
 
                                 )
 
@@ -304,9 +320,7 @@ class DeepTradingEnvironment(gym.Env):
         observation,reward,done,extra_info= self.state.step(action, action_date)
         # obs = self._state.encode()
         obs=observation
-        info = {"action": action,
-                "date": action_date}
-
+        info=extra_info
         return obs, reward, done, info
 
     def render(self, mode='human', close=False):
@@ -321,14 +335,22 @@ def sigmoid(x):
 
 class LinearAgent:
 
-    def __init__(self,environment):
+    def __init__(self,environment,out_reward_window_td):
+        """
+
+
+
+        :param environment:
+        :param out_reward_window_td: datetime.timedelta,
+        """
         self.environment = environment
+        self.out_reward_window_td=out_reward_window_td
         self._initialize_helper_properties()
         self._initialize_linear_parameters()
 
     def _initialize_helper_properties(self):
 
-        self.number_of_assets=len(self.environment.assets_prices.columns)
+        self.number_of_assets=self.environment.number_of_assets
         self.state_features_shape=self.environment.state.state_features_shape
     def _initialize_linear_parameters(self):
         """
@@ -376,10 +398,10 @@ class LinearAgent:
         sigma_features = sigma_features.sum(axis=1).sum(axis=1)
         sigma_weights = (theta_sigma_weights * weights_on_date.values).sum(axis=1)
         #guarantee is always positive
-        log_sigma_squared = np.exp(sigma_features + sigma_weights)
+        sigma_total = np.exp(sigma_features + sigma_weights)
         # stabilize values
         mu = np.array(list(map(sigmoid, mu)))
-        sigma_squared=np.array(list(map(sigmoid, np.log(log_sigma_squared))))
+        sigma_squared=np.array(list(map(sigmoid, sigma_total**2)))
 
 
         cov=np.zeros((self.number_of_assets,self.number_of_assets))
@@ -402,18 +424,22 @@ class LinearAgent:
         action=self._policy_linear(state_features=state_features,weights_on_date=weights_on_date)
 
 
-        return np.random.rand(2)
+        return action
 
     def sample_env(self,observations=100):
-        start = np.random.choice(range(self.environment.assets_prices.shape[0]))
-
+        start = np.random.choice(range(self.environment.state.in_bars_count,self.environment.features.shape[0]))
+        start_date =self.environment.features.index[start]
         rewards = []
-        # Todo: Note that sum of rewards assume that we rebalance a bet on each step ok for training?
-        for iloc_date in range(start, start + observations, 1):
-            action_date = self.environment.assets_prices.index[iloc_date]
+
+        for counter,iloc_date in enumerate(range(start, start + observations, 1)):
+            if counter==0:
+                action_date=start_date
+
+
             action_portfolio_weights = self.get_best_action(self.environment.state,action_date=action_date)
-            obs, reward, done, info = self.environment.step(action_portfolio_weights=action_portfolio_weights,
+            action_date, reward, done, info = self.environment.step(action_portfolio_weights=action_portfolio_weights,
                                                 action_date=action_date)
+            print(info)
 
             rewards.append(reward)
 

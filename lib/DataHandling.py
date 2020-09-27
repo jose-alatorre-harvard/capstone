@@ -58,7 +58,8 @@ def get_only_fractional_stationary_series(series, lag_cutoff=100):
     return frac_time_serie ,opt_d
 
 
-def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta):
+def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta,
+                         return_indices=False):
     """
 
     :param serie:
@@ -86,9 +87,16 @@ def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_li
                                  data=serie.iloc[numerators].values / serie.iloc[divisors].values)
     period_return = period_return.reindex(serie.index)
 
-    period_return = period_return.sort_index()
+    numerators_df=pd.DataFrame(index=obs_dates,
+                                 data=serie.iloc[numerators].reset_index()["index"].values )
 
-    return period_return[period_return.columns[0]] - 1
+    numerators_df=numerators_df.reindex(serie.index)
+
+    period_return = period_return.sort_index()
+    if return_indices==True:
+        return period_return[period_return.columns[0]] - 1 ,numerators_df , serie.iloc[divisors]
+    else:
+        return period_return[period_return.columns[0]] - 1
 
 
 class DailyDataFrame2Features:
@@ -104,6 +112,14 @@ class DailyDataFrame2Features:
         :param exclude_features:
         :param configuration_dict
         """
+
+        #all time series should have the same time index
+        for counter,ts in enumerate(bars_dict.values()):
+            if counter ==0:
+                base_index=ts.index
+            else:
+                assert base_index.equals(ts.index)
+
         self.configuration_dict = configuration_dict
         all_features = pd.DataFrame()
         for asset_name, bars_time_serie_df in bars_dict.items():
@@ -113,7 +129,10 @@ class DailyDataFrame2Features:
             technical_features.columns = [asset_name + "_" + i for i in technical_features.columns]
             all_features = pd.concat([all_features, technical_features], axis=1)
 
-        # todo: Save properties from feature instance like  d of fractional diff
+        #set forward_returns
+        if forward_returns_time_delta is not None:
+            self.forward_returns_dates=features_instance.forward_returns_dates
+
 
         # we drop N/A because there are no features available on certains dates like moving averages
         self.all_features = all_features#.dropna()
@@ -184,6 +203,7 @@ class DailySeries2Features:
 
         self.technical_features = pd.DataFrame(index=serie.index)
         self.log_prices = np.log(serie)
+        self.forward_returns_dates=[]
 
         if features_list is not None:
 
@@ -222,9 +242,15 @@ class DailySeries2Features:
         origin_time_delta = datetime.timedelta(days=0)
         finish_time_delta = -forward_return_td
         forward_limit_time_delta = forward_return_td
-        forward_return = get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta)
+        forward_return,numerators_df,denominators = get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta,
+                                              return_indices=True)
 
-        forward_return.name = ("forward_return_" + str(forward_return_td)).replace(" ", "_")
+        fwd_r_name=("forward_return_" + str(forward_return_td)).replace(" ", "_")
+
+        numerators_df.columns=[fwd_r_name]
+
+        self.forward_returns_dates.append(numerators_df)
+        forward_return.name = fwd_r_name
 
         return forward_return
 
