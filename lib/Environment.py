@@ -442,4 +442,3 @@ class LinearAgent:
             print(info)
 
             rewards.append(reward)
-
