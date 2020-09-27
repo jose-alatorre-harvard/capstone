@@ -11,13 +11,10 @@ class State:
 
     def __init__(self, features,forward_returns, in_bars_count, objective_parameters):
         """
-
         :param features: (dict)
         :param in_bars_count: (int)
         :param objective_parameters:(dict)
-
         """
-
         self.features = features
         self.forward_returns=forward_returns
         self.in_bars_count = in_bars_count
@@ -35,7 +32,6 @@ class State:
         log_close_returns: (pd.DataFrame)
         :return:
         """
-
         self.number_of_assets=len(self.forward_returns.columns)
         self.state_features_shape=(self.in_bars_count,self.features.shape[1])
 
@@ -45,9 +41,7 @@ class State:
     def reset(self):
         """
         resets the weights_buffer
-
         """
-
         self._initialize_weights_buffer()
 
 
@@ -60,11 +54,9 @@ class State:
         return self.forward_returns.columns
 
     def _initialize_weights_buffer(self):
-
         """
          :return:
         """
-
         self.weight_buffer = pd.DataFrame(index=self.features.index,columns=self.asset_names).fillna(0)+ 1 / self.number_of_assets
 
     @property
@@ -106,15 +98,14 @@ class State:
     def encode(self, date):
         """
         convert current state to tensor
-
         """
         pass
 
     def get_state_on_date(self, target_date):
         """
-            returns the state on a target date
-           :param target_date:
-           :return: in_window_features, weights_on_date
+        returns the state on a target date
+        :param target_date:
+        :return: in_window_features, weights_on_date
         """
         #TODO: what happens for  different features for example ("Non Time Series Returns")?
         assert target_date >= self.features.index[self.in_bars_count]
@@ -171,7 +162,7 @@ class DeepTradingEnvironment(gym.Env):
     def build_environment_from_simulated_assets(cls,assets_simulation_details,data_hash,
                                                 meta_parameters,objective_parameters,periods=1000):
         """
-        Simulates Continous 1 minute data
+        Simulates Continuous 1 minute data
         :param assets_simulation_details: (dict)
         :param simulation_details: (dict)
         :param meta_parameters: (dict)
@@ -196,7 +187,6 @@ class DeepTradingEnvironment(gym.Env):
     @classmethod
     def _create_environment_from_asset_prices(cls,assets_prices,meta_parameters,objective_parameters,data_hash,*args,**kwargs):
         """
-
         :param assets_prices:  (pandas.DataFrame)
         :return: DeepTradingEnvironment
         """
@@ -218,11 +208,9 @@ class DeepTradingEnvironment(gym.Env):
     @classmethod
     def build_environment_from_dirs_and_transform(cls, meta_parameters, objective_parameters,data_hash, data_dir="data_env", **kwargs):
         """
-        Do transformations that shouldnt be part of the class
+        Do transformations that shouldn't be part of the class
 
         Also using the meta parameters
-
-
         """
         # optimally this should be only features
         assets_prices = {file: pd.read_parquet(data_dir + "/" + file)["close"] for file in os.listdir(data_dir)}
@@ -289,12 +277,10 @@ class DeepTradingEnvironment(gym.Env):
         """
         resets the environment:
             -resets the buffer of weights in the environments
-
         """
 
     def step(self, action_portfolio_weights, action_date):
         """
-
         :param action_portfolio_weights:
         :param action_date:
         :return:
@@ -336,7 +322,6 @@ class LinearAgent:
         (features_rows*features_columns +number_of_assets(weights))*number of asssets
         :return:
         """
-
 
         param_dim=(self.state_features_shape[0]\
                                    *self.state_features_shape[1]+self.number_of_assets)*self.number_of_assets
