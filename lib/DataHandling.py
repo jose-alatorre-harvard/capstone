@@ -184,6 +184,7 @@ class DailySeries2Features:
 
         self.technical_features = pd.DataFrame(index=serie.index)
         self.log_prices = np.log(serie)
+        self.close_price = serie
 
         if features_list is not None:
 
@@ -245,6 +246,10 @@ class DailySeries2Features:
                 getattr(self, "_add_" + feature)
             except:
                 print("feature " + feature + "  not found")
+
+    def _add_close_price(self, serie):
+        feature = self.close_price
+        return feature
 
     def _add_rsi(self, serie):
         technical = talib.RSI(serie, self.RSI_TIME_FRAME)
