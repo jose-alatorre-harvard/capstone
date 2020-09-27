@@ -9,7 +9,7 @@ from lib.DataHandling import DailyDataFrame2Features
 
 class State:
 
-    def __init__(self, features,forward_returns,forward_returns_dates, in_bars_count, objective_parameters):
+    def __init__(self, features,forward_returns,forward_returns_dates, objective_parameters):
         """
 
         :param features: (dict)
@@ -21,13 +21,24 @@ class State:
         self.features = features
         self.forward_returns=forward_returns
         self.forward_returns_dates=forward_returns_dates
-        self.in_bars_count = in_bars_count
+
         self._set_helper_functions()
         self._set_objective_function_parameters(objective_parameters)
 
 
         self._initialize_weights_buffer()
 
+    def flatten_state(self,state_features, weights_on_date):
+        """
+        flatten states by adding weights to features
+
+        :return:
+        """
+        flat_state=state_features.copy()
+        for index in weights_on_date.index:
+            flat_state[index]=weights_on_date.loc[index]
+
+        return flat_state
 
     def _set_helper_functions(self):
         """
@@ -38,7 +49,9 @@ class State:
         """
 
         self.number_of_assets=len(self.forward_returns.columns)
-        self.state_features_shape=(self.in_bars_count,self.features.shape[1])
+        self.state_dimension=self.features.shape[1] +self.number_of_assets
+
+
 
     def _set_objective_function_parameters(self,objective_parameters):
         self.percent_commission = objective_parameters["percent_commission"]
@@ -129,10 +142,10 @@ class State:
            :return: in_window_features, weights_on_date
         """
         #TODO: what happens for  different features for example ("Non Time Series Returns")?
-        assert target_date >= self.features.index[self.in_bars_count]
+        assert target_date >= self.features.index[0]
 
         date_index = self.features.index.searchsorted(target_date)
-        state_features =self.features.iloc[date_index - self.in_bars_count + 1:date_index + 1]
+        state_features =self.features.iloc[date_index]
         weights_on_date = self.weight_buffer.iloc[date_index]
 
         return state_features, weights_on_date
@@ -281,7 +294,7 @@ class DeepTradingEnvironment(gym.Env):
         if state_type =="in_window_out_window":
             # Will be good if meta parameters does not need to be passed even to the environment possible?
             self.state = State(features=self.features,
-                                in_bars_count=meta_parameters["in_bars_count"],
+
                                 objective_parameters=objective_parameters,
                                forward_returns=self.forward_returns,
                                forward_returns_dates=self.forward_returns_dates
@@ -351,7 +364,7 @@ class LinearAgent:
     def _initialize_helper_properties(self):
 
         self.number_of_assets=self.environment.number_of_assets
-        self.state_features_shape=self.environment.state.state_features_shape
+        self.state_dimension=self.environment.state.state_dimension
     def _initialize_linear_parameters(self):
         """
         parameters are for mu and sigma
@@ -360,25 +373,12 @@ class LinearAgent:
         """
 
 
-        param_dim=(self.state_features_shape[0]\
-                                   *self.state_features_shape[1]+self.number_of_assets)*self.number_of_assets
-        self.theta_mu=np.random.rand(param_dim)
-        self.theta_sigma=np.random.rand(param_dim)
+        param_dim=self.state_dimension
+        self.theta_mu=np.random.rand(self.number_of_assets,param_dim)
+        #no modeling correlations if correlation self.theta_sigma=np.random.rand(self.number_of_assets,self.number_of_asset,param_dim)
+        self.theta_sigma=np.random.rand(self.number_of_assets,param_dim)
 
 
-    def _get_mus(self,theta_mu):
-
-        theta_mu_features=theta_mu[:-self.number_of_assets*self.number_of_assets].reshape(self.number_of_assets,
-                                                                    self.state_features_shape[0],self.state_features_shape[1])
-        theta_mu_weights=theta_mu[-self.number_of_assets*self.number_of_assets:].reshape(self.number_of_assets,
-                                                                                         self.number_of_assets)
-
-
-        return theta_mu_features, theta_mu_weights
-
-    def _get_sigmas(self,theta_sigma):
-
-        return  self._get_mus(theta_sigma)
 
     def _policy_linear(self,state_features,weights_on_date):
         """
@@ -387,27 +387,17 @@ class LinearAgent:
         :param action_date:
         :return:
         """
-        theta_mu_features, theta_mu_weights=self._get_mus(self.theta_mu)
-        theta_sigma_features, theta_sigma_weights = self._get_mus(self.theta_sigma)
-        mu_features=(theta_mu_features*state_features.values)
-        mu_features=mu_features.sum(axis=1).sum(axis=1)
-        mu_weights=(theta_mu_weights*weights_on_date.values).sum(axis=1)
-        mu=mu_features+mu_weights
-
-        sigma_features = (theta_sigma_features * state_features.values)
-        sigma_features = sigma_features.sum(axis=1).sum(axis=1)
-        sigma_weights = (theta_sigma_weights * weights_on_date.values).sum(axis=1)
-        #guarantee is always positive
-        sigma_total = np.exp(sigma_features + sigma_weights)
-        # stabilize values
-        mu = np.array(list(map(sigmoid, mu)))
-        sigma_squared=np.array(list(map(sigmoid, sigma_total**2)))
+        #
+        flat_state=self.environment.state.flatten_state(state_features=state_features,weights_on_date=weights_on_date)
+        #calculate mu and sigma
+        mu=(self.theta_mu*flat_state.values).sum(axis=1)
+        sigma=np.exp(np.sum(self.theta_sigma*flat_state.values,axis=1))
+        cov = np.zeros((self.number_of_assets, self.number_of_assets))
+        np.fill_diagonal(cov, sigma)
 
 
-        cov=np.zeros((self.number_of_assets,self.number_of_assets))
-        np.fill_diagonal(cov,sigma_squared)
-
-        action=np.random.multivariate_normal(mu,cov)
+        action=np.random.multivariate_normal(
+        mu,cov)
 
         return action
 
@@ -426,8 +416,8 @@ class LinearAgent:
 
         return action
 
-    def sample_env(self,observations=100):
-        start = np.random.choice(range(self.environment.state.in_bars_count,self.environment.features.shape[0]))
+    def sample_env(self,observations=32):
+        start = np.random.choice(range(self.environment.features.shape[0]-observations))
         start_date =self.environment.features.index[start]
         rewards = []
 
@@ -443,3 +433,6 @@ class LinearAgent:
 
             rewards.append(reward)
 
+            if action_date >= self.environment.features.index[-1]-self.out_reward_window_td:
+                print("Sample reached limit of time series",counter)
+                break

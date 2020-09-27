@@ -30,4 +30,4 @@ env=DeepTradingEnvironment.build_environment_from_simulated_assets(assets_simula
 
 
 linear_agent=LinearAgent(environment=env,out_reward_window_td=out_reward_window)
-linear_agent.sample_env()
+linear_agent.sample_env(observations=32)
