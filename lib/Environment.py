@@ -171,7 +171,7 @@ class DeepTradingEnvironment(gym.Env):
 
             #Todo: get all features
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
-            forward_returns_dates = features_instance.forward_returns_dates[0]
+            forward_returns_dates = features_instance.forward_returns_dates
 
             only_features.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_" + data_hash)
             only_forward_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_" + data_hash)
@@ -351,7 +351,7 @@ def sigmoid(x):
 
 class LinearAgent:
 
-    def __init__(self,environment,out_reward_window_td):
+    def __init__(self,environment,out_reward_window_td,sample_observations=32):
         """
 
 
@@ -364,6 +364,8 @@ class LinearAgent:
         self._initialize_helper_properties()
         self._initialize_linear_parameters()
 
+        self.sample_observations=sample_observations
+        self._set_latest_posible_date()
     def _initialize_helper_properties(self):
 
         self.number_of_assets=self.environment.number_of_assets
@@ -398,9 +400,14 @@ class LinearAgent:
         cov = np.zeros((self.number_of_assets, self.number_of_assets))
         np.fill_diagonal(cov, sigma)
 
-
-        action=np.random.multivariate_normal(
-        mu,cov)
+        try:
+            mu_clip=np.clip(mu,0,1)
+            cov_clip=np.clip(cov,0,1)
+            action=np.random.multivariate_normal(
+            mu_clip,cov_clip)
+        except:
+            print("error on sampling")
+            raise
 
         return action
 
@@ -418,9 +425,26 @@ class LinearAgent:
 
 
         return action
+    def _set_latest_posible_date(self):
+        """
 
-    def sample_env(self,observations=32):
-        start = np.random.choice(range(self.environment.features.shape[0]-observations))
+        :param observations:
+        :return:
+        """
+        frd=self.environment.forward_returns_dates
+        column_name = frd.columns[0]
+        end_date=frd[column_name].max()
+
+
+        for obs in range(self.sample_observations+1):
+            last_date_start = frd[frd[column_name] == end_date].index
+            last_date_start_index = frd.index.searchsorted(last_date_start)
+            end_date = frd.index[last_date_start_index][0]
+        self.latest_posible_index_date=last_date_start_index[0]
+        self.max_available_obs_date=frd[column_name].index.max()
+
+    def sample_env(self,observations=32,verbose=True):
+        start = np.random.choice(range(self.latest_posible_index_date))
         start_date =self.environment.features.index[start]
         rewards = []
 
@@ -432,10 +456,12 @@ class LinearAgent:
             action_portfolio_weights = self.get_best_action(self.environment.state,action_date=action_date)
             action_date, reward, done, info = self.environment.step(action_portfolio_weights=action_portfolio_weights,
                                                 action_date=action_date)
-            print(info)
+            if verbose:
+                print(info)
 
             rewards.append(reward)
 
-            if action_date >= self.environment.features.index[-1]-self.out_reward_window_td:
-                print("Sample reached limit of time series",counter)
-                break
+            if action_date > self.max_available_obs_date:
+                if verbose:
+                     print("Sample reached limit of time series",counter)
+                raise
