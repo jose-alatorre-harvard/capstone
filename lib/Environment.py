@@ -398,7 +398,7 @@ class LinearAgent:
 
 
 
-    def _policy_linear(self,state_features,weights_on_date):
+    def _policy_linear(self,flat_state):
         """
         return action give a linear policy
         :param state:
@@ -406,35 +406,42 @@ class LinearAgent:
         :return:
         """
         #
-        flat_state=self.environment.state.flatten_state(state_features=state_features,weights_on_date=weights_on_date)
+
         #calculate mu and sigma
-        mu=(self.theta_mu*flat_state.values).sum(axis=1)
-        sigma=np.exp(np.sum(self.theta_sigma*flat_state.values,axis=1))
+        mu=self._mu_linear(flat_state=flat_state)
+        sigma=self._sigma_linear(flat_state=flat_state)
         cov = np.zeros((self.number_of_assets, self.number_of_assets))
-        np.fill_diagonal(cov, sigma)
+        np.fill_diagonal(cov, sigma**2)
 
         try:
-            mu_clip=np.clip(mu,0,1)
-            cov_clip=np.clip(cov,.05,.1)
+
             action=np.random.multivariate_normal(
-            mu_clip,cov_clip)
+            mu,cov)
         except:
             print("error on sampling")
             raise
 
         return action
 
+    def _sigma_linear(self,flat_state):
+        sigma = np.exp(np.sum(self.theta_sigma * flat_state.values, axis=1))
+        sigma_clip=np.clip(sigma,.05,.1)
+        return sigma_clip
+    def _mu_linear(self,flat_state):
+        mu=(self.theta_mu * flat_state.values).sum(axis=1)
+        mu_clip = np.clip(mu, 0, 1)
 
-    def get_best_action(self,state,action_date):
+        return mu_clip
+
+    def get_best_action(self,flat_state):
         """
         returns best action given state (portfolio weights
         :param state:
         :param action_date:
         :return:
         """
-        state_features, weights_on_date = state.get_state_on_date(target_date=action_date)
 
-        action=self._policy_linear(state_features=state_features,weights_on_date=weights_on_date)
+        action=self._policy_linear(flat_state=flat_state)
 
 
         return action
@@ -460,13 +467,23 @@ class LinearAgent:
         start = np.random.choice(range(self.latest_posible_index_date))
         start_date =self.environment.features.index[start]
         rewards = []
-
+        reward_dates=[]
+        actions=[]
+        states=[]
         for counter,iloc_date in enumerate(range(start, start + observations, 1)):
             if counter==0:
                 action_date=start_date
 
+            state_features, weights_on_date = self.environment.state.get_state_on_date(target_date=action_date)
+            flat_state = self.environment.state.flatten_state(state_features=state_features,
+                                                              weights_on_date=weights_on_date)
 
-            action_portfolio_weights = self.get_best_action(self.environment.state,action_date=action_date)
+            action_portfolio_weights = self.get_best_action(flat_state=flat_state)
+            #record S A R
+            reward_dates.append(action_date)
+            actions.append(action_portfolio_weights)
+            states.append(flat_state)
+
             action_date, reward, done, info = self.environment.step(action_portfolio_weights=action_portfolio_weights,
                                                 action_date=action_date)
             if verbose:
@@ -479,3 +496,53 @@ class LinearAgent:
                      print("Sample reached limit of time series",counter)
                 raise
 
+        return states,actions,rewards
+    def REINFORCE_linear_fit(self,alpha=.9,theta_threshold=.001):
+
+        theta_diff=1000
+        old_theta_mu=self.theta_mu
+        old_theta_sigma=self.theta_sigma
+        while theta_diff >theta_threshold:
+            states,actions,rewards=self.sample_env(observations=32)
+            #Todo: Implement reward factory finish implementation
+            #Todo: Continue implementation, if objective function is to maximize sharpe then the question what is my update per episode?
+            #Todo: I believe we must add previous actions as part of the "state"? question to Think
+            G=self._G_cum_return(rewards)
+            new_theta_mu=old_theta_mu+alpha*self._theta_mu_log_gradient()
+
+    def reward_factory(self,reward):
+        """
+        launch reward types Needs to be implemented
+        :param reward:
+        :return:
+        """
+    def _G_cum_return(self,rewards):
+
+        return (pd.concat(rewards, axis=0)+1).cumprod()
+
+
+    def _theta_mu_log_gradient(self,action,flat_state):
+        """
+
+        :param action: pd.DataFrame
+        :param flat_state: pd.DataFrame
+        :return:
+        """
+        sigma=self._sigma_linear(flat_state=flat_state)
+        mu=self._mu_linear(flat_state=flat_state)
+        denominator=1/sigma**2
+        log_gradient=(denominator*(action.values-mu)).reshape(-1,1)*flat_state.values
+
+        return  log_gradient
+
+    def _theta_sigma_log_gradient(self,action,flat_state):
+        """
+
+        :param action:
+        :param flat_state:
+        :return:
+        """
+        sigma = self._sigma_linear(flat_state=flat_state)
+        mu = self._mu_linear(flat_state=flat_state)
+        log_gradient=(((action.values-mu)/sigma)**2 -1).reshape(-1,1)*flat_state.values
+        return  log_gradient
