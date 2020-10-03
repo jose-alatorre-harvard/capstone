@@ -12,11 +12,12 @@ class State:
     def __init__(self, features,forward_returns,forward_returns_dates, objective_parameters):
         """
 
-        :param features: (dict)
-        :param in_bars_count: (int)
-        :param objective_parameters:(dict)
-
+          :param features:
+          :param forward_returns:
+          :param forward_returns_dates:
+          :param objective_parameters:
         """
+
         self.features = features
         self.forward_returns=forward_returns
         self.forward_returns_dates=forward_returns_dates
@@ -149,14 +150,17 @@ class DeepTradingEnvironment(gym.Env):
 
 
     @staticmethod
-    def _build_and_persist_features(assets_dict, out_reward_window,data_hash):
+    def _build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data_hash):
         """
          builds close-to-close returns for a specif
-         :param self:
-         :param assets_prices:(DataFrame)
-         :param out_reward_window:(datetime.timedelta)
-         :return:
-         """
+        :param assets_dict:
+        :param out_reward_window:
+        :param in_bars_count:
+        :param data_hash:
+        :return:
+        """
+
+
 
         PERSISTED_DATA_DIRECTORY = "temp_persisted_data"
         # Todo: Hash csv file
@@ -168,10 +172,18 @@ class DeepTradingEnvironment(gym.Env):
             features=features_instance.all_features
 
             only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
-
+            forward_returns_dates = features_instance.forward_returns_dates
             #Todo: get all features
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
-            forward_returns_dates = features_instance.forward_returns_dates
+            #get the lagged returns as features
+            only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
+            only_features=only_features.dropna()
+            only_forward_returns=only_forward_returns.reindex(only_features.index)
+            forward_returns_dates=forward_returns_dates.reindex(only_features.index)
+            #
+
+
+
 
             only_features.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_" + data_hash)
             only_forward_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_" + data_hash)
@@ -223,6 +235,7 @@ class DeepTradingEnvironment(gym.Env):
 
         # resample
         features, forward_returns,forward_returns_dates = cls._build_and_persist_features(assets_dict=assets_dict,
+                                                                    in_bars_count=meta_parameters["in_bars_count"],
                                              out_reward_window=meta_parameters["out_reward_window"],
                                              data_hash=data_hash)
 
@@ -402,7 +415,7 @@ class LinearAgent:
 
         try:
             mu_clip=np.clip(mu,0,1)
-            cov_clip=np.clip(cov,0,1)
+            cov_clip=np.clip(cov,.05,.1)
             action=np.random.multivariate_normal(
             mu_clip,cov_clip)
         except:
@@ -465,3 +478,4 @@ class LinearAgent:
                 if verbose:
                      print("Sample reached limit of time series",counter)
                 raise
+

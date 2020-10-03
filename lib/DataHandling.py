@@ -151,6 +151,23 @@ class DailyDataFrame2Features:
                                                        upper=self.all_features.quantile(q=.975),
                                                        axis=1)
 
+    def add_lags_to_features(self,features,n_lags):
+        """
+        Adds lags as columns for each column in features
+        :param feautures: pandas.DataFrame,
+        :param n_lagas: int
+        :return:
+        """
+        original_features=features.copy()
+        new_features=features.copy()
+        assert n_lags >=1
+        for lag in range(n_lags):
+            shifted_df=original_features.shift(lag+1)
+            shifted_df.columns=[i+"_lag_"+str(lag) for i in shifted_df.columns]
+            new_features=pd.concat([new_features,shifted_df],axis=1)
+
+        return new_features
+
     def separate_features_from_forward_returns(self,features):
         """
         separates input features from forward returns
