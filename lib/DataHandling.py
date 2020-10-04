@@ -87,8 +87,11 @@ def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_li
                                  data=serie.iloc[numerators].values / serie.iloc[divisors].values)
     period_return = period_return.reindex(serie.index)
 
+    period_return = period_return.sort_index()
+
     try:
-        index_name=serie.index.name
+
+        index_name=serie.index.name  if serie.index.name is not None else "index"
         numerators_df=pd.DataFrame(index=obs_dates,
                                      data=serie.iloc[numerators].reset_index()[index_name].values )
     except:
@@ -96,6 +99,7 @@ def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_li
 
     numerators_df=numerators_df.reindex(serie.index)
 
+    numerators_df[numerators_df.columns[0]]=[i.replace(tzinfo=numerators_df.index.tzinfo) for i in numerators_df[numerators_df.columns[0]]]
     period_return = period_return.sort_index()
     if return_indices==True:
         return period_return[period_return.columns[0]] - 1 ,numerators_df , serie.iloc[divisors]
@@ -133,17 +137,36 @@ class DailyDataFrame2Features:
             technical_features.columns = [asset_name + "_" + i for i in technical_features.columns]
             all_features = pd.concat([all_features, technical_features], axis=1)
 
-        #set forward_returns
-        if forward_returns_time_delta is not None:
-            self.forward_returns_dates=features_instance.forward_returns_dates
 
 
         # we drop N/A because there are no features available on certains dates like moving averages
-        self.all_features = all_features#.dropna()
+        self.all_features = all_features.dropna()
+
+        # set forward_returns
+        if forward_returns_time_delta is not None:
+            self.forward_returns_dates = features_instance.forward_returns_dates[0]
+            self.forward_returns_dates = self.forward_returns_dates.reindex(self.all_features.index)
 
         self.windsorized_data = self.all_features.clip(lower=self.all_features.quantile(q=.025),
                                                        upper=self.all_features.quantile(q=.975),
                                                        axis=1)
+
+    def add_lags_to_features(self,features,n_lags):
+        """
+        Adds lags as columns for each column in features
+        :param feautures: pandas.DataFrame,
+        :param n_lagas: int
+        :return:
+        """
+        original_features=features.copy()
+        new_features=features.copy()
+        assert n_lags >=1
+        for lag in range(n_lags):
+            shifted_df=original_features.shift(lag+1)
+            shifted_df.columns=[i+"_lag_"+str(lag) for i in shifted_df.columns]
+            new_features=pd.concat([new_features,shifted_df],axis=1)
+
+        return new_features
 
     def separate_features_from_forward_returns(self,features):
         """

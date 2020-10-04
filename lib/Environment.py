@@ -12,11 +12,12 @@ class State:
     def __init__(self, features,forward_returns,forward_returns_dates, objective_parameters):
         """
 
-        :param features: (dict)
-        :param in_bars_count: (int)
-        :param objective_parameters:(dict)
-
+          :param features:
+          :param forward_returns:
+          :param forward_returns_dates:
+          :param objective_parameters:
         """
+
         self.features = features
         self.forward_returns=forward_returns
         self.forward_returns_dates=forward_returns_dates
@@ -149,14 +150,17 @@ class DeepTradingEnvironment(gym.Env):
 
 
     @staticmethod
-    def _build_and_persist_features(assets_dict, out_reward_window,data_hash):
+    def _build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data_hash):
         """
          builds close-to-close returns for a specif
-         :param self:
-         :param assets_prices:(DataFrame)
-         :param out_reward_window:(datetime.timedelta)
-         :return:
-         """
+        :param assets_dict:
+        :param out_reward_window:
+        :param in_bars_count:
+        :param data_hash:
+        :return:
+        """
+
+
 
         PERSISTED_DATA_DIRECTORY = "temp_persisted_data"
         # Todo: Hash csv file
@@ -168,10 +172,18 @@ class DeepTradingEnvironment(gym.Env):
             features=features_instance.all_features
 
             only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
-
+            forward_returns_dates = features_instance.forward_returns_dates
             #Todo: get all features
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
-            forward_returns_dates = features_instance.forward_returns_dates[0]
+            #get the lagged returns as features
+            only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
+            only_features=only_features.dropna()
+            only_forward_returns=only_forward_returns.reindex(only_features.index)
+            forward_returns_dates=forward_returns_dates.reindex(only_features.index)
+            #
+
+
+
 
             only_features.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_" + data_hash)
             only_forward_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_" + data_hash)
@@ -223,6 +235,7 @@ class DeepTradingEnvironment(gym.Env):
 
         # resample
         features, forward_returns,forward_returns_dates = cls._build_and_persist_features(assets_dict=assets_dict,
+                                                                    in_bars_count=meta_parameters["in_bars_count"],
                                              out_reward_window=meta_parameters["out_reward_window"],
                                              data_hash=data_hash)
 
@@ -351,7 +364,7 @@ def sigmoid(x):
 
 class LinearAgent:
 
-    def __init__(self,environment,out_reward_window_td):
+    def __init__(self,environment,out_reward_window_td,sample_observations=32):
         """
 
 
@@ -364,6 +377,8 @@ class LinearAgent:
         self._initialize_helper_properties()
         self._initialize_linear_parameters()
 
+        self.sample_observations=sample_observations
+        self._set_latest_posible_date()
     def _initialize_helper_properties(self):
 
         self.number_of_assets=self.environment.number_of_assets
@@ -383,7 +398,7 @@ class LinearAgent:
 
 
 
-    def _policy_linear(self,state_features,weights_on_date):
+    def _policy_linear(self,flat_state):
         """
         return action give a linear policy
         :param state:
@@ -391,51 +406,143 @@ class LinearAgent:
         :return:
         """
         #
-        flat_state=self.environment.state.flatten_state(state_features=state_features,weights_on_date=weights_on_date)
+
         #calculate mu and sigma
-        mu=(self.theta_mu*flat_state.values).sum(axis=1)
-        sigma=np.exp(np.sum(self.theta_sigma*flat_state.values,axis=1))
+        mu=self._mu_linear(flat_state=flat_state)
+        sigma=self._sigma_linear(flat_state=flat_state)
         cov = np.zeros((self.number_of_assets, self.number_of_assets))
-        np.fill_diagonal(cov, sigma)
+        np.fill_diagonal(cov, sigma**2)
 
+        try:
 
-        action=np.random.multivariate_normal(
-        mu,cov)
+            action=np.random.multivariate_normal(
+            mu,cov)
+        except:
+            print("error on sampling")
+            raise
 
         return action
 
+    def _sigma_linear(self,flat_state):
+        sigma = np.exp(np.sum(self.theta_sigma * flat_state.values, axis=1))
+        sigma_clip=np.clip(sigma,.05,.1)
+        return sigma_clip
+    def _mu_linear(self,flat_state):
+        mu=(self.theta_mu * flat_state.values).sum(axis=1)
+        mu_clip = np.clip(mu, 0, 1)
 
-    def get_best_action(self,state,action_date):
+        return mu_clip
+
+    def get_best_action(self,flat_state):
         """
         returns best action given state (portfolio weights
         :param state:
         :param action_date:
         :return:
         """
-        state_features, weights_on_date = state.get_state_on_date(target_date=action_date)
 
-        action=self._policy_linear(state_features=state_features,weights_on_date=weights_on_date)
+        action=self._policy_linear(flat_state=flat_state)
 
 
         return action
+    def _set_latest_posible_date(self):
+        """
 
-    def sample_env(self,observations=32):
-        start = np.random.choice(range(self.environment.features.shape[0]-observations))
+        :param observations:
+        :return:
+        """
+        frd=self.environment.forward_returns_dates
+        column_name = frd.columns[0]
+        end_date=frd[column_name].max()
+
+
+        for obs in range(self.sample_observations+1):
+            last_date_start = frd[frd[column_name] == end_date].index
+            last_date_start_index = frd.index.searchsorted(last_date_start)
+            end_date = frd.index[last_date_start_index][0]
+        self.latest_posible_index_date=last_date_start_index[0]
+        self.max_available_obs_date=frd[column_name].index.max()
+
+    def sample_env(self,observations=32,verbose=True):
+        start = np.random.choice(range(self.latest_posible_index_date))
         start_date =self.environment.features.index[start]
         rewards = []
-
+        reward_dates=[]
+        actions=[]
+        states=[]
         for counter,iloc_date in enumerate(range(start, start + observations, 1)):
             if counter==0:
                 action_date=start_date
 
+            state_features, weights_on_date = self.environment.state.get_state_on_date(target_date=action_date)
+            flat_state = self.environment.state.flatten_state(state_features=state_features,
+                                                              weights_on_date=weights_on_date)
 
-            action_portfolio_weights = self.get_best_action(self.environment.state,action_date=action_date)
+            action_portfolio_weights = self.get_best_action(flat_state=flat_state)
+            #record S A R
+            reward_dates.append(action_date)
+            actions.append(action_portfolio_weights)
+            states.append(flat_state)
+
             action_date, reward, done, info = self.environment.step(action_portfolio_weights=action_portfolio_weights,
                                                 action_date=action_date)
-            print(info)
+            if verbose:
+                print(info)
 
             rewards.append(reward)
 
-            if action_date >= self.environment.features.index[-1]-self.out_reward_window_td:
-                print("Sample reached limit of time series",counter)
-                break
+            if action_date > self.max_available_obs_date:
+                if verbose:
+                     print("Sample reached limit of time series",counter)
+                raise
+
+        return states,actions,rewards
+    def REINFORCE_linear_fit(self,alpha=.9,theta_threshold=.001):
+
+        theta_diff=1000
+        old_theta_mu=self.theta_mu
+        old_theta_sigma=self.theta_sigma
+        while theta_diff >theta_threshold:
+            states,actions,rewards=self.sample_env(observations=32)
+            #Todo: Implement reward factory finish implementation
+            #Todo: Continue implementation, if objective function is to maximize sharpe then the question what is my update per episode?
+            #Todo: I believe we must add previous actions as part of the "state"? question to Think
+            G=self._G_cum_return(rewards)
+            new_theta_mu=old_theta_mu+alpha*self._theta_mu_log_gradient()
+
+    def reward_factory(self,reward):
+        """
+        launch reward types Needs to be implemented
+        :param reward:
+        :return:
+        """
+    def _G_cum_return(self,rewards):
+
+        return (pd.concat(rewards, axis=0)+1).cumprod()
+
+
+    def _theta_mu_log_gradient(self,action,flat_state):
+        """
+
+        :param action: pd.DataFrame
+        :param flat_state: pd.DataFrame
+        :return:
+        """
+        sigma=self._sigma_linear(flat_state=flat_state)
+        mu=self._mu_linear(flat_state=flat_state)
+        denominator=1/sigma**2
+        log_gradient=(denominator*(action.values-mu)).reshape(-1,1)*flat_state.values
+
+        return  log_gradient
+
+    def _theta_sigma_log_gradient(self,action,flat_state):
+        """
+
+        :param action:
+        :param flat_state:
+        :return:
+        """
+        sigma = self._sigma_linear(flat_state=flat_state)
+        mu = self._mu_linear(flat_state=flat_state)
+        log_gradient=(((action.values-mu)/sigma)**2 -1).reshape(-1,1)*flat_state.values
+        return  log_gradient
