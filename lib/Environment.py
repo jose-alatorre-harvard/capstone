@@ -6,7 +6,8 @@ import datetime
 from tqdm import tqdm
 from lib.Benchmarks import SimulatedAsset
 from lib.DataHandling import DailyDataFrame2Features
-
+import matplotlib.pyplot as plt
+import copy
 class State:
 
     def __init__(self, features,forward_returns,forward_returns_dates, objective_parameters):
@@ -114,13 +115,17 @@ class State:
         t_plus_one_returns = self.forward_returns.iloc[action_date_index]
         one_period_mtm_reward = (t_plus_one_returns * action).sum()
 
-        reward = one_period_mtm_reward - commision_percent_cost
+        #mtm - commissions
+        one_period_effective_return = one_period_mtm_reward - commision_percent_cost
+
+        if len(one_period_effective_return) == 0:
+            raise
 
         done= False
         extra_info={"action_date":action_date,
             "forward_returns":t_plus_one_returns,
                     "previous_weights":self.weight_buffer.iloc[action_date_index - 1]}
-        return next_observation_date,reward,done,extra_info
+        return next_observation_date,one_period_effective_return,done,extra_info
 
     def encode(self, date):
         """
@@ -143,6 +148,8 @@ class State:
         weights_on_date = self.weight_buffer.iloc[date_index]
 
         return state_features, weights_on_date
+
+
 
 
 class DeepTradingEnvironment(gym.Env):
@@ -364,7 +371,7 @@ def sigmoid(x):
 
 class LinearAgent:
 
-    def __init__(self,environment,out_reward_window_td,sample_observations=32):
+    def __init__(self,environment,out_reward_window_td,reward_function,sample_observations=32):
         """
 
 
@@ -374,11 +381,15 @@ class LinearAgent:
         """
         self.environment = environment
         self.out_reward_window_td=out_reward_window_td
+        self.reward_function=reward_function
         self._initialize_helper_properties()
         self._initialize_linear_parameters()
 
         self.sample_observations=sample_observations
         self._set_latest_posible_date()
+
+
+
     def _initialize_helper_properties(self):
 
         self.number_of_assets=self.environment.number_of_assets
@@ -425,11 +436,18 @@ class LinearAgent:
 
     def _sigma_linear(self,flat_state):
         sigma = np.exp(np.sum(self.theta_sigma * flat_state.values, axis=1))
-        sigma_clip=np.clip(sigma,.05,.1)
+        sigma_clip=np.clip(sigma,.05,.2)
         return sigma_clip
     def _mu_linear(self,flat_state):
         mu=(self.theta_mu * flat_state.values).sum(axis=1)
-        mu_clip = np.clip(mu, 0, 1)
+        #clip mu to add up to one , and between .01 and 1 , so no negative values
+
+        mu_clip=np.exp(mu) / np.sum(np.exp(mu))
+        # mu_clip=np.clip(mu,.001,1)
+        # mu_clip=mu_clip/np.sum(mu_clip)
+
+        if np.isnan(np.sum(mu_clip)):
+            raise
 
         return mu_clip
 
@@ -464,12 +482,14 @@ class LinearAgent:
         self.max_available_obs_date=frd[column_name].index.max()
 
     def sample_env(self,observations=32,verbose=True):
-        start = np.random.choice(range(self.latest_posible_index_date))
+        #starts in 1 becasue comission dependes on initial weights
+        start = np.random.choice(range(1,self.latest_posible_index_date))
         start_date =self.environment.features.index[start]
-        rewards = []
-        reward_dates=[]
+        period_returns = []
+        returns_dates=[]
         actions=[]
         states=[]
+
         for counter,iloc_date in enumerate(range(start, start + observations, 1)):
             if counter==0:
                 action_date=start_date
@@ -480,45 +500,84 @@ class LinearAgent:
 
             action_portfolio_weights = self.get_best_action(flat_state=flat_state)
             #record S A R
-            reward_dates.append(action_date)
+            returns_dates.append(action_date)
             actions.append(action_portfolio_weights)
             states.append(flat_state)
 
-            action_date, reward, done, info = self.environment.step(action_portfolio_weights=action_portfolio_weights,
+            action_date, one_period_effective_return, done, info = self.environment.step(action_portfolio_weights=action_portfolio_weights,
                                                 action_date=action_date)
             if verbose:
                 print(info)
 
-            rewards.append(reward)
+            period_returns.append(one_period_effective_return)
 
             if action_date > self.max_available_obs_date:
                 if verbose:
                      print("Sample reached limit of time series",counter)
                 raise
 
-        return states,actions,rewards
-    def REINFORCE_linear_fit(self,alpha=.9,theta_threshold=.001):
+        return states,actions,pd.concat(period_returns, axis=0)
+    def REINFORCE_linear_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000
+                             ,record_average_weights=True):
 
         theta_diff=1000
-        old_theta_mu=self.theta_mu
-        old_theta_sigma=self.theta_sigma
-        while theta_diff >theta_threshold:
-            states,actions,rewards=self.sample_env(observations=32)
+        observations=32
+        iters=0
+        n_iters=[]
+        average_weights=[]
+        G_0s=[]
+        while theta_diff >theta_threshold or iters <max_iterations:
+            n_iters.append(iters)
+
+            states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
             #Todo: Implement reward factory finish implementation
-            #Todo: Continue implementation, if objective function is to maximize sharpe then the question what is my update per episode?
-            #Todo: I believe we must add previous actions as part of the "state"? question to Think
-            G=self._G_cum_return(rewards)
-            new_theta_mu=old_theta_mu+alpha*self._theta_mu_log_gradient()
+            rewards=self.returns_to_reward_factory(period_returns=period_returns)
+            new_theta_mu=copy.deepcopy(self.theta_mu)
+            new_theta_sigma=copy.deepcopy(self.theta_sigma)
+            for t in range(observations):
+                action_t=actions[t]
+                flat_state_t=states[t]
 
-    def reward_factory(self,reward):
-        """
-        launch reward types Needs to be implemented
-        :param reward:
-        :return:
-        """
-    def _G_cum_return(self,rewards):
+                gamma_coef=np.array([gamma**(k-t) for k in range(t,observations)])
 
-        return (pd.concat(rewards, axis=0)+1).cumprod()
+
+                G=np.sum(rewards[t:]*gamma_coef)
+
+                if t==0:
+                    G_0s.append(G)
+
+                new_theta_mu=new_theta_mu+alpha*G*(gamma**t)*self._theta_mu_log_gradient(action=action_t,flat_state=flat_state_t)
+                new_theta_sigma=new_theta_sigma+alpha*G*(gamma**t)*self._theta_sigma_log_gradient(action=action_t,flat_state=flat_state_t)
+
+            old_full_theta=np.concatenate([self.theta_mu.ravel(),self.theta_sigma.ravel()])
+            new_full_theta=np.concatenate([new_theta_mu.ravel(),new_theta_sigma.ravel()])
+                #calculate update distance
+
+            theta_diff=np.linalg.norm(new_full_theta-old_full_theta)
+            print("iteration", iters,theta_diff, end="\r", flush=True)
+
+            #assign  update_of thetas
+            self.theta_mu=copy.deepcopy(new_theta_mu)
+            self.theta_sigma=copy.deepcopy(new_theta_sigma)
+
+            iters=iters+1
+
+            if record_average_weights==True:
+                average_weights.append(self.environment.state.weight_buffer.mean())
+                #Todo: implement in tensorboard
+                if iters%200==0:
+                    weights=pd.concat(average_weights, axis=1).T
+                    ax=weights.plot()
+                    ws=np.repeat(self._benchmark_weights.reshape(-1,1),iters,axis=1)
+                    for row in range(ws.shape[0]):
+                        ax.plot(n_iters,ws[row,:],label="benchmark_return"+str(row))
+                    plt.legend(loc="best")
+                    plt.show()
+
+                    plt.plot(n_iters,G_0s)
+                    plt.show()
+
+        return average_weights
 
 
     def _theta_mu_log_gradient(self,action,flat_state):
@@ -531,7 +590,7 @@ class LinearAgent:
         sigma=self._sigma_linear(flat_state=flat_state)
         mu=self._mu_linear(flat_state=flat_state)
         denominator=1/sigma**2
-        log_gradient=(denominator*(action.values-mu)).reshape(-1,1)*flat_state.values
+        log_gradient=(denominator*(action-mu)).reshape(-1,1)*(flat_state.values)
 
         return  log_gradient
 
@@ -544,5 +603,30 @@ class LinearAgent:
         """
         sigma = self._sigma_linear(flat_state=flat_state)
         mu = self._mu_linear(flat_state=flat_state)
-        log_gradient=(((action.values-mu)/sigma)**2 -1).reshape(-1,1)*flat_state.values
+        log_gradient=(((action-mu)/sigma)**2 -1).reshape(-1,1)*flat_state.values
         return  log_gradient
+
+    def returns_to_reward_factory(self, period_returns):
+        """
+        launch reward types Needs to be implemented
+        :param reward:
+        :return:
+        """
+        reward_function = self.reward_function
+        if reward_function == "cum_return":
+            return self._reward_cum_return(period_returns)
+        elif reward_function == "max_sharpe":
+            return self._reward_max_sharpe(period_returns)
+
+
+    def _reward_max_sharpe(self, period_returns):
+        raise NotImplementedError
+
+    def _reward_cum_return(self, period_returns):
+
+        return period_returns.values
+
+    def set_plot_weights(self,weights):
+
+        self._benchmark_weights=weights
+
