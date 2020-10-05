@@ -8,6 +8,10 @@ from lib.Benchmarks import SimulatedAsset
 from lib.DataHandling import DailyDataFrame2Features
 import matplotlib.pyplot as plt
 import copy
+import warnings
+from joblib import Parallel, delayed
+
+
 class State:
 
     def __init__(self, features,forward_returns,forward_returns_dates, objective_parameters):
@@ -87,7 +91,7 @@ class State:
     def _set_weights_on_date(self,weights, target_date):
         self.weight_buffer.loc[target_date] = weights
 
-    def step(self, action, action_date):
+    def step(self, action, action_date,pre_indices=None):
         """
 
         :param action: corresponds to portfolio weights np.array(n_assets,1)
@@ -95,12 +99,17 @@ class State:
         :return:
         """
         # get previous allocation
+        if pre_indices is not None:
+            action_date_index=pre_indices[0]
+            next_observation_date_index=pre_indices[1]
+            next_observation_date= self.forward_returns_dates.iloc[action_date_index].values[0]
+        else:
+            action_date_index = self.weight_buffer.index.searchsorted(action_date)
+            next_observation_date = self.forward_returns_dates.iloc[action_date_index].values[0]
+            next_observation_date_index = self.weight_buffer.index.searchsorted(next_observation_date)
 
-        action_date_index = self.weight_buffer.index.searchsorted(action_date)
-
-        next_observation_date = self.forward_returns_dates.iloc[action_date_index].values[0]
-        next_observation_date_index = self.weight_buffer.index.searchsorted(next_observation_date)
         # on each step between  action_date and next observation date , the weights should be refilled
+
         self.weight_buffer.iloc[action_date_index:next_observation_date_index,:]=action
 
 
@@ -134,7 +143,7 @@ class State:
         """
         pass
 
-    def get_state_on_date(self, target_date):
+    def get_state_on_date(self, target_date,pre_indices=None):
         """
             returns the state on a target date
            :param target_date:
@@ -142,12 +151,15 @@ class State:
         """
         #TODO: what happens for  different features for example ("Non Time Series Returns")?
         assert target_date >= self.features.index[0]
-
-        date_index = self.features.index.searchsorted(target_date)
+        if pre_indices is None:
+            date_index = self.features.index.searchsorted(target_date)
+        else:
+            date_index=pre_indices[0]
         state_features =self.features.iloc[date_index]
         weights_on_date = self.weight_buffer.iloc[date_index]
 
         return state_features, weights_on_date
+
 
 
 
@@ -207,7 +219,7 @@ class DeepTradingEnvironment(gym.Env):
 
     @classmethod
     def build_environment_from_simulated_assets(cls,assets_simulation_details,data_hash,
-                                                meta_parameters,objective_parameters,periods=1000):
+                                                meta_parameters,objective_parameters,periods=2000):
         """
         Simulates continous 1 minute data
         :param assets_simulation_details: (dict)
@@ -344,7 +356,7 @@ class DeepTradingEnvironment(gym.Env):
 
         """
 
-    def step(self, action_portfolio_weights, action_date):
+    def step(self, action_portfolio_weights, action_date,pre_indices=None):
         """
 
         :param action_portfolio_weights:
@@ -353,7 +365,7 @@ class DeepTradingEnvironment(gym.Env):
         """
 
         action = action_portfolio_weights
-        observation,reward,done,extra_info= self.state.step(action, action_date)
+        observation,reward,done,extra_info= self.state.step(action, action_date,pre_indices)
         # obs = self._state.encode()
         obs=observation
         info=extra_info
@@ -381,11 +393,12 @@ class LinearAgent:
         """
         self.environment = environment
         self.out_reward_window_td=out_reward_window_td
+        self.sample_observations = sample_observations
         self.reward_function=reward_function
         self._initialize_helper_properties()
         self._initialize_linear_parameters()
 
-        self.sample_observations=sample_observations
+
         self._set_latest_posible_date()
 
 
@@ -394,6 +407,11 @@ class LinearAgent:
 
         self.number_of_assets=self.environment.number_of_assets
         self.state_dimension=self.environment.state.state_dimension
+
+
+
+
+
     def _initialize_linear_parameters(self):
         """
         parameters are for mu and sigma
@@ -407,6 +425,46 @@ class LinearAgent:
         #no modeling correlations if correlation self.theta_sigma=np.random.rand(self.number_of_assets,self.number_of_asset,param_dim)
         self.theta_sigma=np.random.rand(self.number_of_assets,param_dim)
 
+    def _set_latest_posible_date(self):
+        """
+
+        :param observations:
+        :return:
+        """
+        frd=self.environment.forward_returns_dates
+        column_name = frd.columns[0]
+        end_date=frd[column_name].max()
+
+
+        for obs in range(self.sample_observations+1):
+            last_date_start = frd[frd[column_name] == end_date].index
+            last_date_start_index = frd.index.searchsorted(last_date_start)
+            end_date = frd.index[last_date_start_index][0]
+        self.latest_posible_index_date=last_date_start_index[0]
+        self.max_available_obs_date=frd[column_name].index.max()
+
+        # presampled indices for environment sample
+
+        self.pre_sample_date_indices = pd.DataFrame(index=self.environment.forward_returns_dates.index,
+                                                    columns=range(self.sample_observations+1))
+        # todo assert forward return dates index, equals buffer
+
+        for iloc in tqdm(range(self.latest_posible_index_date),
+                         desc="pre-sampling indices"):
+
+            start_date = self.environment.forward_returns_dates.index[iloc]
+            nfd = self.environment.forward_returns_dates
+            indices = []
+            for obs in range(self.sample_observations+1):
+
+                if obs == 0:
+                    start_date_index = iloc
+                else:
+                    start_date_index = nfd.index.searchsorted(next_date)
+                indices.append(start_date_index)
+                next_date = nfd.iloc[start_date_index][nfd.columns[0]]
+
+            self.pre_sample_date_indices.loc[start_date, :] = indices
 
 
     def _policy_linear(self,flat_state):
@@ -463,25 +521,72 @@ class LinearAgent:
 
 
         return action
-    def _set_latest_posible_date(self):
-        """
 
-        :param observations:
+
+
+    def _get_sars_by_date(self,action_date,verbose=False,pre_indices=None):
+        """
+        gets sars by date
+        :param action_date:
         :return:
         """
-        frd=self.environment.forward_returns_dates
-        column_name = frd.columns[0]
-        end_date=frd[column_name].max()
+        state_features, weights_on_date = self.environment.state.get_state_on_date(target_date=action_date,
+                                                                                   pre_indices=pre_indices)
+        flat_state = self.environment.state.flatten_state(state_features=state_features,
+                                                          weights_on_date=weights_on_date)
+        action_portfolio_weights = self.get_best_action(flat_state=flat_state)
+
+        next_action_date, one_period_effective_return, done, info = self.environment.step(
+            action_portfolio_weights=action_portfolio_weights,
+            action_date=action_date,pre_indices=pre_indices)
+
+        if verbose:
+
+            print(info)
+
+        return next_action_date,  flat_state ,one_period_effective_return, action_portfolio_weights
 
 
-        for obs in range(self.sample_observations+1):
-            last_date_start = frd[frd[column_name] == end_date].index
-            last_date_start_index = frd.index.searchsorted(last_date_start)
-            end_date = frd.index[last_date_start_index][0]
-        self.latest_posible_index_date=last_date_start_index[0]
-        self.max_available_obs_date=frd[column_name].index.max()
+    def sample_env_pre_sampled(self,verbose=False):
+        """
+        samples environment with pre-sampled dates and paralelized
+        :param date_start_index:
+        :return:
+        """
 
-    def sample_env(self,observations=32,verbose=True):
+        # starts in 1 becasue comission dependes on initial weights
+        start = np.random.choice(range(1, self.latest_posible_index_date))
+
+        dates_indices=self.pre_sample_date_indices.iloc[start].values.tolist()
+        action_dates=self.environment.forward_returns_dates.index[dates_indices]
+
+        period_returns = []
+        returns_dates = []
+        actions = []
+        states = []
+
+        for counter in range(self.sample_observations):
+            action_date=action_dates[counter]
+            returns_dates.append(action_date)
+
+            action_date, flat_state, one_period_effective_return, action_portfolio_weights = self._get_sars_by_date(
+                action_date=action_date, verbose=False,pre_indices=[dates_indices[counter],dates_indices[counter+1]])
+
+            actions.append(action_portfolio_weights)
+            states.append(flat_state)
+
+            period_returns.append(one_period_effective_return)
+
+            if action_date > self.max_available_obs_date:
+                if verbose:
+                    print("Sample reached limit of time series", counter)
+                raise
+
+        return states, actions, pd.concat(period_returns, axis=0)
+
+
+
+    def sample_env(self,observations,verbose=True):
         #starts in 1 becasue comission dependes on initial weights
         start = np.random.choice(range(1,self.latest_posible_index_date))
         start_date =self.environment.features.index[start]
@@ -494,20 +599,12 @@ class LinearAgent:
             if counter==0:
                 action_date=start_date
 
-            state_features, weights_on_date = self.environment.state.get_state_on_date(target_date=action_date)
-            flat_state = self.environment.state.flatten_state(state_features=state_features,
-                                                              weights_on_date=weights_on_date)
-
-            action_portfolio_weights = self.get_best_action(flat_state=flat_state)
-            #record S A R
             returns_dates.append(action_date)
+            action_date,flat_state,one_period_effective_return,action_portfolio_weights =self._get_sars_by_date(action_date=action_date,verbose=False)
+
             actions.append(action_portfolio_weights)
             states.append(flat_state)
 
-            action_date, one_period_effective_return, done, info = self.environment.step(action_portfolio_weights=action_portfolio_weights,
-                                                action_date=action_date)
-            if verbose:
-                print(info)
 
             period_returns.append(one_period_effective_return)
 
@@ -517,20 +614,24 @@ class LinearAgent:
                 raise
 
         return states,actions,pd.concat(period_returns, axis=0)
-    def REINFORCE_linear_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000
+    def REINFORCE_linear_fit(self,alpha=.1,gamma=.99,theta_threshold=.001,max_iterations=20000
                              ,record_average_weights=True):
 
         theta_diff=1000
-        observations=32
+        observations=self.sample_observations
         iters=0
         n_iters=[]
         average_weights=[]
         G_0s=[]
-        while theta_diff >theta_threshold or iters <max_iterations:
+        theta_norm=[]
+
+        pbar = tqdm(total=max_iterations)
+        while iters <max_iterations:
             n_iters.append(iters)
 
-            states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
-            #Todo: Implement reward factory finish implementation
+            # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
+            states, actions, period_returns = self.sample_env_pre_sampled(verbose=False)
+
             rewards=self.returns_to_reward_factory(period_returns=period_returns)
             new_theta_mu=copy.deepcopy(self.theta_mu)
             new_theta_sigma=copy.deepcopy(self.theta_sigma)
@@ -554,8 +655,9 @@ class LinearAgent:
                 #calculate update distance
 
             theta_diff=np.linalg.norm(new_full_theta-old_full_theta)
-            print("iteration", iters,theta_diff, end="\r", flush=True)
-
+            theta_norm.append(theta_diff)
+            # print("iteration", iters,theta_diff, end="\r", flush=True)
+            pbar.update(1)
             #assign  update_of thetas
             self.theta_mu=copy.deepcopy(new_theta_mu)
             self.theta_sigma=copy.deepcopy(new_theta_sigma)
@@ -565,7 +667,7 @@ class LinearAgent:
             if record_average_weights==True:
                 average_weights.append(self.environment.state.weight_buffer.mean())
                 #Todo: implement in tensorboard
-                if iters%200==0:
+                if iters%500==0:
                     weights=pd.concat(average_weights, axis=1).T
                     ax=weights.plot()
                     ws=np.repeat(self._benchmark_weights.reshape(-1,1),iters,axis=1)
@@ -574,7 +676,13 @@ class LinearAgent:
                     plt.legend(loc="best")
                     plt.show()
 
-                    plt.plot(n_iters,G_0s)
+                    plt.plot(n_iters,G_0s,label=self.reward_function)
+                    plt.plot(n_iters,[self._benchmark_G for i in range(iters)])
+                    plt.legend(loc="best")
+                    plt.show()
+
+                    plt.plot(n_iters,theta_norm,label="norm improvement")
+                    plt.legend(loc="best")
                     plt.show()
 
         return average_weights
@@ -617,16 +725,47 @@ class LinearAgent:
             return self._reward_cum_return(period_returns)
         elif reward_function == "max_sharpe":
             return self._reward_max_sharpe(period_returns)
+        elif reward_function == "min_vol":
+            return self._reward_to_min_vol(period_returns)
 
+    def _reward_to_min_vol(self,period_returns):
+        """
+        minimum volatility portfolio
+        :param period_returns:
+        :return:
+        """
+        rewards = np.zeros(period_returns.shape[0])
+        vol = period_returns.std() * np.sqrt(252 / 7)
+        rewards[-1] = -vol
+
+        return rewards
 
     def _reward_max_sharpe(self, period_returns):
-        raise NotImplementedError
+        """
+        calculates sharpe ratio for the returns
+        :param period_returns:
+        :return:
+        """
+
+        warnings.warn('Using  anualization factor as daily')
+        rewards=np.zeros(period_returns.shape[0])
+
+        mean_return=period_returns.mean()*(252/7)
+        vol=period_returns.std()*np.sqrt(252/7)
+        sharpe=mean_return/(vol)
+        rewards[-1]=sharpe
+
+
+
+        return rewards
+
+
 
     def _reward_cum_return(self, period_returns):
 
         return period_returns.values
 
-    def set_plot_weights(self,weights):
+    def set_plot_weights(self,weights,benchmark_G):
 
         self._benchmark_weights=weights
-
+        self._benchmark_G=benchmark_G

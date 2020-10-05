@@ -22,8 +22,8 @@ print("===Objective Parameters===")
 print(objective_parameters)
 
 
-assets_simulation_details={"asset_1":{"method":"GBM","sigma":.1,"mean":.1},
-                    "asset_2":{"method":"GBM","sigma":.1,"mean":-.1}}
+assets_simulation_details={"asset_1":{"method":"GBM","sigma":.01,"mean":.02},
+                    "asset_2":{"method":"GBM","sigma":.03,"mean":.18}}
 
 env=DeepTradingEnvironment.build_environment_from_simulated_assets(assets_simulation_details=assets_simulation_details,
                                                                      data_hash="simulation_gbm",
@@ -35,14 +35,35 @@ env=DeepTradingEnvironment.build_environment_from_simulated_assets(assets_simula
 #                                                                      meta_parameters=meta_parameters,
 #                                                                      objective_parameters=objective_parameters)
 
-linear_agent=LinearAgent(environment=env,out_reward_window_td=out_reward_window,
-                         reward_function="cum_return")
+#reward_function= "cum_return" , "max_sharpe"
 
-cov=np.array([[assets_simulation_details["asset_1"]["sigma"],0],[0,assets_simulation_details["asset_2"]["sigma"]]])
+cov=np.array([[assets_simulation_details["asset_1"]["sigma"]**2,0],[0,assets_simulation_details["asset_2"]["sigma"]**2]])
 mus=np.array([assets_simulation_details["asset_1"]["mean"],assets_simulation_details["asset_2"]["mean"]])
 
+from pypfopt.efficient_frontier import EfficientFrontier
+from pypfopt.plotting import plot_efficient_frontier
+from pypfopt.cla import CLA
+ef = EfficientFrontier(mus, cov)
+# weights = ef.max_sharpe(risk_free_rate=0)
+weights = ef.min_volatility()
+
+x=np.array(list(weights.values())).reshape(-1,1)
+p_vol=np.sqrt(np.matmul(np.matmul(x.T,cov),x))
+p_sharpe=np.matmul(x.T,mus)/p_vol
+linear_agent=LinearAgent(environment=env,out_reward_window_td=out_reward_window,
+                         reward_function="min_vol",sample_observations=32)
+
+# cla=CLA(mus,cov)
+# weights=cla.max_sharpe()
 #max return all weights should go to asset with higher mean
-linear_agent.set_plot_weights(weights=np.array([0,1]))
+# linear_agent.set_plot_weights(weights=np.array([0,1]))
+
+#min vol weithts
+linear_agent.set_plot_weights(weights=np.array(list(weights.values())),
+                              benchmark_G=-p_vol.ravel()[0])
+
+# linear_agent.set_plot_weights(weights=np.array(list(weights.values())),
+#                               benchmark_G=p_sharpe.ravel()[0])
 
 linear_agent.REINFORCE_linear_fit()
 
