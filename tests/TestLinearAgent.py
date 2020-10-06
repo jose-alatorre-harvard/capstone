@@ -1,11 +1,8 @@
 
 from lib.Environment import DeepTradingEnvironment, LinearAgent
-
-
-
 import datetime
 import numpy as np
-from tqdm import tqdm
+
 
 out_reward_window=datetime.timedelta(days=7)
 # parameters related to the transformation of data, this parameters govern an step before the algorithm
