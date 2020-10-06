@@ -667,7 +667,7 @@ class LinearAgent:
             if record_average_weights==True:
                 average_weights.append(self.environment.state.weight_buffer.mean())
                 #Todo: implement in tensorboard
-                if iters%500==0:
+                if iters%2000==0:
                     weights=pd.concat(average_weights, axis=1).T
                     ax=weights.plot()
                     ws=np.repeat(self._benchmark_weights.reshape(-1,1),iters,axis=1)
@@ -685,6 +685,7 @@ class LinearAgent:
                     plt.legend(loc="best")
                     plt.show()
 
+                    alpha=alpha/2
         return average_weights
 
 
