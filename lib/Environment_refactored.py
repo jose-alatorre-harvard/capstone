@@ -12,6 +12,79 @@ import warnings
 from joblib import Parallel, delayed
 
 
+
+from tensorflow import keras
+from tensorflow.keras import layers
+from tensorflow.keras.layers.experimental import preprocessing
+
+class RewardFactory:
+
+    def __init__(self,in_bars_count,percent_commission):
+
+
+        self.in_bars_count=in_bars_count
+        self.percent_commission=percent_commission
+
+
+    def get_reward(self, weights_bufffer,forward_returns,action_date_index,reward_function):
+        """
+        launch reward types Needs to be implemented
+        :param reward:
+        :return:
+        """
+        portfolio_returns=self._calculate_returns_with_commisions( weights_bufffer, forward_returns, action_date_index)
+
+        if reward_function == "cum_return":
+            return self._reward_cum_return(portfolio_returns)
+        elif reward_function == "max_sharpe":
+            return self._reward_max_sharpe(portfolio_returns)
+        elif reward_function == "min_vol":
+            return self._reward_to_min_vol(portfolio_returns)
+
+    def _reward_to_min_vol(self, portfolio_returns):
+        """
+        minimum volatility portfolio
+        :param period_returns:
+        :return:
+        """
+
+
+        return -portfolio_returns.std()*np.sqrt(252 / 7)
+
+    def _reward_max_sharpe(self, portfolio_returns):
+        """
+        calculates sharpe ratio for the returns
+        :param period_returns:
+        :return:
+        """
+
+
+        mean_return = portfolio_returns.mean() * (252 / 7)
+        vol = portfolio_returns.std() * np.sqrt(252 / 7)
+        sharpe = mean_return / (vol)
+
+
+        return sharpe
+
+    def _reward_cum_return(self, portfolio_returns):
+
+        return portfolio_returns.iloc[-1]
+
+    def _calculate_returns_with_commisions(self,weights_buffer,forward_returns,action_date_index):
+        """
+        calculates the effective returns with commision
+        :param target_weights:
+        :return:
+        """
+        target_weights=weights_buffer.iloc[action_date_index -self.in_bars_count- 1:action_date_index + 1]
+        target_forward_returns=forward_returns.iloc[action_date_index -self.in_bars_count- 1:action_date_index + 1]
+
+        weight_difference = abs(target_weights.diff())
+        commision_percent_cost = -weight_difference.sum(axis=1) * self.percent_commission
+
+        portfolio_returns=(target_forward_returns*target_weights).sum(axis=1)-commision_percent_cost
+
+        return portfolio_returns
 class State:
 
     def __init__(self, features,forward_returns,asset_names,in_bars_count,forward_returns_dates, objective_parameters):
@@ -26,12 +99,14 @@ class State:
         self.features = features
         self.a_names=asset_names
         self.forward_returns=forward_returns
+        self.forward_returns.columns=self.asset_names
         self.forward_returns_dates=forward_returns_dates
         self.in_bars_count=in_bars_count
         self._set_helper_functions()
         self._set_objective_function_parameters(objective_parameters)
 
         self._initialize_weights_buffer()
+        self.reward_factory=RewardFactory(in_bars_count=in_bars_count,percent_commission=self.percent_commission)
 
     def flatten_state(self,state_features, weights_on_date):
         """
@@ -41,9 +116,9 @@ class State:
         """
         flat_state=state_features.copy()
 
+        # for index in weights_on_date.index:
+        #     flat_state[index] = weights_on_date.loc[index]
         flat_state=pd.concat([flat_state,weights_on_date],axis=0)
-
-
         return flat_state
 
     def _set_helper_functions(self):
@@ -55,9 +130,7 @@ class State:
         """
 
         self.number_of_assets=len(self.forward_returns.columns)
-        self.state_dimension=self.features.shape[1] +self.number_of_assets*self.in_bars_count
-
-
+        self.state_dimension=self.features.shape[1] +self.number_of_assets#*self.in_bars_count
 
     def _set_objective_function_parameters(self,objective_parameters):
         self.percent_commission = objective_parameters["percent_commission"]
@@ -69,7 +142,6 @@ class State:
         """
 
         self._initialize_weights_buffer()
-
 
     @property
     def asset_names(self):
@@ -89,7 +161,7 @@ class State:
          :return:
         """
 
-        self.weight_buffer = pd.DataFrame(index=self.features.index,columns=["w_"+a_name for a_name in self.asset_names]).fillna(0)+ 1 / self.number_of_assets
+        self.weight_buffer = pd.DataFrame(index=self.features.index,columns=self.asset_names).fillna(0)+ 1 / self.number_of_assets
 
     @property
     def shape(self):
@@ -98,7 +170,7 @@ class State:
     def _set_weights_on_date(self,weights, target_date):
         self.weight_buffer.loc[target_date] = weights
 
-    def step(self, action, action_date,pre_indices=None):
+    def step(self, action, action_date,reward_function,pre_indices=None):
         """
 
         :param action: corresponds to portfolio weights np.array(n_assets,1)
@@ -119,29 +191,21 @@ class State:
 
         self.weight_buffer.iloc[action_date_index:next_observation_date_index,:]=action
 
+        reward=self.reward_factory.get_reward(weights_bufffer=self.weight_buffer,
+                                              forward_returns=self.forward_returns,
+                                              action_date_index=action_date_index,
+                                              reward_function=reward_function)
 
-        weight_difference = self.weight_buffer.iloc[action_date_index - 1:action_date_index + 1]
-        # obtain the difference from the previous allocation, diff is done t_1 - t
-        weight_difference = abs(weight_difference.diff().dropna())
 
-        # calculate rebalance commission
-        commision_percent_cost = -weight_difference.sum(axis = 1) * self.percent_commission
+        #reward factory_should be launched_here
 
-        # get period_ahead_returns
-        t_plus_one_returns = self.forward_returns.iloc[action_date_index]
-        one_period_mtm_reward = (t_plus_one_returns * action).sum()
 
-        #mtm - commissions
-        one_period_effective_return = one_period_mtm_reward - commision_percent_cost
-
-        if len(one_period_effective_return) == 0:
-            raise
 
         done= False
         extra_info={"action_date":action_date,
-            "forward_returns":t_plus_one_returns,
+            "reward_function":reward_function,
                     "previous_weights":self.weight_buffer.iloc[action_date_index - 1]}
-        return next_observation_date,one_period_effective_return,done,extra_info
+        return next_observation_date,reward,done,extra_info
 
     def encode(self, date):
         """
@@ -149,7 +213,14 @@ class State:
 
         """
         pass
-
+    def get_full_state_pre_process(self):
+        """
+        gets full state data
+        :return:
+        """
+        state_features = self.features
+        weights_on_date = self.weight_buffer.applymap(lambda x : np.random.rand())
+        return pd.concat([state_features,weights_on_date],axis=1)
     def get_state_on_date(self, target_date,pre_indices=None):
         """
             returns the state on a target date
@@ -157,18 +228,19 @@ class State:
            :return: in_window_features, weights_on_date
         """
         #TODO: what happens for  different features for example ("Non Time Series Returns")?
-        assert target_date >= self.features.index[0]
-        if pre_indices is None:
-            date_index = self.features.index.searchsorted(target_date)
-        else:
-            date_index=pre_indices[0]
-        state_features =self.features.iloc[date_index]
-        weights_on_date = self.weight_buffer.iloc[date_index-self.in_bars_count+1:date_index+1]
-        w_flat=[pd.DataFrame(index=[target_date],columns=[col+"lag_"+str(self.in_bars_count-i-1) for col in weights_on_date.columns ],
-                             data=weights_on_date.iloc[i].values.reshape(1,-1)) for i in range(weights_on_date.shape[0])]
-        w_flat=pd.concat(w_flat,axis=1)
-        w_flat=w_flat.T[target_date]
-        return state_features, w_flat
+        try:
+            assert target_date >= self.features.index[0]
+            if pre_indices is None:
+                date_index = self.features.index.searchsorted(target_date)
+            else:
+                date_index=pre_indices[0]
+            state_features =self.features.iloc[date_index]
+            weights_on_date = self.weight_buffer.iloc[date_index]
+
+
+        except:
+            raise
+        return state_features, weights_on_date
 
 
 
@@ -371,7 +443,7 @@ class DeepTradingEnvironment(gym.Env):
 
         """
 
-    def step(self, action_portfolio_weights, action_date,pre_indices=None):
+    def step(self, action_portfolio_weights, action_date,reward_function,pre_indices=None):
         """
 
         :param action_portfolio_weights:
@@ -380,7 +452,10 @@ class DeepTradingEnvironment(gym.Env):
         """
 
         action = action_portfolio_weights
-        observation,reward,done,extra_info= self.state.step(action, action_date,pre_indices)
+        observation,reward,done,extra_info= self.state.step(action=action,
+                                                            action_date=action_date,
+                                                            reward_function=reward_function,
+                                                            pre_indices=pre_indices)
         # obs = self._state.encode()
         obs=observation
         info=extra_info
@@ -396,49 +471,22 @@ import math
 def sigmoid(x):
         return 1 / (1 + math.exp(-x))
 
-class LinearAgent:
-
-    def __init__(self,environment,out_reward_window_td,reward_function,sample_observations=32):
-        """
 
 
 
-        :param environment:
-        :param out_reward_window_td: datetime.timedelta,
-        """
+class AgentDataBase:
+
+    def __init__(self, environment, out_reward_window_td, reward_function, sample_observations=32):
         self.environment = environment
-        self.out_reward_window_td=out_reward_window_td
+        self.out_reward_window_td = out_reward_window_td
         self.sample_observations = sample_observations
-        self.reward_function=reward_function
+        self.reward_function = reward_function
         self._initialize_helper_properties()
-        self._initialize_linear_parameters()
-
-
         self._set_latest_posible_date()
 
-
-
     def _initialize_helper_properties(self):
-
-        self.number_of_assets=self.environment.number_of_assets
-        self.state_dimension=self.environment.state.state_dimension
-
-
-
-
-
-    def _initialize_linear_parameters(self):
-        """
-        parameters are for mu and sigma
-        (features_rows*features_columns +number_of_assets(weights))*number of asssets
-        :return:
-        """
-
-
-        param_dim=self.state_dimension
-        self.theta_mu=np.random.rand(self.number_of_assets,param_dim)
-        #no modeling correlations if correlation self.theta_sigma=np.random.rand(self.number_of_assets,self.number_of_asset,param_dim)
-        self.theta_sigma=np.random.rand(self.number_of_assets,param_dim)
+        self.number_of_assets = self.environment.number_of_assets
+        self.state_dimension = self.environment.state.state_dimension
 
     def _set_latest_posible_date(self):
         """
@@ -481,8 +529,115 @@ class LinearAgent:
 
             self.pre_sample_date_indices.loc[start_date, :] = indices
 
+    def get_best_action(self,flat_state):
+        """
+        returns best action given state (portfolio weights
+        :param state:
+        :param action_date:
+        :return:
+        """
 
-    def _policy_linear(self,flat_state):
+        action=self.policy(flat_state=flat_state)
+
+
+        return action
+
+    def policy(self,flat_state):
+        raise NotImplementedError
+    def _get_sars_by_date(self,action_date,verbose=False,pre_indices=None):
+        """
+        gets sars by date
+        :param action_date:
+        :return:
+        """
+        state_features, weights_on_date = self.environment.state.get_state_on_date(target_date=action_date,
+                                                                                   pre_indices=pre_indices)
+        flat_state = self.environment.state.flatten_state(state_features=state_features,
+                                                          weights_on_date=weights_on_date)
+        action_portfolio_weights = self.get_best_action(flat_state=flat_state)
+
+        next_action_date, reward, done, info = self.environment.step(
+            action_portfolio_weights=action_portfolio_weights,reward_function=self.reward_function,
+            action_date=action_date,pre_indices=pre_indices)
+
+        if verbose:
+
+            print(info)
+
+        return next_action_date,  flat_state ,reward, action_portfolio_weights
+
+    def sample_env_pre_sampled(self,verbose=False):
+        # starts in 1 becasue comission dependes on initial weights
+        start = np.random.choice(range(self.environment.state.in_bars_count + 1, self.latest_posible_index_date))
+        states, actions, rewards = self.sample_env_pre_sampled_from_index(start=start,
+                                                                            sample_observations=self.sample_observations,
+                                                                          pre_sample_date_indices=self.pre_sample_date_indices ,
+                                                                          forward_returns_dates=self.environment.forward_returns_dates)
+        return  states, actions, rewards
+    def sample_env_pre_sampled_from_index(self, start, pre_sample_date_indices, sample_observations,
+                                          forward_returns_dates, verbose=False):
+        """
+        samples environment with pre-sampled dates and paralelized
+        :param date_start_index:
+        :return:
+        """
+
+        dates_indices = pre_sample_date_indices.iloc[start].values.tolist()
+        action_dates = forward_returns_dates.index[dates_indices]
+
+        rewards = []
+        returns_dates = []
+        actions = []
+        states = []
+
+        for counter in range(sample_observations):
+            action_date = action_dates[counter]
+            returns_dates.append(action_date)
+
+            action_date, flat_state, reward, action_portfolio_weights = self._get_sars_by_date(
+                action_date=action_date, verbose=False,
+                pre_indices=[dates_indices[counter], dates_indices[counter + 1]])
+
+            actions.append(action_portfolio_weights)
+            states.append(flat_state)
+
+            rewards.append(reward)
+
+            if action_date > self.max_available_obs_date:
+                if verbose:
+                    print("Sample reached limit of time series", counter)
+                raise
+
+        return states, actions, rewards
+
+class LinearAgent(AgentDataBase):
+
+    def __init__(self,*args,**kwargs):
+        """
+
+
+
+        :param environment:
+        :param out_reward_window_td: datetime.timedelta,
+        """
+        super().__init__(*args,**kwargs)
+
+        self._initialize_linear_parameters()
+
+    def _initialize_linear_parameters(self):
+        """
+        parameters are for mu and sigma
+        (features_rows*features_columns +number_of_assets(weights))*number of asssets
+        :return:
+        """
+
+
+        param_dim=self.state_dimension
+        self.theta_mu=np.random.rand(self.number_of_assets,param_dim)
+        #no modeling correlations if correlation self.theta_sigma=np.random.rand(self.number_of_assets,self.number_of_asset,param_dim)
+        self.theta_sigma=np.random.rand(self.number_of_assets,param_dim)
+
+    def policy(self,flat_state):
         """
         return action give a linear policy
         :param state:
@@ -514,8 +669,8 @@ class LinearAgent:
     def _mu_linear(self,flat_state):
         mu=(self.theta_mu * flat_state.values).sum(axis=1)
         #clip mu to add up to one , and between .01 and 1 , so no negative values
-
-        mu_clip=np.exp(mu) / np.sum(np.exp(mu))
+        c=max(mu)
+        mu_clip=np.exp(mu-c) / np.sum(np.exp(mu-c))
         # mu_clip=np.clip(mu,.001,1)
         # mu_clip=mu_clip/np.sum(mu_clip)
 
@@ -523,81 +678,6 @@ class LinearAgent:
             raise
 
         return mu_clip
-
-    def get_best_action(self,flat_state):
-        """
-        returns best action given state (portfolio weights
-        :param state:
-        :param action_date:
-        :return:
-        """
-
-        action=self._policy_linear(flat_state=flat_state)
-
-
-        return action
-
-
-
-    def _get_sars_by_date(self,action_date,verbose=False,pre_indices=None):
-        """
-        gets sars by date
-        :param action_date:
-        :return:
-        """
-        state_features, weights_on_date = self.environment.state.get_state_on_date(target_date=action_date,
-                                                                                   pre_indices=pre_indices)
-        flat_state = self.environment.state.flatten_state(state_features=state_features,
-                                                          weights_on_date=weights_on_date)
-        action_portfolio_weights = self.get_best_action(flat_state=flat_state)
-
-        next_action_date, one_period_effective_return, done, info = self.environment.step(
-            action_portfolio_weights=action_portfolio_weights,
-            action_date=action_date,pre_indices=pre_indices)
-
-        if verbose:
-
-            print(info)
-
-        return next_action_date,  flat_state ,one_period_effective_return, action_portfolio_weights
-
-
-    def sample_env_pre_sampled(self,verbose=False):
-        """
-        samples environment with pre-sampled dates and paralelized
-        :param date_start_index:
-        :return:
-        """
-
-        # starts in 1 becasue comission dependes on initial weights
-        start = np.random.choice(range(1, self.latest_posible_index_date))
-
-        dates_indices=self.pre_sample_date_indices.iloc[start].values.tolist()
-        action_dates=self.environment.forward_returns_dates.index[dates_indices]
-
-        period_returns = []
-        returns_dates = []
-        actions = []
-        states = []
-
-        for counter in range(self.sample_observations):
-            action_date=action_dates[counter]
-            returns_dates.append(action_date)
-
-            action_date, flat_state, one_period_effective_return, action_portfolio_weights = self._get_sars_by_date(
-                action_date=action_date, verbose=False,pre_indices=[dates_indices[counter],dates_indices[counter+1]])
-
-            actions.append(action_portfolio_weights)
-            states.append(flat_state)
-
-            period_returns.append(one_period_effective_return)
-
-            if action_date > self.max_available_obs_date:
-                if verbose:
-                    print("Sample reached limit of time series", counter)
-                raise
-
-        return states, actions, pd.concat(period_returns, axis=0)
 
 
 
@@ -629,7 +709,9 @@ class LinearAgent:
                 raise
 
         return states,actions,pd.concat(period_returns, axis=0)
-    def REINFORCE_linear_fit(self,alpha=.1,gamma=.99,theta_threshold=.001,max_iterations=20000
+
+
+    def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000
                              ,record_average_weights=True):
 
         theta_diff=1000
@@ -637,7 +719,7 @@ class LinearAgent:
         iters=0
         n_iters=[]
         average_weights=[]
-        G_0s=[]
+        average_reward=[]
         theta_norm=[]
 
         pbar = tqdm(total=max_iterations)
@@ -645,9 +727,9 @@ class LinearAgent:
             n_iters.append(iters)
 
             # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
-            states, actions, period_returns = self.sample_env_pre_sampled(verbose=False)
+            states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
 
-            rewards=self.returns_to_reward_factory(period_returns=period_returns)
+            average_reward.append(np.mean(rewards))
             new_theta_mu=copy.deepcopy(self.theta_mu)
             new_theta_sigma=copy.deepcopy(self.theta_sigma)
             for t in range(observations):
@@ -659,8 +741,7 @@ class LinearAgent:
 
                 G=np.sum(rewards[t:]*gamma_coef)
 
-                if t==0:
-                    G_0s.append(G)
+
 
                 new_theta_mu=new_theta_mu+alpha*G*(gamma**t)*self._theta_mu_log_gradient(action=action_t,flat_state=flat_state_t)
                 new_theta_sigma=new_theta_sigma+alpha*G*(gamma**t)*self._theta_sigma_log_gradient(action=action_t,flat_state=flat_state_t)
@@ -682,7 +763,7 @@ class LinearAgent:
             if record_average_weights==True:
                 average_weights.append(self.environment.state.weight_buffer.mean())
                 #Todo: implement in tensorboard
-                if iters%2000==0:
+                if iters%200==0:
                     weights=pd.concat(average_weights, axis=1).T
                     ax=weights.plot()
                     ws=np.repeat(self._benchmark_weights.reshape(-1,1),iters,axis=1)
@@ -691,7 +772,7 @@ class LinearAgent:
                     plt.legend(loc="best")
                     plt.show()
 
-                    plt.plot(n_iters,G_0s,label=self.reward_function)
+                    plt.plot(n_iters,average_reward,label=self.reward_function)
                     plt.plot(n_iters,[self._benchmark_G for i in range(iters)])
                     plt.legend(loc="best")
                     plt.show()
@@ -700,7 +781,7 @@ class LinearAgent:
                     plt.legend(loc="best")
                     plt.show()
 
-                    alpha=alpha/2
+                    # alpha=alpha/2
         return average_weights
 
 
@@ -730,58 +811,102 @@ class LinearAgent:
         log_gradient=(((action-mu)/sigma)**2 -1).reshape(-1,1)*flat_state.values
         return  log_gradient
 
-    def returns_to_reward_factory(self, period_returns):
-        """
-        launch reward types Needs to be implemented
-        :param reward:
-        :return:
-        """
-        reward_function = self.reward_function
-        if reward_function == "cum_return":
-            return self._reward_cum_return(period_returns)
-        elif reward_function == "max_sharpe":
-            return self._reward_max_sharpe(period_returns)
-        elif reward_function == "min_vol":
-            return self._reward_to_min_vol(period_returns)
-
-    def _reward_to_min_vol(self,period_returns):
-        """
-        minimum volatility portfolio
-        :param period_returns:
-        :return:
-        """
-        rewards = np.zeros(period_returns.shape[0])
-        vol = period_returns.std() * np.sqrt(252 / 7)
-        rewards[-1] = -vol
-
-        return rewards
-
-    def _reward_max_sharpe(self, period_returns):
-        """
-        calculates sharpe ratio for the returns
-        :param period_returns:
-        :return:
-        """
-
-        warnings.warn('Using  anualization factor as daily')
-        rewards=np.zeros(period_returns.shape[0])
-
-        mean_return=period_returns.mean()*(252/7)
-        vol=period_returns.std()*np.sqrt(252/7)
-        sharpe=mean_return/(vol)
-        rewards[-1]=sharpe
-
-
-
-        return rewards
-
-
-
-    def _reward_cum_return(self, period_returns):
-
-        return period_returns.values
-
     def set_plot_weights(self,weights,benchmark_G):
 
         self._benchmark_weights=weights
         self._benchmark_G=benchmark_G
+
+
+def PG_keras_loss(y_true,y_pred):
+    """
+    custom loss for policy gradient
+    :param y_true: Gs
+    :param y_pred: vector of 4 values
+    :return:
+    """
+
+    n_assets=int(y_pred.shape[1]/2)
+
+
+class DeepAgent:
+
+    def __init__(self,*args,**kwargs):
+
+
+        self.adb=AgentDataBase(*args,**kwargs)
+        self.data_generator=KerasStateGenerator(agent_database_instance=self.adb)
+        self.build_model()
+
+    def build_model(self):
+        # TODO: Normalization needs to done pre-batch
+        full_state=self.adb.environment.state.get_full_state_pre_process()
+        a=5
+
+        inputs = keras.Input(shape=(full_state.shape[1],))
+
+        state_normalizer = preprocessing.Normalization()
+        state_normalizer.adapt(full_state.values)
+        x=state_normalizer(inputs)
+        outputs=layers.Dense(units=self.adb.number_of_assets*2,activation="linear")(x)
+
+        mus=layers.Activation("softmax")(outputs[:,:self.adb.number_of_assets])
+        sigmas=keras.backend.exp(outputs[:,self.adb.number_of_assets:])
+        sigmas_clipped=keras.backend.clip(sigmas,.05,.15)
+        formated_outputs=keras.layers.Concatenate(axis=1)([mus, sigmas_clipped])
+
+        model=keras.Model(inputs,formated_outputs,name="Linear Regression")
+
+
+    def fit(self):
+        """
+        fits Reinforce
+        :return:
+        """
+
+class KerasStateGenerator(keras.utils.Sequence):
+
+    def __init__(self,agent_database_instance,gamma=1):
+
+        self.adb=agent_database_instance
+        self.indexes = np.arange(self.adb.pre_sample_date_indices.shape[0])
+        self.gamma=gamma
+    def __data_generation(self, index_start):
+        """
+         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
+        :param index_start:
+        :return:
+        """
+        states, actions, rewards = self.adb.sample_env_pre_sampled_from_index(start=index_start,
+                                                              sample_observations=self.adb.sample_observations,
+                                                              pre_sample_date_indices=self.adb.pre_sample_date_indices,
+                                                              forward_returns_dates=self.adb.environment.forward_returns_dates)
+
+        states_to_keras = np.array([s.values for s in states])
+        X=states_to_keras.reshape(self.adb.sample_observations,-1,1)
+        #for REINFORCE
+        Gs=[]
+        for t in range(self.adb.sample_observations):
+
+            gamma_coef = np.array([self.gamma ** (k - t) for k in range(t, self.adb.sample_observations)])
+            G = np.sum(rewards[t:] * gamma_coef)
+            Gs.append(G)
+        y=np.array(Gs)
+        return X, y
+    def on_epoch_end(self):
+        'Updates indexes after each epoch'
+
+        if self.shuffle == True:
+            np.random.shuffle(self.indexes)
+
+    def __len__(self):
+        'Denotes the number of batches per epoch'
+        return int(self.n_samples / self.batch_size)
+
+    def __getitem__(self, index):
+        'Generate one batch of data'
+        # Generate indexes of the batch
+        index_start = self.indexes[index * self.batch_size]
+        # Generate data
+        X, y = self.__data_generation(index_start)
+
+        return X, y
