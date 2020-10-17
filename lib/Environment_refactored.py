@@ -16,7 +16,8 @@ from joblib import Parallel, delayed
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.layers.experimental import preprocessing
-
+import tensorflow as tf
+from keras import backend as K
 class RewardFactory:
 
     def __init__(self,in_bars_count,percent_commission):
@@ -824,22 +825,32 @@ def PG_keras_loss(y_true,y_pred):
     :param y_pred: vector of 4 values
     :return:
     """
+    means = K.reshape(y_pred[:, 0], (-1, 1))
+    stds = np.reshape(y_pred[:, 1], (-1, 1))
+    var = np.square(stds)
+    print(var.shape)
 
-    n_assets=int(y_pred.shape[1]/2)
 
 
-class DeepAgent:
+
+
+
+class DeepAgent(AgentDataBase):
 
     def __init__(self,*args,**kwargs):
+        super().__init__(*args, **kwargs)
 
 
-        self.adb=AgentDataBase(*args,**kwargs)
-        self.data_generator=KerasStateGenerator(agent_database_instance=self.adb)
+
+        self.data_generator=KerasStateGenerator(sampling_function=self.sample_env_pre_sampled_from_index,
+                                                sampling_function_kwargs=)
         self.build_model()
 
+        self.fit()
     def build_model(self):
-        # TODO: Normalization needs to done pre-batch
-        full_state=self.adb.environment.state.get_full_state_pre_process()
+        # TODO: Normalization needs to done pre-batch. Here is been done with one batch it seems to me.
+
+        full_state=self.environment.state.get_full_state_pre_process()
         a=5
 
         inputs = keras.Input(shape=(full_state.shape[1],))
@@ -847,47 +858,70 @@ class DeepAgent:
         state_normalizer = preprocessing.Normalization()
         state_normalizer.adapt(full_state.values)
         x=state_normalizer(inputs)
-        outputs=layers.Dense(units=self.adb.number_of_assets*2,activation="linear")(x)
+        outputs=layers.Dense(units=self.number_of_assets*2,activation="linear")(x)
 
-        mus=layers.Activation("softmax")(outputs[:,:self.adb.number_of_assets])
-        sigmas=keras.backend.exp(outputs[:,self.adb.number_of_assets:])
+        mus=layers.Activation("softmax")(outputs[:,:self.number_of_assets])
+        #predict sigmas
+        sigmas=keras.backend.exp(outputs[:,self.number_of_assets:])
         sigmas_clipped=keras.backend.clip(sigmas,.05,.15)
         formated_outputs=keras.layers.Concatenate(axis=1)([mus, sigmas_clipped])
 
         model=keras.Model(inputs,formated_outputs,name="Linear Regression")
 
-
+        self.model=model
     def fit(self):
         """
         fits Reinforce
         :return:
         """
 
+        self.model.compile(
+                        optimizer=tf.optimizers.Adam(learning_rate=0.1),
+                        loss=PG_keras_loss)
+
+        self.model.fit_generator(generator=self.data_generator)
+                            # validation_data=validation_generator,
+                            # use_multiprocessing=True,
+                            # workers=6)
+
+
 class KerasStateGenerator(keras.utils.Sequence):
 
-    def __init__(self,agent_database_instance,gamma=1):
+    def __init__(self,sampling_function,sampling_function_kwargs,gamma=1):
+        """
 
-        self.adb=agent_database_instance
-        self.indexes = np.arange(self.adb.pre_sample_date_indices.shape[0])
+        :param sampling_function:
+        :param sampling_function_kwargs:
+        :param gamma:
+        """
+
+        assert "sample_observations" in sampling_function_kwargs
+        assert "pre_sample_date_indices" in sampling_function_kwargs
+        assert "forward_returns_dates" in sampling_function_kwargs
+
+        self.indexes = np.arange(sampling_function_kwargs["pre_sample_date_indices"].shape[0])
+        self.sampling_function=sampling_function
+        self.sampling_function_kwargs=sampling_function_kwargs
         self.gamma=gamma
+        self.batch_size=sampling_function_kwargs["sample_observations"]
+        self.n_samples=len(self.indexes)
+
     def __data_generation(self, index_start):
         """
          'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
+         if the loss is
         :param index_start:
         :return:
         """
-        states, actions, rewards = self.adb.sample_env_pre_sampled_from_index(start=index_start,
-                                                              sample_observations=self.adb.sample_observations,
-                                                              pre_sample_date_indices=self.adb.pre_sample_date_indices,
-                                                              forward_returns_dates=self.adb.environment.forward_returns_dates)
+        states, actions, rewards = self.sampling_function(start=index_start,**self.sampling_function_kwargs)
 
         states_to_keras = np.array([s.values for s in states])
-        X=states_to_keras.reshape(self.adb.sample_observations,-1,1)
+        X=states_to_keras.reshape(self.batch_size,-1,1)
         #for REINFORCE
         Gs=[]
-        for t in range(self.adb.sample_observations):
+        for t in range(self.batch_size):
 
-            gamma_coef = np.array([self.gamma ** (k - t) for k in range(t, self.adb.sample_observations)])
+            gamma_coef = np.array([self.gamma ** (k - t) for k in range(t, self.batch_size)])
             G = np.sum(rewards[t:] * gamma_coef)
             Gs.append(G)
         y=np.array(Gs)
