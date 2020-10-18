@@ -58,23 +58,24 @@ deep_agent.REINFORCE_fit()
 
 
 linear_agent=LinearAgent(environment=env,out_reward_window_td=out_reward_window,
-                         reward_function="cum_return",sample_observations=32)
+                         reward_function="min_vol",sample_observations=32)
 
 # cla=CLA(mus,cov)
 # weights=cla.max_sharpe()
 #max return all weights should go to asset with higher mean
-linear_agent.set_plot_weights(weights=np.array([0,1]), benchmark_G=assets_simulation_details["asset_2"]["mean"])
+# linear_agent.set_plot_weights(weights=np.array([0,1]), benchmark_G=assets_simulation_details["asset_2"]["mean"])
 
 #min vol weithts
 
 
 
-# linear_agent.set_plot_weights(weights=np.array(list(weights.values())),
-#                               benchmark_G=-p_vol.ravel()[0])
+linear_agent.set_plot_weights(weights=np.array(list(weights.values())),
+                              benchmark_G=-p_vol.ravel()[0])
 
 # linear_agent.set_plot_weights(weights=np.array(list(weights.values())),
 #                               benchmark_G=p_sharpe.ravel()[0])
 
-linear_agent.REINFORCE_fit()
+# linear_agent.REINFORCE_fit()
+# linear_agent.REINFORCE_refactor_fid()
 
 

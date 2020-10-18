@@ -18,6 +18,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.layers.experimental import preprocessing
 import tensorflow as tf
 from tensorflow.keras import backend as K
+import tensorflow.keras.initializers as initializers
 class RewardFactory:
 
     def __init__(self,in_bars_count,percent_commission):
@@ -170,8 +171,11 @@ class State:
         """
          :return:
         """
-
-        self.weight_buffer = pd.DataFrame(index=self.features.index,columns=self.asset_names).fillna(0)+ 1 / self.number_of_assets
+        #initialise weights uniform
+        init_w=np.random.uniform(0,1,(len(self.features.index),len(self.asset_names)))
+        init_w=np.apply_along_axis(lambda x: np.exp(x) / np.sum(np.exp(x)), 1, init_w)
+        self.weight_buffer = pd.DataFrame(index=self.features.index,columns=self.asset_names,
+                                          data=init_w)
 
 
     @property
@@ -180,6 +184,23 @@ class State:
 
     def _set_weights_on_date(self,weights, target_date):
         self.weight_buffer.loc[target_date] = weights
+
+    def sample_rewards_by_indices(self,sample_indices,reward_function):
+        """
+
+        :param sample_indices:
+        :return:
+        """
+        rewards = []
+        for i in sample_indices:
+            reward = self.reward_factory.get_reward(weights_bufffer=self.weight_buffer,
+                                                    forward_returns=self.forward_returns,
+                                                    action_date_index= i,
+                                                    reward_function=reward_function)
+            rewards.append(reward)
+
+        return rewards
+
 
     def sample_rewards(self,action_date_index,sample_size,reward_function):
         """
@@ -277,6 +298,7 @@ class State:
         :param iloc:
         :return:
         """
+
         state_features = self.features.iloc[index_location]
         weights_on_date = self.weight_buffer.iloc[index_location]
 
@@ -545,6 +567,7 @@ class AgentDataBase:
         self.reward_function = reward_function
         self._initialize_helper_properties()
         if pre_sample==True:
+            # self._build_full_pre_sampled_indices()
             self._set_latest_posible_date()
 
     def _initialize_helper_properties(self):
@@ -552,8 +575,35 @@ class AgentDataBase:
         self.state_dimension = self.environment.state.state_dimension
 
 
+    def _build_full_pre_sampled_indices(self):
+        """
+        build full pre sampled indices
+        :return:
+        """
+        forward_return_dates_df=self.environment.forward_returns_dates
+        first_forward_return_date=forward_return_dates_df.iloc[self.environment.state.in_bars_count+1].values[0]
 
+        sample_indices={}
+        date_start_counter=self.environment.state.in_bars_count+1
+        start_date = forward_return_dates_df.index[date_start_counter]
+        while start_date != first_forward_return_date:
 
+            start_date = forward_return_dates_df.index[date_start_counter]
+            sample_indices[start_date]=[date_start_counter]
+
+            index_date_iloc=date_start_counter
+            while index_date_iloc <forward_return_dates_df.shape[0]:
+
+                forward_return_date=forward_return_dates_df.iloc[index_date_iloc].values[0]
+                forward_return_date_index=forward_return_dates_df.index.searchsorted(forward_return_date)
+                if forward_return_date <forward_return_dates_df.index[-1]:
+                    sample_indices[start_date].append(forward_return_date_index)
+
+                index_date_iloc=forward_return_date_index
+
+            date_start_counter=date_start_counter+1
+
+        self.sample_indices=sample_indices
     def _set_latest_posible_date(self):
         """
 
@@ -688,6 +738,27 @@ class AgentDataBase:
     def benchmark_G(self):
         return self._benchmark_G
 
+    def sample_full_env(self):
+        """
+        samples full environment online training TD-1
+        :return:
+        """
+        states = []
+        rewards = []
+        actions = []
+        for counter, action_date in tqdm(enumerate(self.environment.features.index),desc="sampling full environment"):
+
+            if counter > self.environment.state.in_bars_count:
+
+                next_date, flat_state, reward, action_portfolio_weights = self._get_sars_by_date(
+                    action_date=action_date, verbose=False)
+
+                states.append(flat_state)
+                rewards.append(reward)
+                actions.append(action_portfolio_weights)
+
+        return states, actions,rewards
+
 class LinearAgent(AgentDataBase):
 
     def __init__(self,*args,**kwargs):
@@ -741,11 +812,16 @@ class LinearAgent(AgentDataBase):
         return action
 
     def _sigma_linear(self,flat_state):
-        sigma = np.exp(np.sum(self.theta_sigma * flat_state.values, axis=1))
+        if isinstance(flat_state,pd.Series):
+            flat_state=flat_state.values
+        sigma = np.exp(np.sum(self.theta_sigma * flat_state, axis=1))
         sigma_clip=np.clip(sigma,.05,.2)
         return sigma_clip
     def _mu_linear(self,flat_state):
-        mu=(self.theta_mu * flat_state.values).sum(axis=1)
+        if isinstance(flat_state,pd.Series):
+            flat_state=flat_state.values
+
+        mu=(self.theta_mu * flat_state).sum(axis=1)
         #clip mu to add up to one , and between .01 and 1 , so no negative values
         c=max(mu)
         mu_clip=np.exp(mu-c) / np.sum(np.exp(mu-c))
@@ -789,9 +865,103 @@ class LinearAgent(AgentDataBase):
 
         return states,actions,pd.concat(period_returns, axis=0)
 
+    def REINFORCE_refactor_fid(self,alpha=.01,gamma=.95,max_iterations=100000,record_average_weights=True):
+        """
+        WHY THIS DOESNT WORK!!!!
+        :param alpha:
+        :param gamma:
+        :param max_iterations:
+        :param record_average_weights:
+        :return:
+        """
+
+        observations = self.sample_observations
+        iters = 0
+        n_iters = []
+        average_weights = []
+        average_reward = []
+        theta_norm = []
+        pbar = tqdm(total=max_iterations)
+
+        all_states=[self.environment.state.get_flat_state_by_iloc(index_location=iloc).values for iloc in range(self.environment.state.weight_buffer.shape[0])]
+
+        while iters < max_iterations:
+
+
+            #step 1: sample_full_environment
+            for tmp_sample_indices in self.sample_indices.values():
+
+                rewards=self.environment.state.sample_rewards_by_indices(tmp_sample_indices, self.reward_function)
+                flat_states=[self.environment.state.get_flat_state_by_iloc(index_location=iloc).values for iloc in tmp_sample_indices]
+                actions=self.environment.state.weight_buffer.iloc[tmp_sample_indices].values
+
+                new_theta_mu = copy.deepcopy(self.theta_mu)
+                new_theta_sigma = copy.deepcopy(self.theta_sigma)
+                episode_size=len(rewards)
+
+                average_reward.append(np.mean(rewards))
+
+                for t in range(episode_size):
+                    n_iters.append(iters)
+                    action_t = actions[t]
+                    flat_state_t = flat_states[t]
+
+                    gamma_coef = np.array([gamma ** (k - t) for k in range(t, episode_size)])
+
+                    G = np.sum(rewards[t:] * gamma_coef)
+
+                    new_theta_mu = new_theta_mu + alpha * G * (gamma ** t) * self._theta_mu_log_gradient(
+                        action=action_t, flat_state=flat_state_t)
+                    new_theta_sigma = new_theta_sigma + alpha * G * (gamma ** t) * self._theta_sigma_log_gradient(
+                        action=action_t, flat_state=flat_state_t)
+
+                    if iters%32==0 and iters>0:
+                        old_full_theta = np.concatenate([self.theta_mu.ravel(), self.theta_sigma.ravel()])
+                        new_full_theta = np.concatenate([new_theta_mu.ravel(), new_theta_sigma.ravel()])
+
+                        # assign  update_of thetas
+                        self.theta_mu = copy.deepcopy(new_theta_mu)
+                        self.theta_sigma = copy.deepcopy(new_theta_sigma)
+
+                        # after an iteration we update weights with new prediction
+                        new_weights = [self.get_best_action(tmp_state) for tmp_state in all_states]
+                        self.environment.state.weight_buffer.loc[:, :] = new_weights
+                        #update rewards and indices
+
+                        rewards = self.environment.state.sample_rewards_by_indices(tmp_sample_indices,
+                                                                                   self.reward_function)
+                        flat_states = [self.environment.state.get_flat_state_by_iloc(index_location=iloc).values for
+                                       iloc in tmp_sample_indices]
+                        actions = self.environment.state.weight_buffer.iloc[tmp_sample_indices].values
+
+                    if iters % 200 == 0 and iters > 0:
+
+                        # Todo: implement in tensorboard
+                        average_weights.append(self.environment.state.weight_buffer.mean())
+                        weights = pd.concat(average_weights, axis=1).T
+                        ax = weights.plot()
+                        ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
+                        for row in range(ws.shape[0]):
+                            ax.plot(range(len(average_weights)), ws[row, :], label="benchmark_return" + str(row))
+                        plt.legend(loc="best")
+                        plt.show()
+
+                        # plt.plot(n_iters, average_reward, label=self.reward_function)
+                        # plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                        # plt.legend(loc="best")
+                        # plt.show()
+
+
+                    iters = iters + 1
+                    pbar.update(1)
+
+
+
+
 
     def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000
                              ,record_average_weights=True):
+
 
         theta_diff=1000
         observations=self.sample_observations
@@ -822,8 +992,8 @@ class LinearAgent(AgentDataBase):
 
 
 
-                new_theta_mu=new_theta_mu+alpha*G*(gamma**t)*self._theta_mu_log_gradient(action=action_t,flat_state=flat_state_t)
-                new_theta_sigma=new_theta_sigma+alpha*G*(gamma**t)*self._theta_sigma_log_gradient(action=action_t,flat_state=flat_state_t)
+                new_theta_mu=new_theta_mu+alpha*G*(gamma**t)*self._theta_mu_log_gradient(action=action_t,flat_state=flat_state_t.values)
+                new_theta_sigma=new_theta_sigma+alpha*G*(gamma**t)*self._theta_sigma_log_gradient(action=action_t,flat_state=flat_state_t.values)
 
             old_full_theta=np.concatenate([self.theta_mu.ravel(),self.theta_sigma.ravel()])
             new_full_theta=np.concatenate([new_theta_mu.ravel(),new_theta_sigma.ravel()])
@@ -843,9 +1013,11 @@ class LinearAgent(AgentDataBase):
                 average_weights.append(self.environment.state.weight_buffer.mean())
                 #Todo: implement in tensorboard
                 if iters%200==0:
+
+
                     weights=pd.concat(average_weights, axis=1).T
                     ax=weights.plot()
-                    ws=np.repeat(self._benchmark_weights.reshape(-1,1),iters,axis=1)
+                    ws=np.repeat(self._benchmark_weights.reshape(-1,1),len(average_weights),axis=1)
                     for row in range(ws.shape[0]):
                         ax.plot(n_iters,ws[row,:],label="benchmark_return"+str(row))
                     plt.legend(loc="best")
@@ -856,9 +1028,9 @@ class LinearAgent(AgentDataBase):
                     plt.legend(loc="best")
                     plt.show()
 
-                    plt.plot(n_iters,theta_norm,label="norm improvement")
-                    plt.legend(loc="best")
-                    plt.show()
+                    # plt.plot(range(len(average_weights)),theta_norm,label="norm improvement")
+                    # plt.legend(loc="best")
+                    # plt.show()
 
                     # alpha=alpha/2
         return average_weights
@@ -874,7 +1046,7 @@ class LinearAgent(AgentDataBase):
         sigma=self._sigma_linear(flat_state=flat_state)
         mu=self._mu_linear(flat_state=flat_state)
         denominator=1/sigma**2
-        log_gradient=(denominator*(action-mu)).reshape(-1,1)*(flat_state.values)
+        log_gradient=(denominator*(action-mu)).reshape(-1,1)*(flat_state)
 
         return  log_gradient
 
@@ -887,14 +1059,14 @@ class LinearAgent(AgentDataBase):
         """
         sigma = self._sigma_linear(flat_state=flat_state)
         mu = self._mu_linear(flat_state=flat_state)
-        log_gradient=(((action-mu)/sigma)**2 -1).reshape(-1,1)*flat_state.values
+        log_gradient=(((action-mu)/sigma)**2 -1).reshape(-1,1)*flat_state
         return  log_gradient
 
 
 
 
 
-from scipy.stats import multivariate_normal
+
 class DeepAgent(AgentDataBase):
 
 
@@ -905,54 +1077,23 @@ class DeepAgent(AgentDataBase):
 
         self.build_model()
         self.train_average_weights = []
-        self.data_generator = KerasStateGenerator(agent_instance=self)
 
+    def CustomLossGaussian(self,state, action, reward):
+        # Obtain mu and sigma from actor network
+        nn_mu, nn_sigma = self.model(state)
 
+        # Obtain pdf of Gaussian distribution
+        pdf_value = tf.exp(-0.5 * ((action - nn_mu) / (nn_sigma)) ** 2) * \
+                    1 / (nn_sigma * tf.sqrt(2 * np.pi))
 
-    def sample_full_env(self):
-        """
-        samples full environment online training TD-1
-        :return:
-        """
-        states = []
-        rewards = []
-        actions = []
-        for counter, action_date in tqdm(enumerate(self.environment.features.index),desc="sampling full environment"):
+        # Compute log probability
+        log_probability = tf.math.log(pdf_value + 1e-5)
 
-            if counter > self.environment.state.in_bars_count:
-
-                next_date, flat_state, reward, action_portfolio_weights = self._get_sars_by_date(
-                    action_date=action_date, verbose=False)
-
-                states.append(flat_state)
-                rewards.append(reward)
-                actions.append(action_portfolio_weights)
-
-        return states, actions,rewards
-
-    def policy_batch(self,flat_state_actions):
-
-
-
-        prediction=self.model.predict(flat_state_actions)
-        actions=[]
-        for prediction in prediction:
-            mu = prediction[:self.number_of_assets]
-            sigmas = prediction[self.number_of_assets:self.number_of_assets*2]
-
-            cov = np.zeros((self.number_of_assets, self.number_of_assets))
-            np.fill_diagonal(cov, sigmas ** 2)
-            try:
-
-                action = np.random.multivariate_normal(
-                    mu, cov)
-            except:
-                raise
-            c=max(action)
-            action=np.exp(action - c) / np.sum(np.exp(action - c))
-            actions.append(action)
-        return actions
-
+        # Compute weighted loss
+        loss_actor = reward * log_probability
+        #reduce mean have local minim
+        J=tf.math.reduce_sum(tf.math.reduce_sum(loss_actor,axis=0))
+        return -J
     def policy(self,flat_state):
         """
         Policy needs to use a prediction from the deep model
@@ -963,26 +1104,22 @@ class DeepAgent(AgentDataBase):
             input=np.array([flat_state.values]).reshape(-1)
         else:
             input=flat_state
-        input=np.concatenate([input,np.zeros(2)])
-        prediction=self.model.predict(input.reshape(1,-1))
 
-        prediction=prediction[0][:self.number_of_assets*2]
-        mu=prediction[:self.number_of_assets]
-        sigmas=prediction[self.number_of_assets:]
+        mu, sigmas=self.model.predict(input.reshape(1,-1))
+        mu=mu[0]
 
-        c = max(mu)
-        mu_clip = np.exp(mu - c) / np.sum(np.exp(mu - c))
 
-        sigma_clip = np.clip(sigmas, .05, .2)
 
 
         cov = np.zeros((self.number_of_assets, self.number_of_assets))
-        np.fill_diagonal(cov, sigma_clip ** 2)
+        np.fill_diagonal(cov, sigmas ** 2)
 
         try:
 
             action = np.random.multivariate_normal(
-                mu_clip, cov)
+                mu, cov)
+
+
         except:
             print("error on sampling")
             raise
@@ -990,89 +1127,106 @@ class DeepAgent(AgentDataBase):
         return action
 
 
-
-
-    def _normal_sample_layer(self,args):
-        """
-
-        :param mus:
-        :param sigmas:
-        :return:
-        """
-        mus, sigmas = args
-        epsilon = K.random_normal(shape=K.shape(mus),
-                                  mean=0., stddev=0.1)
-        action=mus+sigmas*epsilon
-        return action
-
     def build_model(self):
         # TODO: Normalization needs to done pre-batch. Here is been done with one batch it seems to me.
 
         full_state=self.environment.state.get_full_state_pre_process()
 
-
-        inputs = keras.Input(shape=(full_state.shape[1]+self.number_of_assets,))
-
-        actions=inputs[:,-self.number_of_assets:]
+        inputs = keras.Input(shape=(full_state.shape[1],))
 
         state_normalizer = preprocessing.Normalization()
         state_normalizer.adapt(full_state.values)
-        x=state_normalizer(inputs[:,:-self.number_of_assets])
 
-        outputs=layers.Dense(units=self.number_of_assets*2, kernel_regularizer=tf.keras.regularizers.l2(.01),activation="linear")(x)
-        mus=outputs[:,:self.number_of_assets]
+
+        x=state_normalizer(inputs)
+
+        mus=layers.Dense(units=self.number_of_assets,
+                         kernel_initializer=initializers.RandomUniform(0,1), bias_initializer='zeros',
+                         activation="linear")(x)
         mus=layers.Activation("softmax")(mus)
+        log_sigmas=layers.Dense(units=self.number_of_assets,bias_initializer=initializers.Constant(np.log(.1)),
+                                kernel_initializer=initializers.Zeros(),
+                               activation="linear")(x)
+        sigmas=K.exp(log_sigmas)
+        sigmas=K.clip(sigmas,.05,.20)
 
-        #predict sigmas
-        sigmas=keras.backend.exp(outputs[:,self.number_of_assets:])
-        sigmas_clipped=keras.backend.clip(sigmas,.05,.15)
-
-
-
-        formated_outputs=keras.layers.Concatenate(axis=1,name="formated_outputs")([mus, sigmas_clipped,actions])
-
-        #add lambda function for final sample
-        # action=layers.Lambda(self._normal_sample_layer)([mus,sigmas_clipped])
-        # clipped_actions=layers.Activation("softmax")(action)
-
-        model=keras.Model(inputs,[formated_outputs],name="linear_regression")
+        model=keras.Model(inputs,[mus,sigmas],name="linear_regression")
         self.model=model
 
-    def PG_keras_loss(self,y_true, y_pred):
-        """
-        custom loss for policy gradient
-        :param y_true: Gs
-        :param y_pred: vector of 4 values
-        :return:
-        """
-        predictions=y_pred[:,:-self.number_of_assets]
-        actions=y_pred[:,-self.number_of_assets:]
+    @tf.function
+    def train_step(self,states,actions,Gs,opt):
+        with tf.GradientTape() as tape:
+            # Compute Gaussian loss
+            loss_value = self.CustomLossGaussian(states, actions, Gs)
+            # Compute gradients
+        grads = tape.gradient(loss_value, self.model.trainable_variables)
+
+        # Apply gradients to update network weights
+        opt.apply_gradients(zip(grads, self.model.trainable_variables))
+
+    def REINFORCE_fit(self,  gamma=.99, max_iterations=10000
+                      , record_average_weights=True):
 
 
-        mus=predictions[:,:self.number_of_assets]
-        sigmas=predictions[:,self.number_of_assets:]
+        observations = self.sample_observations
+        iters = 0
+        n_iters = []
+        average_weights = []
+        average_reward = []
+        theta_norm = []
+
+        pbar = tqdm(total=max_iterations)
+        # opt = keras.optimizers.SGD(learning_rate=0.1,momentum=0.9, nesterov=True)
+        opt = keras.optimizers.Adam(learning_rate=0.01)
 
 
-        log_poli=-.5*K.square(actions-mus)/K.square(sigmas) - K.log(sigmas*np.sqrt(2*np.pi) )
+        while iters < max_iterations:
+            n_iters.append(iters)
 
+            # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
+            states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
+            states=np.array([s.values for s in states]).reshape(self.sample_observations,-1)
+            average_reward.append(np.mean(rewards))
+            actions=np.array(actions)
+            Gs=[]
+            for t in range(observations):
 
-        L = -K.sum(y_true * log_poli)
-        return L
-    def REINFORCE_fit(self):
-        """
-        fits Reinforce
-        :return:
-        """
+                gamma_coef = np.array([gamma ** (k - t) for k in range(t, observations)])
 
-        self.model.compile(
-                        optimizer=tf.optimizers.Adam(learning_rate=.1),
-                        loss=self.PG_keras_loss)
+                G = np.sum(rewards[t:] * gamma_coef)
+                Gs.append(G)
+            Gs=np.array(Gs)
+            Gs=Gs.reshape(-1,1)
+            # self.train_step(states=states,actions=actions,Gs=Gs,opt=opt)
+            with tf.GradientTape() as tape:
+                # Compute Gaussian loss
+                loss_value = self.CustomLossGaussian(states, actions, Gs)
+            # Compute gradients
+            grads = tape.gradient(loss_value, self.model.trainable_variables)
 
-        self.model.fit(self.data_generator,epochs=200)#,use_multiprocessing=True,workers=6)
-                            # validation_data=validation_generator,
-                            # ,
-                            # workers=6)
+            # Apply gradients to update network weights
+            opt.apply_gradients(zip(grads, self.model.trainable_variables))
 
+            pbar.update(1)
+            iters = iters + 1
+            print('loss', float(loss_value))
+            if record_average_weights == True:
+                average_weights.append(self.environment.state.weight_buffer.mean())
+                # Todo: implement in tensorboard
+                if iters % 200 == 0:
+
+                    weights = pd.concat(average_weights, axis=1).T
+                    ax = weights.plot()
+                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
+                    for row in range(ws.shape[0]):
+                        ax.plot(n_iters, ws[row, :], label="benchmark_return" + str(row))
+                    plt.legend(loc="best")
+                    plt.show()
+
+                    plt.plot(n_iters, average_reward, label=self.reward_function)
+                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                    plt.legend(loc="best")
+                    plt.show()
 
 class KerasStateGenerator(keras.utils.Sequence):
 
