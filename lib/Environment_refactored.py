@@ -17,7 +17,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.layers.experimental import preprocessing
 import tensorflow as tf
-from keras import backend as K
+from tensorflow.keras import backend as K
 class RewardFactory:
 
     def __init__(self,in_bars_count,percent_commission):
@@ -109,6 +109,15 @@ class State:
         self._initialize_weights_buffer()
         self.reward_factory=RewardFactory(in_bars_count=in_bars_count,percent_commission=self.percent_commission)
 
+    def get_flat_state_by_iloc(self,index_location):
+        """
+
+        :return:
+        """
+
+        state_features,weights_on_date=self.get_state_by_iloc(index_location=index_location)
+        return self.flatten_state(state_features, weights_on_date)
+
     def flatten_state(self,state_features, weights_on_date):
         """
         flatten states by adding weights to features
@@ -164,12 +173,51 @@ class State:
 
         self.weight_buffer = pd.DataFrame(index=self.features.index,columns=self.asset_names).fillna(0)+ 1 / self.number_of_assets
 
+
     @property
     def shape(self):
         raise
 
     def _set_weights_on_date(self,weights, target_date):
         self.weight_buffer.loc[target_date] = weights
+
+    def sample_rewards(self,action_date_index,sample_size,reward_function):
+        """
+
+        :return:
+        """
+        rewards=[]
+        for i in range(sample_size):
+
+            reward = self.reward_factory.get_reward(weights_bufffer=self.weight_buffer,
+                                                    forward_returns=self.forward_returns,
+                                                    action_date_index=action_date_index+i,
+                                                    reward_function=reward_function)
+            rewards.append(reward)
+
+        return rewards
+
+    def sample_state_by_iloc(self, index_location, sample_size):
+        """
+
+        :param index_location:
+        :param sample_size:
+        :return:
+        """
+        states = []
+        for i in range(sample_size):
+            state = self.get_flat_state_by_iloc(index_location=index_location + 1)
+            states.append(state.values)
+        return states
+
+    def update_weights_by_iloc(self,index_location,sample_size,new_weights):
+        """
+
+        :param index_location:
+        :param sample_size:
+        :return:
+        """
+        self.weight_buffer.iloc[index_location:index_location+sample_size]=new_weights
 
     def step(self, action, action_date,reward_function,pre_indices=None):
         """
@@ -222,6 +270,20 @@ class State:
         state_features = self.features
         weights_on_date = self.weight_buffer.applymap(lambda x : np.random.rand())
         return pd.concat([state_features,weights_on_date],axis=1)
+
+    def get_state_by_iloc(self,index_location):
+        """
+        index location
+        :param iloc:
+        :return:
+        """
+        state_features = self.features.iloc[index_location]
+        weights_on_date = self.weight_buffer.iloc[index_location]
+
+        return state_features,weights_on_date
+
+
+
     def get_state_on_date(self, target_date,pre_indices=None):
         """
             returns the state on a target date
@@ -235,9 +297,8 @@ class State:
                 date_index = self.features.index.searchsorted(target_date)
             else:
                 date_index=pre_indices[0]
-            state_features =self.features.iloc[date_index]
-            weights_on_date = self.weight_buffer.iloc[date_index]
 
+            state_features, weights_on_date=self.get_state_by_iloc(index_location=date_index)
 
         except:
             raise
@@ -477,17 +538,21 @@ def sigmoid(x):
 
 class AgentDataBase:
 
-    def __init__(self, environment, out_reward_window_td, reward_function, sample_observations=32):
+    def __init__(self, environment, out_reward_window_td, reward_function, sample_observations=32,pre_sample=True):
         self.environment = environment
         self.out_reward_window_td = out_reward_window_td
         self.sample_observations = sample_observations
         self.reward_function = reward_function
         self._initialize_helper_properties()
-        self._set_latest_posible_date()
+        if pre_sample==True:
+            self._set_latest_posible_date()
 
     def _initialize_helper_properties(self):
         self.number_of_assets = self.environment.number_of_assets
         self.state_dimension = self.environment.state.state_dimension
+
+
+
 
     def _set_latest_posible_date(self):
         """
@@ -611,6 +676,18 @@ class AgentDataBase:
 
         return states, actions, rewards
 
+    def set_plot_weights(self,weights,benchmark_G):
+
+        self._benchmark_weights=weights
+        self._benchmark_G=benchmark_G
+
+    @property
+    def benchmark_weights(self):
+        return self._benchmark_weights
+    @property
+    def benchmark_G(self):
+        return self._benchmark_G
+
 class LinearAgent(AgentDataBase):
 
     def __init__(self,*args,**kwargs):
@@ -682,6 +759,7 @@ class LinearAgent(AgentDataBase):
 
 
 
+
     def sample_env(self,observations,verbose=True):
         #starts in 1 becasue comission dependes on initial weights
         start = np.random.choice(range(1,self.latest_posible_index_date))
@@ -699,7 +777,7 @@ class LinearAgent(AgentDataBase):
             action_date,flat_state,one_period_effective_return,action_portfolio_weights =self._get_sars_by_date(action_date=action_date,verbose=False)
 
             actions.append(action_portfolio_weights)
-            states.append(flat_state)
+            states.append(flat_state.values)
 
 
             period_returns.append(one_period_effective_return)
@@ -812,82 +890,193 @@ class LinearAgent(AgentDataBase):
         log_gradient=(((action-mu)/sigma)**2 -1).reshape(-1,1)*flat_state.values
         return  log_gradient
 
-    def set_plot_weights(self,weights,benchmark_G):
-
-        self._benchmark_weights=weights
-        self._benchmark_G=benchmark_G
-
-
-def PG_keras_loss(y_true,y_pred):
-    """
-    custom loss for policy gradient
-    :param y_true: Gs
-    :param y_pred: vector of 4 values
-    :return:
-    """
-    means = K.reshape(y_pred[:, 0], (-1, 1))
-    stds = np.reshape(y_pred[:, 1], (-1, 1))
-    var = np.square(stds)
-    print(var.shape)
 
 
 
 
-
-
+from scipy.stats import multivariate_normal
 class DeepAgent(AgentDataBase):
+
+
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args, **kwargs)
 
 
-
-        self.data_generator=KerasStateGenerator(sampling_function=self.sample_env_pre_sampled_from_index,
-                                                sampling_function_kwargs=)
         self.build_model()
+        self.train_average_weights = []
+        self.data_generator = KerasStateGenerator(agent_instance=self)
 
-        self.fit()
+
+
+    def sample_full_env(self):
+        """
+        samples full environment online training TD-1
+        :return:
+        """
+        states = []
+        rewards = []
+        actions = []
+        for counter, action_date in tqdm(enumerate(self.environment.features.index),desc="sampling full environment"):
+
+            if counter > self.environment.state.in_bars_count:
+
+                next_date, flat_state, reward, action_portfolio_weights = self._get_sars_by_date(
+                    action_date=action_date, verbose=False)
+
+                states.append(flat_state)
+                rewards.append(reward)
+                actions.append(action_portfolio_weights)
+
+        return states, actions,rewards
+
+    def policy_batch(self,flat_state_actions):
+
+
+
+        prediction=self.model.predict(flat_state_actions)
+        actions=[]
+        for prediction in prediction:
+            mu = prediction[:self.number_of_assets]
+            sigmas = prediction[self.number_of_assets:self.number_of_assets*2]
+
+            cov = np.zeros((self.number_of_assets, self.number_of_assets))
+            np.fill_diagonal(cov, sigmas ** 2)
+            try:
+
+                action = np.random.multivariate_normal(
+                    mu, cov)
+            except:
+                raise
+            c=max(action)
+            action=np.exp(action - c) / np.sum(np.exp(action - c))
+            actions.append(action)
+        return actions
+
+    def policy(self,flat_state):
+        """
+        Policy needs to use a prediction from the deep model
+        :param flat_state:
+        :return:
+        """
+        if isinstance(flat_state,pd.Series):
+            input=np.array([flat_state.values]).reshape(-1)
+        else:
+            input=flat_state
+        input=np.concatenate([input,np.zeros(2)])
+        prediction=self.model.predict(input.reshape(1,-1))
+
+        prediction=prediction[0][:self.number_of_assets*2]
+        mu=prediction[:self.number_of_assets]
+        sigmas=prediction[self.number_of_assets:]
+
+        c = max(mu)
+        mu_clip = np.exp(mu - c) / np.sum(np.exp(mu - c))
+
+        sigma_clip = np.clip(sigmas, .05, .2)
+
+
+        cov = np.zeros((self.number_of_assets, self.number_of_assets))
+        np.fill_diagonal(cov, sigma_clip ** 2)
+
+        try:
+
+            action = np.random.multivariate_normal(
+                mu_clip, cov)
+        except:
+            print("error on sampling")
+            raise
+
+        return action
+
+
+
+
+    def _normal_sample_layer(self,args):
+        """
+
+        :param mus:
+        :param sigmas:
+        :return:
+        """
+        mus, sigmas = args
+        epsilon = K.random_normal(shape=K.shape(mus),
+                                  mean=0., stddev=0.1)
+        action=mus+sigmas*epsilon
+        return action
+
     def build_model(self):
         # TODO: Normalization needs to done pre-batch. Here is been done with one batch it seems to me.
 
         full_state=self.environment.state.get_full_state_pre_process()
-        a=5
 
-        inputs = keras.Input(shape=(full_state.shape[1],))
+
+        inputs = keras.Input(shape=(full_state.shape[1]+self.number_of_assets,))
+
+        actions=inputs[:,-self.number_of_assets:]
 
         state_normalizer = preprocessing.Normalization()
         state_normalizer.adapt(full_state.values)
-        x=state_normalizer(inputs)
-        outputs=layers.Dense(units=self.number_of_assets*2,activation="linear")(x)
+        x=state_normalizer(inputs[:,:-self.number_of_assets])
 
-        mus=layers.Activation("softmax")(outputs[:,:self.number_of_assets])
+        outputs=layers.Dense(units=self.number_of_assets*2, kernel_regularizer=tf.keras.regularizers.l2(.01),activation="linear")(x)
+        mus=outputs[:,:self.number_of_assets]
+        mus=layers.Activation("softmax")(mus)
+
         #predict sigmas
         sigmas=keras.backend.exp(outputs[:,self.number_of_assets:])
         sigmas_clipped=keras.backend.clip(sigmas,.05,.15)
-        formated_outputs=keras.layers.Concatenate(axis=1)([mus, sigmas_clipped])
 
-        model=keras.Model(inputs,formated_outputs,name="Linear Regression")
 
+
+        formated_outputs=keras.layers.Concatenate(axis=1,name="formated_outputs")([mus, sigmas_clipped,actions])
+
+        #add lambda function for final sample
+        # action=layers.Lambda(self._normal_sample_layer)([mus,sigmas_clipped])
+        # clipped_actions=layers.Activation("softmax")(action)
+
+        model=keras.Model(inputs,[formated_outputs],name="linear_regression")
         self.model=model
-    def fit(self):
+
+    def PG_keras_loss(self,y_true, y_pred):
+        """
+        custom loss for policy gradient
+        :param y_true: Gs
+        :param y_pred: vector of 4 values
+        :return:
+        """
+        predictions=y_pred[:,:-self.number_of_assets]
+        actions=y_pred[:,-self.number_of_assets:]
+
+
+        mus=predictions[:,:self.number_of_assets]
+        sigmas=predictions[:,self.number_of_assets:]
+
+
+        log_poli=-.5*K.square(actions-mus)/K.square(sigmas) - K.log(sigmas*np.sqrt(2*np.pi) )
+
+
+        L = -K.sum(y_true * log_poli)
+        return L
+    def REINFORCE_fit(self):
         """
         fits Reinforce
         :return:
         """
 
         self.model.compile(
-                        optimizer=tf.optimizers.Adam(learning_rate=0.1),
-                        loss=PG_keras_loss)
+                        optimizer=tf.optimizers.Adam(learning_rate=.1),
+                        loss=self.PG_keras_loss)
 
-        self.model.fit_generator(generator=self.data_generator)
+        self.model.fit(self.data_generator,epochs=200)#,use_multiprocessing=True,workers=6)
                             # validation_data=validation_generator,
-                            # use_multiprocessing=True,
+                            # ,
                             # workers=6)
 
 
 class KerasStateGenerator(keras.utils.Sequence):
 
-    def __init__(self,sampling_function,sampling_function_kwargs,gamma=1):
+    def __init__(self,agent_instance,batch_size=32,gamma=1):
         """
 
         :param sampling_function:
@@ -895,16 +1084,21 @@ class KerasStateGenerator(keras.utils.Sequence):
         :param gamma:
         """
 
-        assert "sample_observations" in sampling_function_kwargs
-        assert "pre_sample_date_indices" in sampling_function_kwargs
-        assert "forward_returns_dates" in sampling_function_kwargs
 
-        self.indexes = np.arange(sampling_function_kwargs["pre_sample_date_indices"].shape[0])
-        self.sampling_function=sampling_function
-        self.sampling_function_kwargs=sampling_function_kwargs
+
+
+        self.agent_instance=agent_instance
+        self.indexes=np.arange(self.agent_instance.environment.state.in_bars_count+1,
+                               self.agent_instance.environment.state.weight_buffer.shape[0]-batch_size)
+        self.n_samples = len(self.indexes)
         self.gamma=gamma
-        self.batch_size=sampling_function_kwargs["sample_observations"]
-        self.n_samples=len(self.indexes)
+        self.batch_size=batch_size
+
+        self.shuffle=True
+
+        self.epoch_run = 0
+        self.on_epoch_end()
+
 
     def __data_generation(self, index_start):
         """
@@ -913,10 +1107,30 @@ class KerasStateGenerator(keras.utils.Sequence):
         :param index_start:
         :return:
         """
-        states, actions, rewards = self.sampling_function(start=index_start,**self.sampling_function_kwargs)
 
-        states_to_keras = np.array([s.values for s in states])
-        X=states_to_keras.reshape(self.batch_size,-1,1)
+        #todo: this path should be faster
+        # flat_states = self.agent_instance.environment.state.sample_state_by_iloc(index_location=index_start, sample_size=self.batch_size)
+        #
+        #
+        # flat_states=np.array(flat_states)
+        # states_plus_actions=np.concatenate([flat_states,np.zeros((self.batch_size, self.agent_instance.number_of_assets))],axis=1)
+        # actions = self.agent_instance.policy_batch(states_plus_actions.reshape(self.batch_size, -1))
+        # self.agent_instance.environment.state.weight_buffer.iloc[index_start:index_start + self.batch_size] = actions
+        #
+        # states_plus_actions = np.concatenate([flat_states, actions], axis=1)
+        #
+        #
+        #
+        # rewards = self.agent_instance.environment.state.sample_rewards(action_date_index=index_start,
+        #                                                                sample_size=self.batch_size,
+        #                                                                reward_function=self.agent_instance.reward_function)
+
+        states, actions, rewards = self.agent_instance.sample_env_pre_sampled(verbose=False)
+        states=np.array([s.values for s in states])
+        actions=np.array(actions)
+        states_plus_actions=np.concatenate([states,actions],axis=1)
+
+        X=states_plus_actions.reshape(self.batch_size,-1)
         #for REINFORCE
         Gs=[]
         for t in range(self.batch_size):
@@ -927,10 +1141,31 @@ class KerasStateGenerator(keras.utils.Sequence):
         y=np.array(Gs)
         return X, y
     def on_epoch_end(self):
+        """
+        updates indexes after each epoch
+        :return:
+        """
         'Updates indexes after each epoch'
 
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
+
+        if self.epoch_run %5 ==0:
+
+
+            if self.shuffle == True:
+                np.random.shuffle(self.indexes)
+            if self.epoch_run>0:
+
+
+
+                weights = pd.concat(self.agent_instance.train_average_weights, axis=1).T
+                ax = weights.plot()
+                ws = np.repeat(self.agent_instance.benchmark_weights.reshape(-1, 1), self.epoch_run , axis=1)
+                for row in range(ws.shape[0]):
+                    ax.plot(range(self.epoch_run) , ws[row, :], label="benchmark_return" + str(row))
+                plt.legend(loc="best")
+                plt.show()
+        self.agent_instance.train_average_weights.append(self.agent_instance.environment.state.weight_buffer.mean())
+        self.epoch_run = self.epoch_run + 1
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -939,8 +1174,17 @@ class KerasStateGenerator(keras.utils.Sequence):
     def __getitem__(self, index):
         'Generate one batch of data'
         # Generate indexes of the batch
-        index_start = self.indexes[index * self.batch_size]
+        index_start = self.indexes[index]
         # Generate data
+
         X, y = self.__data_generation(index_start)
 
         return X, y
+
+"""
+self.sample_env_pre_sampled_from_index(start=start,
+                                                                            sample_observations=self.sample_observations,
+                                                                          pre_sample_date_indices=self.pre_sample_date_indices ,
+                                                                          forward_returns_dates=self.environment.forward_returns_dates)
+
+"""
