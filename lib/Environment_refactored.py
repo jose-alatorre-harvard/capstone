@@ -1035,6 +1035,87 @@ class LinearAgent(AgentDataBase):
                     # alpha=alpha/2
         return average_weights
 
+    def REINFORCE_baseline_fit(self, alpha_theta=.01, gamma=.99, theta_threshold=.001, max_iterations=10000
+                      , record_average_weights=True):
+
+        theta_diff = 1000
+        observations = self.sample_observations
+        iters = 0
+        n_iters = []
+        average_weights = []
+        average_reward = []
+        theta_norm = []
+        w = 0
+        alpha_w = 0.1 / 1
+
+        pbar = tqdm(total=max_iterations)
+        while iters < max_iterations:
+            n_iters.append(iters)
+
+            # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
+            states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
+
+            average_reward.append(np.mean(rewards))
+            new_theta_mu = copy.deepcopy(self.theta_mu)
+            new_theta_sigma = copy.deepcopy(self.theta_sigma)
+            for t in range(observations):
+                action_t = actions[t]
+                flat_state_t = states[t]
+
+                gamma_coef = np.array([gamma ** (k - t) for k in range(t, observations)])
+
+                G = np.sum(rewards[t:] * gamma_coef)
+
+                v = w
+                grad_v = 1
+
+                delta = G - v
+                w = w + alpha_w * delta * grad_v
+
+                new_theta_mu = new_theta_mu + alpha_theta * delta * (gamma ** t) * self._theta_mu_log_gradient(action=action_t,
+                                                                                                     flat_state=flat_state_t.values)
+                new_theta_sigma = new_theta_sigma + alpha_theta * delta * (gamma ** t) * self._theta_sigma_log_gradient(
+                    action=action_t, flat_state=flat_state_t.values)
+
+            old_full_theta = np.concatenate([self.theta_mu.ravel(), self.theta_sigma.ravel()])
+            new_full_theta = np.concatenate([new_theta_mu.ravel(), new_theta_sigma.ravel()])
+            # calculate update distance
+
+            theta_diff = np.linalg.norm(new_full_theta - old_full_theta)
+            theta_norm.append(theta_diff)
+            # print("iteration", iters,theta_diff, end="\r", flush=True)
+            pbar.update(1)
+            # assign  update_of thetas
+            self.theta_mu = copy.deepcopy(new_theta_mu)
+            self.theta_sigma = copy.deepcopy(new_theta_sigma)
+
+            iters = iters + 1
+
+            if record_average_weights == True:
+                average_weights.append(self.environment.state.weight_buffer.mean())
+                # Todo: implement in tensorboard
+                if iters % 200 == 0:
+
+                    weights = pd.concat(average_weights, axis=1).T
+                    ax = weights.plot()
+                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
+                    for row in range(ws.shape[0]):
+                        ax.plot(n_iters, ws[row, :], label="benchmark_return" + str(row))
+                    plt.legend(loc="best")
+                    plt.show()
+
+                    plt.plot(n_iters, average_reward, label=self.reward_function)
+                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                    plt.legend(loc="best")
+                    plt.show()
+
+                    # plt.plot(range(len(average_weights)),theta_norm,label="norm improvement")
+                    # plt.legend(loc="best")
+                    # plt.show()
+
+                    # alpha=alpha/2
+        return average_weights
+
 
     def _theta_mu_log_gradient(self,action,flat_state):
         """
