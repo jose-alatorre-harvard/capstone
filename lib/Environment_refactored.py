@@ -1082,6 +1082,8 @@ class DeepAgent(AgentDataBase):
         # Obtain mu and sigma from actor network
         nn_mu, nn_sigma = self.model(state)
 
+        action=tf.cast(action,tf.float32)
+        reward=tf.cast(reward,tf.float32)
         # Obtain pdf of Gaussian distribution
         pdf_value = tf.exp(-0.5 * ((action - nn_mu) / (nn_sigma)) ** 2) * \
                     1 / (nn_sigma * tf.sqrt(2 * np.pi))
@@ -1148,7 +1150,7 @@ class DeepAgent(AgentDataBase):
                                 kernel_initializer=initializers.Zeros(),
                                activation="linear")(x)
         sigmas=K.exp(log_sigmas)
-        sigmas=K.clip(sigmas,.05,.20)
+        sigmas=K.clip(sigmas,.05,.30)
 
         model=keras.Model(inputs,[mus,sigmas],name="linear_regression")
         self.model=model
