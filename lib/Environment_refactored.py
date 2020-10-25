@@ -19,6 +19,8 @@ from tensorflow.keras.layers.experimental import preprocessing
 import tensorflow as tf
 from tensorflow.keras import backend as K
 import tensorflow.keras.initializers as initializers
+import torch
+
 class RewardFactory:
 
     def __init__(self,in_bars_count,percent_commission):
@@ -786,6 +788,8 @@ class LinearAgent(AgentDataBase):
         #no modeling correlations if correlation self.theta_sigma=np.random.rand(self.number_of_assets,self.number_of_asset,param_dim)
         self.theta_sigma=np.random.rand(self.number_of_assets,param_dim)
 
+        self.theta_state_baseline=np.random.rand(param_dim)
+
     def policy(self,flat_state):
         """
         return action give a linear policy
@@ -810,7 +814,11 @@ class LinearAgent(AgentDataBase):
             raise
 
         return action
-
+    def _state_linear(self,flat_state):
+        if isinstance(flat_state,pd.Series):
+            flat_state=flat_state.values
+        state_value=(self.theta_state_baseline * flat_state).sum()
+        return state_value
     def _sigma_linear(self,flat_state):
         if isinstance(flat_state,pd.Series):
             flat_state=flat_state.values
@@ -959,8 +967,8 @@ class LinearAgent(AgentDataBase):
 
 
 
-    def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000
-                             ,record_average_weights=True):
+    def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000, plot_gradients=False
+                             ,record_average_weights=True,add_baseline=False,alpha_baseline=.01):
 
 
         theta_diff=1000
@@ -972,6 +980,10 @@ class LinearAgent(AgentDataBase):
         theta_norm=[]
 
         pbar = tqdm(total=max_iterations)
+        theta_mu_hist_gradients=[]
+        theta_sigma_hist_gradients=[]
+
+
         while iters <max_iterations:
             n_iters.append(iters)
 
@@ -981,6 +993,9 @@ class LinearAgent(AgentDataBase):
             average_reward.append(np.mean(rewards))
             new_theta_mu=copy.deepcopy(self.theta_mu)
             new_theta_sigma=copy.deepcopy(self.theta_sigma)
+
+            tmp_mu_gradient=[]
+            tmp_sigma_gradient=[]
             for t in range(observations):
                 action_t=actions[t]
                 flat_state_t=states[t]
@@ -990,10 +1005,24 @@ class LinearAgent(AgentDataBase):
 
                 G=np.sum(rewards[t:]*gamma_coef)
 
+                if add_baseline==True:
+                    delta=G-self._state_linear(flat_state=flat_state_t)
+                    self.theta_state_baseline=self.theta_state_baseline+alpha_baseline*delta*self._baseline_linear_gradient(flat_state=flat_state_t)
+                else:
+                    delta=G
+
+                theta_mu_log_gradient=self._theta_mu_log_gradient(action=action_t,flat_state=flat_state_t.values)
+                theta_sigma_log_gradient=self._theta_sigma_log_gradient(action=action_t,flat_state=flat_state_t.values)
+
+                tmp_mu_gradient.append(theta_mu_log_gradient)
+                tmp_sigma_gradient.append(theta_sigma_log_gradient)
 
 
-                new_theta_mu=new_theta_mu+alpha*G*(gamma**t)*self._theta_mu_log_gradient(action=action_t,flat_state=flat_state_t.values)
-                new_theta_sigma=new_theta_sigma+alpha*G*(gamma**t)*self._theta_sigma_log_gradient(action=action_t,flat_state=flat_state_t.values)
+                new_theta_mu=new_theta_mu+alpha*delta*(gamma**t)*theta_mu_log_gradient
+                new_theta_sigma=new_theta_sigma+alpha*delta*(gamma**t)*theta_sigma_log_gradient
+
+            theta_mu_hist_gradients.append(np.array(tmp_mu_gradient).mean(axis=1))
+            theta_sigma_hist_gradients.append(np.array(tmp_sigma_gradient).mean(axis=1))
 
             old_full_theta=np.concatenate([self.theta_mu.ravel(),self.theta_sigma.ravel()])
             new_full_theta=np.concatenate([new_theta_mu.ravel(),new_theta_sigma.ravel()])
@@ -1033,6 +1062,14 @@ class LinearAgent(AgentDataBase):
                     # plt.show()
 
                     # alpha=alpha/2
+
+                    if plot_gradients==True:
+
+                        for asset in range(self.number_of_assets):
+                            tmp_mu_asset=np.array([i[0,:] for i in theta_mu_hist_gradients])
+                            plt.plot(tmp_mu_asset,label=str(asset)+"mu")
+                            plt.show()
+
         return average_weights
 
 
@@ -1062,11 +1099,179 @@ class LinearAgent(AgentDataBase):
         log_gradient=(((action-mu)/sigma)**2 -1).reshape(-1,1)*flat_state
         return  log_gradient
 
+    def _baseline_linear_gradient(self,flat_state):
+        return flat_state
+
+
+import copy
+
+
+class PolicyEstimator(torch.nn.Module):
+    def __init__(self, state_dimension,number_of_assets):
+        super(PolicyEstimator, self).__init__()
+        self.state_dimension=state_dimension
+        self.number_of_assets=number_of_assets
+
+        self.mus = torch.nn.Linear(self.state_dimension, self.number_of_assets)
+        self.log_sigmas = torch.nn.Linear(self.state_dimension, self.number_of_assets)
+
+    def forward(self,x):
+        sigmas=torch.exp(self.log_sigmas(x))
+        clip_sigmas=torch.clamp(sigmas,.01,.2)
+        mus_clip=torch.nn.Softmax()(self.mus(x))
+        return mus_clip,clip_sigmas
+
+class DeepAgentPytorch(AgentDataBase):
 
 
 
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args, **kwargs)
 
 
+        self.build_model()
+        self.train_average_weights = []
+
+    def CustomLossGaussian(self,state, action, reward):
+        # Obtain mu and sigma from actor network
+        nn_mu, nn_sigma = self.model(state)
+
+
+        # Obtain pdf of Gaussian distribution
+        pdf_value = torch.exp(-0.5 * ((action - nn_mu) / (nn_sigma)) ** 2) * \
+                    1 / (nn_sigma * np.sqrt(2 * np.pi))
+
+        # Compute log probability
+        log_probability = torch.log(pdf_value + 1e-5)
+
+        # Compute weighted loss
+        loss_actor = reward * log_probability
+        #reduce mean have local minim
+        J=torch.mean(torch.sum(loss_actor,axis=1))
+        return -J
+    def policy(self,flat_state):
+        """
+        Policy needs to use a prediction from the deep model
+        :param flat_state:
+        :return:
+        """
+        if isinstance(flat_state,pd.Series):
+            input=torch.FloatTensor(np.array([flat_state.values]).reshape(-1))
+        else:
+            input=torch.FloatTensor(flat_state)
+
+        mu, sigmas=self.model(input)
+        mu=mu.detach().numpy()
+        sigmas=sigmas.detach().numpy()
+
+        cov = np.zeros((self.number_of_assets, self.number_of_assets))
+        np.fill_diagonal(cov, sigmas ** 2)
+
+        try:
+
+            action = np.random.multivariate_normal(
+                mu, cov)
+
+
+        except:
+            print("error on sampling")
+            raise
+
+        return action
+
+
+    def build_model(self):
+        # TODO: Normalization needs to done pre-batch. Here is been done with one batch it seems to me.
+
+        self.model=PolicyEstimator(state_dimension=self.state_dimension,number_of_assets=self.number_of_assets)
+
+
+    def REINFORCE_fit(self,  gamma=.99, max_iterations=10000
+                      , record_average_weights=True):
+
+
+        observations = self.sample_observations
+        iters = 0
+        n_iters = []
+        average_weights = []
+        average_reward = []
+        total_reward=[]
+        theta_norm = []
+        losses=[]
+        pbar = tqdm(total=max_iterations)
+
+        optimizer = torch.optim.Adam(self.model.parameters(),
+                               lr=0.01)
+
+        historical_grads = []
+        while iters < max_iterations:
+            n_iters.append(iters)
+
+            # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
+            states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
+            states=np.array([s.values for s in states]).reshape(self.sample_observations,-1)
+            average_reward.append(np.mean(rewards))
+            # total_reward.extend(rewards)
+            actions=np.array(actions)
+            Gs=[]
+
+            for t in range(observations):
+
+                gamma_coef = np.array([gamma ** (k - t) for k in range(t, observations)])
+
+                G = np.sum(rewards[t:] * gamma_coef)
+                Gs.append(G)
+            Gs=np.array(Gs)
+            Gs=Gs.reshape(-1,1)
+            Gs=Gs
+
+            Gs_tensor=torch.FloatTensor(Gs)
+            states_tensor=torch.FloatTensor(states)
+            actions_tensor=torch.FloatTensor(actions)
+
+            optimizer.zero_grad()
+
+            loss_value = self.CustomLossGaussian(states_tensor, actions_tensor, Gs_tensor)
+            #calculate gradients
+            loss_value.backward()
+            #apply gradients
+            optimizer.step()
+
+            pbar.update(1)
+            iters = iters + 1
+            # historical_grads.append(loss_value.grad.numpy())
+
+            pbar.set_description("loss "+str(loss_value))
+            losses.append(float(loss_value))
+            if record_average_weights == True:
+                average_weights.append(self.environment.state.weight_buffer.mean())
+                # Todo: implement in tensorboard
+                if iters % 200 == 0:
+
+                    weights = pd.concat(average_weights, axis=1).T
+                    ax = weights.plot()
+                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
+                    for row in range(ws.shape[0]):
+                        ax.plot(n_iters, ws[row, :], label="benchmark_return" + str(row))
+                    plt.legend(loc="best")
+                    plt.show()
+
+                    plt.plot(n_iters, average_reward, label=self.reward_function)
+                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                    plt.legend(loc="best")
+                    plt.show()
+
+                    # plt.plot(total_reward,label="total_reward")
+                    # plt.show()
+
+
+                    # plt.plot(losses,legend="losses")
+
+                    # grads_to_plot_1=np.array([i[:,0] for i in historical_grads])
+                    # grads_to_plot_2=np.array([i[:,1] for i in historical_grads])
+                    # plt.plot(grads_to_plot_1)
+                    # plt.plot(grads_to_plot_2)
+                    # plt.show()
 class DeepAgent(AgentDataBase):
 
 
@@ -1094,7 +1299,7 @@ class DeepAgent(AgentDataBase):
         # Compute weighted loss
         loss_actor = reward * log_probability
         #reduce mean have local minim
-        J=tf.math.reduce_sum(tf.math.reduce_sum(loss_actor,axis=0))
+        J=tf.math.reduce_mean(tf.math.reduce_sum(loss_actor,axis=1))
         return -J
     def policy(self,flat_state):
         """
@@ -1143,14 +1348,14 @@ class DeepAgent(AgentDataBase):
         x=state_normalizer(inputs)
 
         mus=layers.Dense(units=self.number_of_assets,
-                         kernel_initializer=initializers.RandomUniform(0,1), bias_initializer='zeros',
-                         activation="linear")(x)
+                         #kernel_initializer=initializers.RandomUniform(0,1), #bias_initializer='zeros',
+                         activation="relu", name="mu_layer", kernel_regularizer=tf.keras.regularizers.L1(0.01))(x)
         mus=layers.Activation("softmax")(mus)
-        log_sigmas=layers.Dense(units=self.number_of_assets,bias_initializer=initializers.Constant(np.log(.1)),
-                                kernel_initializer=initializers.Zeros(),
-                               activation="linear")(x)
+        log_sigmas=layers.Dense(units=self.number_of_assets,#bias_initializer=initializers.Constant(np.log(.1)),
+                                #kernel_initializer=initializers.RandomUniform(-2.99,-1.89),
+                               activation="softplus")(x)
         sigmas=K.exp(log_sigmas)
-        sigmas=K.clip(sigmas,.05,.30)
+        sigmas=K.clip(sigmas,.05,.15)
 
         model=keras.Model(inputs,[mus,sigmas],name="linear_regression")
         self.model=model
@@ -1175,13 +1380,14 @@ class DeepAgent(AgentDataBase):
         n_iters = []
         average_weights = []
         average_reward = []
+        total_reward=[]
         theta_norm = []
-
+        losses=[]
         pbar = tqdm(total=max_iterations)
-        # opt = keras.optimizers.SGD(learning_rate=0.1,momentum=0.9, nesterov=True)
-        opt = keras.optimizers.Adam(learning_rate=0.01)
+        opt = keras.optimizers.SGD(learning_rate=0.1)
+        # opt = keras.optimizers.Adam(learning_rate=0.001)
 
-
+        historical_grads = []
         while iters < max_iterations:
             n_iters.append(iters)
 
@@ -1189,8 +1395,10 @@ class DeepAgent(AgentDataBase):
             states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
             states=np.array([s.values for s in states]).reshape(self.sample_observations,-1)
             average_reward.append(np.mean(rewards))
+            # total_reward.extend(rewards)
             actions=np.array(actions)
             Gs=[]
+
             for t in range(observations):
 
                 gamma_coef = np.array([gamma ** (k - t) for k in range(t, observations)])
@@ -1199,19 +1407,24 @@ class DeepAgent(AgentDataBase):
                 Gs.append(G)
             Gs=np.array(Gs)
             Gs=Gs.reshape(-1,1)
+            Gs=Gs-Gs.mean()
             # self.train_step(states=states,actions=actions,Gs=Gs,opt=opt)
+
             with tf.GradientTape() as tape:
                 # Compute Gaussian loss
                 loss_value = self.CustomLossGaussian(states, actions, Gs)
-            # Compute gradients
-            grads = tape.gradient(loss_value, self.model.trainable_variables)
+                # Compute gradients
+                grads = tape.gradient(loss_value, self.model.trainable_variables)
 
-            # Apply gradients to update network weights
-            opt.apply_gradients(zip(grads, self.model.trainable_variables))
+                # Apply gradients to update network weights
+                opt.apply_gradients(zip(grads, self.model.trainable_variables))
 
             pbar.update(1)
             iters = iters + 1
+            historical_grads.append(grads[0].numpy())
+
             print('loss', float(loss_value))
+            losses.append(float(loss_value))
             if record_average_weights == True:
                 average_weights.append(self.environment.state.weight_buffer.mean())
                 # Todo: implement in tensorboard
@@ -1228,6 +1441,18 @@ class DeepAgent(AgentDataBase):
                     plt.plot(n_iters, average_reward, label=self.reward_function)
                     plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                     plt.legend(loc="best")
+                    plt.show()
+
+                    # plt.plot(total_reward,label="total_reward")
+                    # plt.show()
+
+
+                    # plt.plot(losses,legend="losses")
+
+                    grads_to_plot_1=np.array([i[:,0] for i in historical_grads])
+                    grads_to_plot_2=np.array([i[:,1] for i in historical_grads])
+                    plt.plot(grads_to_plot_1)
+                    plt.plot(grads_to_plot_2)
                     plt.show()
 
 class KerasStateGenerator(keras.utils.Sequence):
