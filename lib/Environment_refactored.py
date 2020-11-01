@@ -13,12 +13,12 @@ from joblib import Parallel, delayed
 
 
 
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.layers.experimental import preprocessing
-import tensorflow as tf
-from tensorflow.keras import backend as K
-import tensorflow.keras.initializers as initializers
+# from tensorflow import keras
+# from tensorflow.keras import layers
+# from tensorflow.keras.layers.experimental import preprocessing
+# import tensorflow as tf
+# from tensorflow.keras import backend as K
+# import tensorflow.keras.initializers as initializers
 import torch
 
 class RewardFactory:
@@ -347,8 +347,7 @@ class DeepTradingEnvironment(gym.Env):
         :return:
         """
 
-
-
+        # os.chdir('..')
         PERSISTED_DATA_DIRECTORY = "temp_persisted_data"
         # Todo: Hash csv file
         if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash):
@@ -1200,9 +1199,17 @@ class PolicyEstimator(torch.nn.Module):
         sigmas=torch.exp(self.log_sigmas(x))
         clip_sigmas=torch.clamp(sigmas,.01,.2)
         mus_clip=torch.nn.Softmax()(self.mus(x))
+
         return mus_clip,clip_sigmas
 
 class DeepAgentPytorch(AgentDataBase):
+    # Check to see if GPU is available
+    if torch.cuda.is_available():
+        dev = "cuda:0"
+    else:
+        dev = "cpu"
+    # device = torch.device(dev)
+    device = torch.device("cpu") # use cpu
 
 
 
@@ -1213,7 +1220,7 @@ class DeepAgentPytorch(AgentDataBase):
         self.build_model()
         self.train_average_weights = []
 
-    def CustomLossGaussian(self,state, action, reward):
+    def CustomLossGaussian(self,state, action, reward, baseline, next_state):
         # Obtain mu and sigma from actor network
         nn_mu, nn_sigma = self.model(state)
 
@@ -1225,11 +1232,12 @@ class DeepAgentPytorch(AgentDataBase):
         # Compute log probability
         log_probability = torch.log(pdf_value + 1e-5)
 
-        # Compute weighted loss
-        loss_actor = reward * log_probability
+
+        loss_actor = (reward + next_state - baseline) * log_probability
         #reduce mean have local minim
         J=torch.mean(torch.sum(loss_actor,axis=1))
         return -J
+
     def policy(self,flat_state):
         """
         Policy needs to use a prediction from the deep model
@@ -1237,13 +1245,13 @@ class DeepAgentPytorch(AgentDataBase):
         :return:
         """
         if isinstance(flat_state,pd.Series):
-            input=torch.FloatTensor(np.array([flat_state.values]).reshape(-1))
+            input=torch.FloatTensor(np.array([flat_state.values]).reshape(-1)).to(self.device)
         else:
-            input=torch.FloatTensor(flat_state)
+            input=torch.FloatTensor(flat_state).to(self.device)
 
         mu, sigmas=self.model(input)
-        mu=mu.detach().numpy()
-        sigmas=sigmas.detach().numpy()
+        mu=mu.detach().cpu().numpy()
+        sigmas=sigmas.detach().cpu().numpy()
 
         cov = np.zeros((self.number_of_assets, self.number_of_assets))
         np.fill_diagonal(cov, sigmas ** 2)
@@ -1264,7 +1272,7 @@ class DeepAgentPytorch(AgentDataBase):
     def build_model(self):
         # TODO: Normalization needs to done pre-batch. Here is been done with one batch it seems to me.
 
-        self.model=PolicyEstimator(state_dimension=self.state_dimension,number_of_assets=self.number_of_assets)
+        self.model=PolicyEstimator(state_dimension=self.state_dimension,number_of_assets=self.number_of_assets).to(self.device)
 
 
     def REINFORCE_fit(self,  gamma=.99, max_iterations=10000
@@ -1306,13 +1314,13 @@ class DeepAgentPytorch(AgentDataBase):
             Gs=Gs.reshape(-1,1)
             Gs=Gs
 
-            Gs_tensor=torch.FloatTensor(Gs)
-            states_tensor=torch.FloatTensor(states)
-            actions_tensor=torch.FloatTensor(actions)
+            Gs_tensor=torch.FloatTensor(Gs).to(self.device)
+            states_tensor=torch.FloatTensor(states).to(self.device)
+            actions_tensor=torch.FloatTensor(actions).to(self.device)
 
             optimizer.zero_grad()
 
-            loss_value = self.CustomLossGaussian(states_tensor, actions_tensor, Gs_tensor)
+            loss_value = self.CustomLossGaussian(states_tensor, actions_tensor, Gs_tensor, baseline=0, next_state = 0)
             #calculate gradients
             loss_value.backward()
             #apply gradients
@@ -1353,107 +1361,12 @@ class DeepAgentPytorch(AgentDataBase):
                     # plt.plot(grads_to_plot_1)
                     # plt.plot(grads_to_plot_2)
                     # plt.show()
-class DeepAgent(AgentDataBase):
 
+    # citing https://github.com/hagerrady13/Reinforce-PyTorch/blob/master/main.py
 
-
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args, **kwargs)
-
-
-        self.build_model()
-        self.train_average_weights = []
-
-    def CustomLossGaussian(self,state, action, reward):
-        # Obtain mu and sigma from actor network
-        nn_mu, nn_sigma = self.model(state)
-
-        action=tf.cast(action,tf.float32)
-        reward=tf.cast(reward,tf.float32)
-        # Obtain pdf of Gaussian distribution
-        pdf_value = tf.exp(-0.5 * ((action - nn_mu) / (nn_sigma)) ** 2) * \
-                    1 / (nn_sigma * tf.sqrt(2 * np.pi))
-
-        # Compute log probability
-        log_probability = tf.math.log(pdf_value + 1e-5)
-
-        # Compute weighted loss
-        loss_actor = reward * log_probability
-        #reduce mean have local minim
-        J=tf.math.reduce_mean(tf.math.reduce_sum(loss_actor,axis=1))
-        return -J
-    def policy(self,flat_state):
-        """
-        Policy needs to use a prediction from the deep model
-        :param flat_state:
-        :return:
-        """
-        if isinstance(flat_state,pd.Series):
-            input=np.array([flat_state.values]).reshape(-1)
-        else:
-            input=flat_state
-
-        mu, sigmas=self.model.predict(input.reshape(1,-1))
-        mu=mu[0]
-
-
-
-
-        cov = np.zeros((self.number_of_assets, self.number_of_assets))
-        np.fill_diagonal(cov, sigmas ** 2)
-
-        try:
-
-            action = np.random.multivariate_normal(
-                mu, cov)
-
-
-        except:
-            print("error on sampling")
-            raise
-
-        return action
-
-
-    def build_model(self):
-        # TODO: Normalization needs to done pre-batch. Here is been done with one batch it seems to me.
-
-        full_state=self.environment.state.get_full_state_pre_process()
-
-        inputs = keras.Input(shape=(full_state.shape[1],))
-
-        state_normalizer = preprocessing.Normalization()
-        state_normalizer.adapt(full_state.values)
-
-
-        x=state_normalizer(inputs)
-
-        mus=layers.Dense(units=self.number_of_assets,
-                         #kernel_initializer=initializers.RandomUniform(0,1), #bias_initializer='zeros',
-                         activation="relu", name="mu_layer", kernel_regularizer=tf.keras.regularizers.L1(0.01))(x)
-        mus=layers.Activation("softmax")(mus)
-        log_sigmas=layers.Dense(units=self.number_of_assets,#bias_initializer=initializers.Constant(np.log(.1)),
-                                #kernel_initializer=initializers.RandomUniform(-2.99,-1.89),
-                               activation="softplus")(x)
-        sigmas=K.exp(log_sigmas)
-        sigmas=K.clip(sigmas,.05,.15)
-
-        model=keras.Model(inputs,[mus,sigmas],name="linear_regression")
-        self.model=model
-
-    @tf.function
-    def train_step(self,states,actions,Gs,opt):
-        with tf.GradientTape() as tape:
-            # Compute Gaussian loss
-            loss_value = self.CustomLossGaussian(states, actions, Gs)
-            # Compute gradients
-        grads = tape.gradient(loss_value, self.model.trainable_variables)
-
-        # Apply gradients to update network weights
-        opt.apply_gradients(zip(grads, self.model.trainable_variables))
-
-    def REINFORCE_fit(self,  gamma=.99, max_iterations=10000
+    def REINFORCE_baseline_fit(self, alpha_theta = 0.01, gamma=.99, max_iterations=10000
                       , record_average_weights=True):
+
 
 
         observations = self.sample_observations
@@ -1464,9 +1377,11 @@ class DeepAgent(AgentDataBase):
         total_reward=[]
         theta_norm = []
         losses=[]
+        
         pbar = tqdm(total=max_iterations)
-        opt = keras.optimizers.SGD(learning_rate=0.1)
-        # opt = keras.optimizers.Adam(learning_rate=0.001)
+
+        optimizer = torch.optim.Adam(self.model.parameters(),
+                               lr=0.01)
 
         historical_grads = []
         while iters < max_iterations:
@@ -1479,6 +1394,7 @@ class DeepAgent(AgentDataBase):
             # total_reward.extend(rewards)
             actions=np.array(actions)
             Gs=[]
+            Vs=[]
 
             for t in range(observations):
 
@@ -1486,25 +1402,37 @@ class DeepAgent(AgentDataBase):
 
                 G = np.sum(rewards[t:] * gamma_coef)
                 Gs.append(G)
+                V = np.array(rewards[t])
+                Vs.append(V)
             Gs=np.array(Gs)
             Gs=Gs.reshape(-1,1)
-            Gs=Gs-Gs.mean()
-            # self.train_step(states=states,actions=actions,Gs=Gs,opt=opt)
+            Gs=Gs
+            # State-Value
+            Vs=np.array(Vs)
+            Vs=Vs.reshape(-1,1)
+            Vs=Vs
 
-            with tf.GradientTape() as tape:
-                # Compute Gaussian loss
-                loss_value = self.CustomLossGaussian(states, actions, Gs)
-                # Compute gradients
-                grads = tape.gradient(loss_value, self.model.trainable_variables)
+            Gs_tensor=torch.FloatTensor(Gs).to(self.device)
+            states_tensor=torch.FloatTensor(states).to(self.device)
+            actions_tensor=torch.FloatTensor(actions).to(self.device)
+            V_tensor = torch.FloatTensor(Vs).to(self.device)
 
-                # Apply gradients to update network weights
-                opt.apply_gradients(zip(grads, self.model.trainable_variables))
+            optimizer.zero_grad()
+
+            policy_loss = self.CustomLossGaussian(states_tensor, actions_tensor, Gs_tensor, baseline=V_tensor, next_state = 0)
+            value_loss = torch.nn.functional.mse_loss(V_tensor, Gs_tensor, reduction='mean')
+            loss_value = policy_loss + value_loss
+
+            #calculate gradients
+            loss_value.backward()
+            #apply gradients
+            optimizer.step()
 
             pbar.update(1)
             iters = iters + 1
-            historical_grads.append(grads[0].numpy())
+            # historical_grads.append(loss_value.grad.numpy())
 
-            print('loss', float(loss_value))
+            pbar.set_description("loss "+str(loss_value))
             losses.append(float(loss_value))
             if record_average_weights == True:
                 average_weights.append(self.environment.state.weight_buffer.mean())
@@ -1530,118 +1458,405 @@ class DeepAgent(AgentDataBase):
 
                     # plt.plot(losses,legend="losses")
 
-                    grads_to_plot_1=np.array([i[:,0] for i in historical_grads])
-                    grads_to_plot_2=np.array([i[:,1] for i in historical_grads])
-                    plt.plot(grads_to_plot_1)
-                    plt.plot(grads_to_plot_2)
+                    # grads_to_plot_1=np.array([i[:,0] for i in historical_grads])
+                    # grads_to_plot_2=np.array([i[:,1] for i in historical_grads])
+                    # plt.plot(grads_to_plot_1)
+                    # plt.plot(grads_to_plot_2)
+                    # plt.show()
+
+    def Actor_Critic_fit(self, alpha_theta=0.01, gamma=.99, max_iterations=10000
+                               , record_average_weights=True):
+
+        observations = self.sample_observations
+        iters = 0
+        n_iters = []
+        average_weights = []
+        average_reward = []
+        total_reward = []
+        theta_norm = []
+        losses = []
+
+        pbar = tqdm(total=max_iterations)
+
+        optimizer = torch.optim.Adam(self.model.parameters(),
+                                     lr=0.01)
+
+        historical_grads = []
+        while iters < max_iterations:
+            n_iters.append(iters)
+
+            # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
+            states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
+            states = np.array([s.values for s in states]).reshape(self.sample_observations, -1)
+            average_reward.append(np.mean(rewards))
+            # total_reward.extend(rewards)
+            actions = np.array(actions)
+            Gs = []
+            Vs = []
+            Vs_prime = []
+            i = 1
+
+            for t in range(observations):
+                gamma_coef = np.array([gamma ** (k - t) for k in range(t, observations)])
+
+                G = np.sum(rewards[t:] * gamma_coef)
+                Gs.append(G)
+                V = np.array(rewards[t])
+                Vs.append(V)
+                if t < observations - 1:
+                    Vprime = np.array(rewards[t+1]* (gamma ** i))
+                    i = i + 1
+                    Vs_prime.append(Vprime)
+                else:
+                    Vprime = 0
+                    Vs_prime.append(Vprime)
+            Gs = np.array(Gs)
+            Gs = Gs.reshape(-1, 1)
+            Gs = Gs
+            # State-Value for current state
+            Vs = np.array(Vs)
+            Vs = Vs.reshape(-1, 1)
+            Vs = Vs
+            # State-Value for next state
+            Vs_prime = np.array(Vs_prime)
+            Vs_prime = Vs_prime.reshape(-1, 1)
+            Vs_prime = Vs_prime
+
+            Gs_tensor = torch.FloatTensor(Gs).to(self.device)
+            states_tensor = torch.FloatTensor(states).to(self.device)
+            actions_tensor = torch.FloatTensor(actions).to(self.device)
+            V_tensor = torch.FloatTensor(Vs).to(self.device)
+            Vprime_tensor = torch.FloatTensor(Vs_prime).to(self.device)
+
+            optimizer.zero_grad()
+
+            policy_loss = self.CustomLossGaussian(states_tensor, actions_tensor, Gs_tensor, baseline=V_tensor, next_state = Vprime_tensor)
+            value_loss = torch.nn.functional.mse_loss(Vprime_tensor, Gs_tensor, reduction='mean')
+            loss_value = policy_loss + value_loss
+
+            # calculate gradients
+            loss_value.backward()
+            # apply gradients
+            optimizer.step()
+
+            pbar.update(1)
+            iters = iters + 1
+            # historical_grads.append(loss_value.grad.numpy())
+
+            pbar.set_description("loss " + str(loss_value))
+            losses.append(float(loss_value))
+            if record_average_weights == True:
+                average_weights.append(self.environment.state.weight_buffer.mean())
+                # Todo: implement in tensorboard
+                if iters % 200 == 0:
+
+                    weights = pd.concat(average_weights, axis=1).T
+                    ax = weights.plot()
+                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
+                    for row in range(ws.shape[0]):
+                        ax.plot(n_iters, ws[row, :], label="benchmark_return" + str(row))
+                    plt.legend(loc="best")
                     plt.show()
 
-class KerasStateGenerator(keras.utils.Sequence):
-
-    def __init__(self,agent_instance,batch_size=32,gamma=1):
-        """
-
-        :param sampling_function:
-        :param sampling_function_kwargs:
-        :param gamma:
-        """
+                    plt.plot(n_iters, average_reward, label=self.reward_function)
+                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                    plt.legend(loc="best")
+                    plt.show()
 
 
 
 
-        self.agent_instance=agent_instance
-        self.indexes=np.arange(self.agent_instance.environment.state.in_bars_count+1,
-                               self.agent_instance.environment.state.weight_buffer.shape[0]-batch_size)
-        self.n_samples = len(self.indexes)
-        self.gamma=gamma
-        self.batch_size=batch_size
-
-        self.shuffle=True
-
-        self.epoch_run = 0
-        self.on_epoch_end()
 
 
-    def __data_generation(self, index_start):
-        """
-         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
-         if the loss is
-        :param index_start:
-        :return:
-        """
-
-        #todo: this path should be faster
-        # flat_states = self.agent_instance.environment.state.sample_state_by_iloc(index_location=index_start, sample_size=self.batch_size)
-        #
-        #
-        # flat_states=np.array(flat_states)
-        # states_plus_actions=np.concatenate([flat_states,np.zeros((self.batch_size, self.agent_instance.number_of_assets))],axis=1)
-        # actions = self.agent_instance.policy_batch(states_plus_actions.reshape(self.batch_size, -1))
-        # self.agent_instance.environment.state.weight_buffer.iloc[index_start:index_start + self.batch_size] = actions
-        #
-        # states_plus_actions = np.concatenate([flat_states, actions], axis=1)
-        #
-        #
-        #
-        # rewards = self.agent_instance.environment.state.sample_rewards(action_date_index=index_start,
-        #                                                                sample_size=self.batch_size,
-        #                                                                reward_function=self.agent_instance.reward_function)
-
-        states, actions, rewards = self.agent_instance.sample_env_pre_sampled(verbose=False)
-        states=np.array([s.values for s in states])
-        actions=np.array(actions)
-        states_plus_actions=np.concatenate([states,actions],axis=1)
-
-        X=states_plus_actions.reshape(self.batch_size,-1)
-        #for REINFORCE
-        Gs=[]
-        for t in range(self.batch_size):
-
-            gamma_coef = np.array([self.gamma ** (k - t) for k in range(t, self.batch_size)])
-            G = np.sum(rewards[t:] * gamma_coef)
-            Gs.append(G)
-        y=np.array(Gs)
-        return X, y
-    def on_epoch_end(self):
-        """
-        updates indexes after each epoch
-        :return:
-        """
-        'Updates indexes after each epoch'
-
-
-        if self.epoch_run %5 ==0:
-
-
-            if self.shuffle == True:
-                np.random.shuffle(self.indexes)
-            if self.epoch_run>0:
-
-
-
-                weights = pd.concat(self.agent_instance.train_average_weights, axis=1).T
-                ax = weights.plot()
-                ws = np.repeat(self.agent_instance.benchmark_weights.reshape(-1, 1), self.epoch_run , axis=1)
-                for row in range(ws.shape[0]):
-                    ax.plot(range(self.epoch_run) , ws[row, :], label="benchmark_return" + str(row))
-                plt.legend(loc="best")
-                plt.show()
-        self.agent_instance.train_average_weights.append(self.agent_instance.environment.state.weight_buffer.mean())
-        self.epoch_run = self.epoch_run + 1
-
-    def __len__(self):
-        'Denotes the number of batches per epoch'
-        return int(self.n_samples / self.batch_size)
-
-    def __getitem__(self, index):
-        'Generate one batch of data'
-        # Generate indexes of the batch
-        index_start = self.indexes[index]
-        # Generate data
-
-        X, y = self.__data_generation(index_start)
-
-        return X, y
+# class DeepAgent(AgentDataBase):
+#
+#
+#
+#     def __init__(self,*args,**kwargs):
+#         super().__init__(*args, **kwargs)
+#
+#
+#         self.build_model()
+#         self.train_average_weights = []
+#
+#     def CustomLossGaussian(self,state, action, reward):
+#         # Obtain mu and sigma from actor network
+#         nn_mu, nn_sigma = self.model(state)
+#
+#         action=tf.cast(action,tf.float32)
+#         reward=tf.cast(reward,tf.float32)
+#         # Obtain pdf of Gaussian distribution
+#         pdf_value = tf.exp(-0.5 * ((action - nn_mu) / (nn_sigma)) ** 2) * \
+#                     1 / (nn_sigma * tf.sqrt(2 * np.pi))
+#
+#         # Compute log probability
+#         log_probability = tf.math.log(pdf_value + 1e-5)
+#
+#         # Compute weighted loss
+#         loss_actor = reward * log_probability
+#         #reduce mean have local minim
+#         J=tf.math.reduce_mean(tf.math.reduce_sum(loss_actor,axis=1))
+#         return -J
+#     def policy(self,flat_state):
+#         """
+#         Policy needs to use a prediction from the deep model
+#         :param flat_state:
+#         :return:
+#         """
+#         if isinstance(flat_state,pd.Series):
+#             input=np.array([flat_state.values]).reshape(-1)
+#         else:
+#             input=flat_state
+#
+#         mu, sigmas=self.model.predict(input.reshape(1,-1))
+#         mu=mu[0]
+#
+#
+#
+#
+#         cov = np.zeros((self.number_of_assets, self.number_of_assets))
+#         np.fill_diagonal(cov, sigmas ** 2)
+#
+#         try:
+#
+#             action = np.random.multivariate_normal(
+#                 mu, cov)
+#
+#
+#         except:
+#             print("error on sampling")
+#             raise
+#
+#         return action
+#
+#
+#     def build_model(self):
+#         # TODO: Normalization needs to done pre-batch. Here is been done with one batch it seems to me.
+#
+#         full_state=self.environment.state.get_full_state_pre_process()
+#
+#         inputs = keras.Input(shape=(full_state.shape[1],))
+#
+#         state_normalizer = preprocessing.Normalization()
+#         state_normalizer.adapt(full_state.values)
+#
+#
+#         x=state_normalizer(inputs)
+#
+#         mus=layers.Dense(units=self.number_of_assets,
+#                          #kernel_initializer=initializers.RandomUniform(0,1), #bias_initializer='zeros',
+#                          activation="relu", name="mu_layer", kernel_regularizer=tf.keras.regularizers.L1(0.01))(x)
+#         mus=layers.Activation("softmax")(mus)
+#         log_sigmas=layers.Dense(units=self.number_of_assets,#bias_initializer=initializers.Constant(np.log(.1)),
+#                                 #kernel_initializer=initializers.RandomUniform(-2.99,-1.89),
+#                                activation="softplus")(x)
+#         sigmas=K.exp(log_sigmas)
+#         sigmas=K.clip(sigmas,.05,.15)
+#
+#         model=keras.Model(inputs,[mus,sigmas],name="linear_regression")
+#         self.model=model
+#
+#     @tf.function
+#     def train_step(self,states,actions,Gs,opt):
+#         with tf.GradientTape() as tape:
+#             # Compute Gaussian loss
+#             loss_value = self.CustomLossGaussian(states, actions, Gs)
+#             # Compute gradients
+#         grads = tape.gradient(loss_value, self.model.trainable_variables)
+#
+#         # Apply gradients to update network weights
+#         opt.apply_gradients(zip(grads, self.model.trainable_variables))
+#
+#     def REINFORCE_fit(self,  gamma=.99, max_iterations=10000
+#                       , record_average_weights=True):
+#
+#
+#         observations = self.sample_observations
+#         iters = 0
+#         n_iters = []
+#         average_weights = []
+#         average_reward = []
+#         total_reward=[]
+#         theta_norm = []
+#         losses=[]
+#         pbar = tqdm(total=max_iterations)
+#         opt = keras.optimizers.SGD(learning_rate=0.1)
+#         # opt = keras.optimizers.Adam(learning_rate=0.001)
+#
+#         historical_grads = []
+#         while iters < max_iterations:
+#             n_iters.append(iters)
+#
+#             # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
+#             states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
+#             states=np.array([s.values for s in states]).reshape(self.sample_observations,-1)
+#             average_reward.append(np.mean(rewards))
+#             # total_reward.extend(rewards)
+#             actions=np.array(actions)
+#             Gs=[]
+#
+#             for t in range(observations):
+#
+#                 gamma_coef = np.array([gamma ** (k - t) for k in range(t, observations)])
+#
+#                 G = np.sum(rewards[t:] * gamma_coef)
+#                 Gs.append(G)
+#             Gs=np.array(Gs)
+#             Gs=Gs.reshape(-1,1)
+#             Gs=Gs-Gs.mean()
+#             # self.train_step(states=states,actions=actions,Gs=Gs,opt=opt)
+#
+#             with tf.GradientTape() as tape:
+#                 # Compute Gaussian loss
+#                 loss_value = self.CustomLossGaussian(states, actions, Gs)
+#                 # Compute gradients
+#                 grads = tape.gradient(loss_value, self.model.trainable_variables)
+#
+#                 # Apply gradients to update network weights
+#                 opt.apply_gradients(zip(grads, self.model.trainable_variables))
+#
+#             pbar.update(1)
+#             iters = iters + 1
+#             historical_grads.append(grads[0].numpy())
+#
+#             print('loss', float(loss_value))
+#             losses.append(float(loss_value))
+#             if record_average_weights == True:
+#                 average_weights.append(self.environment.state.weight_buffer.mean())
+#                 # Todo: implement in tensorboard
+#                 if iters % 200 == 0:
+#
+#                     weights = pd.concat(average_weights, axis=1).T
+#                     ax = weights.plot()
+#                     ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
+#                     for row in range(ws.shape[0]):
+#                         ax.plot(n_iters, ws[row, :], label="benchmark_return" + str(row))
+#                     plt.legend(loc="best")
+#                     plt.show()
+#
+#                     plt.plot(n_iters, average_reward, label=self.reward_function)
+#                     plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+#                     plt.legend(loc="best")
+#                     plt.show()
+#
+#                     # plt.plot(total_reward,label="total_reward")
+#                     # plt.show()
+#
+#
+#                     # plt.plot(losses,legend="losses")
+#
+#                     grads_to_plot_1=np.array([i[:,0] for i in historical_grads])
+#                     grads_to_plot_2=np.array([i[:,1] for i in historical_grads])
+#                     plt.plot(grads_to_plot_1)
+#                     plt.plot(grads_to_plot_2)
+#                     plt.show()
+#
+# class KerasStateGenerator(keras.utils.Sequence):
+#
+#     def __init__(self,agent_instance,batch_size=32,gamma=1):
+#         """
+#
+#         :param sampling_function:
+#         :param sampling_function_kwargs:
+#         :param gamma:
+#         """
+#
+#
+#
+#
+#         self.agent_instance=agent_instance
+#         self.indexes=np.arange(self.agent_instance.environment.state.in_bars_count+1,
+#                                self.agent_instance.environment.state.weight_buffer.shape[0]-batch_size)
+#         self.n_samples = len(self.indexes)
+#         self.gamma=gamma
+#         self.batch_size=batch_size
+#
+#         self.shuffle=True
+#
+#         self.epoch_run = 0
+#         self.on_epoch_end()
+#
+#
+#     def __data_generation(self, index_start):
+#         """
+#          'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
+#          if the loss is
+#         :param index_start:
+#         :return:
+#         """
+#
+#         #todo: this path should be faster
+#         # flat_states = self.agent_instance.environment.state.sample_state_by_iloc(index_location=index_start, sample_size=self.batch_size)
+#         #
+#         #
+#         # flat_states=np.array(flat_states)
+#         # states_plus_actions=np.concatenate([flat_states,np.zeros((self.batch_size, self.agent_instance.number_of_assets))],axis=1)
+#         # actions = self.agent_instance.policy_batch(states_plus_actions.reshape(self.batch_size, -1))
+#         # self.agent_instance.environment.state.weight_buffer.iloc[index_start:index_start + self.batch_size] = actions
+#         #
+#         # states_plus_actions = np.concatenate([flat_states, actions], axis=1)
+#         #
+#         #
+#         #
+#         # rewards = self.agent_instance.environment.state.sample_rewards(action_date_index=index_start,
+#         #                                                                sample_size=self.batch_size,
+#         #                                                                reward_function=self.agent_instance.reward_function)
+#
+#         states, actions, rewards = self.agent_instance.sample_env_pre_sampled(verbose=False)
+#         states=np.array([s.values for s in states])
+#         actions=np.array(actions)
+#         states_plus_actions=np.concatenate([states,actions],axis=1)
+#
+#         X=states_plus_actions.reshape(self.batch_size,-1)
+#         #for REINFORCE
+#         Gs=[]
+#         for t in range(self.batch_size):
+#
+#             gamma_coef = np.array([self.gamma ** (k - t) for k in range(t, self.batch_size)])
+#             G = np.sum(rewards[t:] * gamma_coef)
+#             Gs.append(G)
+#         y=np.array(Gs)
+#         return X, y
+#     def on_epoch_end(self):
+#         """
+#         updates indexes after each epoch
+#         :return:
+#         """
+#         'Updates indexes after each epoch'
+#
+#
+#         if self.epoch_run %5 ==0:
+#
+#
+#             if self.shuffle == True:
+#                 np.random.shuffle(self.indexes)
+#             if self.epoch_run>0:
+#
+#
+#
+#                 weights = pd.concat(self.agent_instance.train_average_weights, axis=1).T
+#                 ax = weights.plot()
+#                 ws = np.repeat(self.agent_instance.benchmark_weights.reshape(-1, 1), self.epoch_run , axis=1)
+#                 for row in range(ws.shape[0]):
+#                     ax.plot(range(self.epoch_run) , ws[row, :], label="benchmark_return" + str(row))
+#                 plt.legend(loc="best")
+#                 plt.show()
+#         self.agent_instance.train_average_weights.append(self.agent_instance.environment.state.weight_buffer.mean())
+#         self.epoch_run = self.epoch_run + 1
+#
+#     def __len__(self):
+#         'Denotes the number of batches per epoch'
+#         return int(self.n_samples / self.batch_size)
+#
+#     def __getitem__(self, index):
+#         'Generate one batch of data'
+#         # Generate indexes of the batch
+#         index_start = self.indexes[index]
+#         # Generate data
+#
+#         X, y = self.__data_generation(index_start)
+#
+#         return X, y
 
 """
 self.sample_env_pre_sampled_from_index(start=start,
