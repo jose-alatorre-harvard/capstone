@@ -9,7 +9,8 @@ out_reward_window=datetime.timedelta(days=7)
 meta_parameters = {"in_bars_count": 30,
                    "out_reward_window":out_reward_window ,
                    "state_type":"in_window_out_window",
-                   "asset_names":["asset_1","asset_2"]}
+                   "asset_names":["asset_1","asset_2"],
+                   "include_previous_weights":False}
 
 # parameters that are related to the objective/reward function construction
 objective_parameters = {"percent_commission": .001,
@@ -49,18 +50,18 @@ x=np.array(list(weights.values())).reshape(-1,1)
 p_vol=np.sqrt(np.matmul(np.matmul(x.T,cov),x))
 p_sharpe=np.matmul(x.T,mus)/p_vol
 
-deep_agent=DeepAgentPytorch(environment=env,out_reward_window_td=out_reward_window,pre_sample=True,
-                         reward_function="cum_return",sample_observations=64)
-
-
-deep_agent.set_plot_weights(weights=np.array([0,1]), benchmark_G=assets_simulation_details["asset_2"]["mean"])
+# deep_agent=DeepAgentPytorch(environment=env,out_reward_window_td=out_reward_window,pre_sample=True,
+#                          reward_function="cum_return",sample_observations=64)
+#
+#
+# deep_agent.set_plot_weights(weights=np.array([0,1]), benchmark_G=assets_simulation_details["asset_2"]["mean"])
 # deep_agent.set_plot_weights(weights=np.array(list(weights.values())),
 #                               benchmark_G=-p_vol.ravel()[0])
-deep_agent.REINFORCE_fit()
+# deep_agent.REINFORCE_fit()
 
 
-# linear_agent=LinearAgent(environment=env,out_reward_window_td=out_reward_window,
-#                          reward_function="min_vol",sample_observations=32)
+linear_agent=LinearAgent(environment=env,out_reward_window_td=out_reward_window,
+                         reward_function="cum_return",sample_observations=32)
 
 # cla=CLA(mus,cov)
 # weights=cla.max_sharpe()
@@ -70,14 +71,14 @@ deep_agent.REINFORCE_fit()
 #min vol weithts
 
 
-#
-# linear_agent.set_plot_weights(weights=np.array(list(weights.values())),
-#                               benchmark_G=-p_vol.ravel()[0])
-#
+
+linear_agent.set_plot_weights(weights=np.array(list(weights.values())),
+                              benchmark_G=-p_vol.ravel()[0])
+
 # # linear_agent.set_plot_weights(weights=np.array(list(weights.values())),
 # #                               benchmark_G=p_sharpe.ravel()[0])
 #
 # linear_agent.REINFORCE_fit(add_baseline=True,plot_gradients=True)
 # # linear_agent.REINFORCE_refactor_fid()
-#
-#
+
+linear_agent.ACTOR_CRITIC_FIT(use_traces=True)

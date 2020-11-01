@@ -91,7 +91,8 @@ class RewardFactory:
         return portfolio_returns
 class State:
 
-    def __init__(self, features,forward_returns,asset_names,in_bars_count,forward_returns_dates, objective_parameters):
+    def __init__(self, features,forward_returns,asset_names,in_bars_count,forward_returns_dates, objective_parameters,
+                 include_previous_weights=True):
         """
 
           :param features:
@@ -104,6 +105,7 @@ class State:
         self.a_names=asset_names
         self.forward_returns=forward_returns
         self.forward_returns.columns=self.asset_names
+        self.include_previous_weights=include_previous_weights
         self.forward_returns_dates=forward_returns_dates
         self.in_bars_count=in_bars_count
         self._set_helper_functions()
@@ -131,7 +133,10 @@ class State:
 
         # for index in weights_on_date.index:
         #     flat_state[index] = weights_on_date.loc[index]
-        flat_state=pd.concat([flat_state,weights_on_date],axis=0)
+        if self.include_previous_weights==True:
+            flat_state=pd.concat([flat_state,weights_on_date],axis=0)
+        else:
+            flat_state=flat_state
         return flat_state
 
     def _set_helper_functions(self):
@@ -143,7 +148,10 @@ class State:
         """
 
         self.number_of_assets=len(self.forward_returns.columns)
-        self.state_dimension=self.features.shape[1] +self.number_of_assets#*self.in_bars_count
+        if self.include_previous_weights==True:
+            self.state_dimension=self.features.shape[1] +self.number_of_assets#*self.in_bars_count
+        else:
+            self.state_dimension=self.features.shape[1]
 
     def _set_objective_function_parameters(self,objective_parameters):
         self.percent_commission = objective_parameters["percent_commission"]
@@ -427,7 +435,8 @@ class DeepTradingEnvironment(gym.Env):
                                              data_hash=data_hash)
 
 
-        # transform features
+        # add bias to features
+        features["bias"]=1
 
         return DeepTradingEnvironment(features=features,forward_returns_dates=forward_returns_dates,
                                forward_returns=forward_returns, meta_parameters=meta_parameters,
@@ -505,7 +514,8 @@ class DeepTradingEnvironment(gym.Env):
                                in_bars_count=meta_parameters["in_bars_count"],
                                objective_parameters=objective_parameters,
                                forward_returns=self.forward_returns,
-                               forward_returns_dates=self.forward_returns_dates
+                               forward_returns_dates=self.forward_returns_dates,
+                               include_previous_weights=meta_parameters["include_previous_weights"]
 
                                 )
 
@@ -790,6 +800,7 @@ class LinearAgent(AgentDataBase):
 
         self.theta_state_baseline=np.random.rand(param_dim)
 
+
     def policy(self,flat_state):
         """
         return action give a linear policy
@@ -963,8 +974,130 @@ class LinearAgent(AgentDataBase):
                     iters = iters + 1
                     pbar.update(1)
 
+    def ACTOR_CRITIC_FIT(self, alpha=.01, gamma=.99, theta_threshold=.001, max_iterations=10000, plot_gradients=False
+                      , record_average_weights=True,  alpha_critic=.01,l_trace=.3,l_trace_critic=.3,use_traces=False):
+
+        theta_diff = 1000
+        observations = self.sample_observations
+        iters = 0
+        n_iters = []
+        average_weights = []
+        average_reward = []
+        theta_norm = []
+
+        pbar = tqdm(total=max_iterations)
+        theta_mu_hist_gradients = []
+        theta_sigma_hist_gradients = []
+
+        while iters < max_iterations:
+            n_iters.append(iters)
+
+            # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
+            states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
+
+            average_reward.append(np.mean(rewards))
+            new_theta_mu = copy.deepcopy(self.theta_mu)
+            new_theta_sigma = copy.deepcopy(self.theta_sigma)
+
+            tmp_mu_gradient = []
+            tmp_sigma_gradient = []
+
+            #initialize elegibility traces
+
+            z_theta_critic=np.zeros(self.theta_state_baseline.shape)
+            z_theta_mu=np.zeros(self.theta_mu.shape)
+            z_theta_sigma=np.zeros(self.theta_sigma.shape)
+            I=1
+            for t in range(observations):
+                action_t = actions[t]
+                flat_state_t = states[t]
+                if t==observations-1:
+                    flat_state_prime=0
+                else:
+                    flat_state_prime=states[t+1]
 
 
+                delta = rewards[t] + gamma * self._state_linear(flat_state=flat_state_prime) - self._state_linear(
+                    flat_state=flat_state_t)
+
+                theta_mu_log_gradient = self._theta_mu_log_gradient(action=action_t, flat_state=flat_state_t.values)
+                theta_sigma_log_gradient = self._theta_sigma_log_gradient(action=action_t,
+                                                                          flat_state=flat_state_t.values)
+
+                if use_traces==True:
+                    # traces
+                    z_theta_critic = gamma * l_trace_critic * z_theta_critic + self._baseline_linear_gradient(
+                        flat_state=flat_state_t)
+                    z_theta_mu = gamma * l_trace * z_theta_mu + I * theta_mu_log_gradient
+                    z_theta_sigma = gamma * l_trace * z_theta_sigma + I * theta_sigma_log_gradient
+
+                    self.theta_state_baseline = self.theta_state_baseline + alpha_critic * delta * z_theta_critic
+
+                    new_theta_mu = new_theta_mu + alpha * delta *z_theta_mu
+                    new_theta_sigma = new_theta_sigma + alpha * delta * z_theta_sigma
+
+                    I=gamma*I
+                else:
+                    self.theta_state_baseline = self.theta_state_baseline + alpha_critic * delta * self._baseline_linear_gradient(
+                        flat_state=flat_state_t)
+
+                    new_theta_mu = new_theta_mu + alpha * delta * (gamma ** t) * theta_mu_log_gradient
+                    new_theta_sigma = new_theta_sigma + alpha * delta * (gamma ** t) * theta_sigma_log_gradient
+
+                tmp_mu_gradient.append(theta_mu_log_gradient)
+                tmp_sigma_gradient.append(theta_sigma_log_gradient)
+
+
+
+            theta_mu_hist_gradients.append(np.array(tmp_mu_gradient).mean(axis=1))
+            theta_sigma_hist_gradients.append(np.array(tmp_sigma_gradient).mean(axis=1))
+
+            old_full_theta = np.concatenate([self.theta_mu.ravel(), self.theta_sigma.ravel()])
+            new_full_theta = np.concatenate([new_theta_mu.ravel(), new_theta_sigma.ravel()])
+            # calculate update distance
+
+            theta_diff = np.linalg.norm(new_full_theta - old_full_theta)
+            theta_norm.append(theta_diff)
+            # print("iteration", iters,theta_diff, end="\r", flush=True)
+            pbar.update(1)
+            # assign  update_of thetas
+            self.theta_mu = copy.deepcopy(new_theta_mu)
+            self.theta_sigma = copy.deepcopy(new_theta_sigma)
+
+            iters = iters + 1
+
+            if record_average_weights == True:
+                average_weights.append(self.environment.state.weight_buffer.mean())
+                # Todo: implement in tensorboard
+                if iters % 200 == 0:
+
+                    weights = pd.concat(average_weights, axis=1).T
+                    ax = weights.plot()
+                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
+                    for row in range(ws.shape[0]):
+                        ax.plot(n_iters, ws[row, :], label="benchmark_return" + str(row))
+                    plt.legend(loc="best")
+                    plt.show()
+
+                    plt.plot(n_iters, average_reward, label=self.reward_function)
+                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                    plt.legend(loc="best")
+                    plt.show()
+
+                    # plt.plot(range(len(average_weights)),theta_norm,label="norm improvement")
+                    # plt.legend(loc="best")
+                    # plt.show()
+
+                    # alpha=alpha/2
+
+                    if plot_gradients == True:
+
+                        for asset in range(self.number_of_assets):
+                            tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
+                            plt.plot(tmp_mu_asset, label=str(asset) + "mu")
+                            plt.show()
+
+        return average_weights
 
 
     def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000, plot_gradients=False
@@ -1008,6 +1141,7 @@ class LinearAgent(AgentDataBase):
                 if add_baseline==True:
                     delta=G-self._state_linear(flat_state=flat_state_t)
                     self.theta_state_baseline=self.theta_state_baseline+alpha_baseline*delta*self._baseline_linear_gradient(flat_state=flat_state_t)
+
                 else:
                     delta=G
 
