@@ -237,7 +237,7 @@ class State:
         """
         states = []
         for i in range(sample_size):
-            state = self.get_flat_state_by_iloc(index_location=index_location + 1)
+            state = self.get_flat_state_by_iloc(index_locatifon=index_location + 1)
             states.append(state.values)
         return states
 
