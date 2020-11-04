@@ -1,9 +1,10 @@
 
 from lib.Environment2 import DeepTradingEnvironment
+from lib.Environment2 import Actor
 import numpy as np
 import pandas as pd
 import datetime
-
+from spinup import vpg_pytorch
 
 out_reward_window=datetime.timedelta(days=7)
 meta_parameters = {"in_bars_count": 30,
@@ -25,4 +26,8 @@ new_environment= DeepTradingEnvironment(objective_parameters=objective_parameter
 
 obs, reward, done, info=new_environment.step(action=np.array([.5,.5]))
 
-a=5
+env_fun =lambda : DeepTradingEnvironment(objective_parameters=objective_parameters,meta_parameters=meta_parameters,
+                                        features=features,
+                                        forward_returns=forward_returns,
+                                        forward_returns_dates=forward_returns_dates)
+

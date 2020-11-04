@@ -1,6 +1,7 @@
 import gym
 import pandas as pd
 import numpy as np
+import torch
 
 class RewardFactory:
 
@@ -470,3 +471,4 @@ class DeepTradingEnvironment(gym.Env):
 
 
         print(f'Step :{self.current_step}')
+
