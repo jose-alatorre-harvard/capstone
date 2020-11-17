@@ -21,11 +21,18 @@ class RewardFactory:
         portfolio_returns=self._calculate_returns_with_commisions( weights_bufffer, forward_returns, action_date_index)
 
         if reward_function == "cum_return":
-            return self._reward_cum_return(portfolio_returns)
+            function_rewards=self._reward_cum_return(portfolio_returns)
+
         elif reward_function == "max_sharpe":
-            return self._reward_max_sharpe(portfolio_returns)
+            function_rewards = self._reward_max_sharpe(portfolio_returns)
         elif reward_function == "min_vol":
-            return self._reward_to_min_vol(portfolio_returns)
+            function_rewards= self._reward_to_min_vol(portfolio_returns)
+        elif reward_function == "min_realized_variance":
+            function_rewards=self._min_realized_variance(portfolio_returns)
+
+        return function_rewards
+
+
 
     def _reward_to_min_vol(self, portfolio_returns):
         """
@@ -52,6 +59,13 @@ class RewardFactory:
 
         return sharpe
 
+    def _min_realized_variance(self,portfolio_returns):
+        """
+
+        :param portfolio_returns:
+        :return:
+        """
+        return -100*portfolio_returns.iloc[-1]**2
     def _reward_cum_return(self, portfolio_returns):
 
         return portfolio_returns.iloc[-1]
@@ -240,6 +254,9 @@ class State:
         :param action:
         :return:
         """
+        MIN_LEVERAGE=.9
+        MAX_LEVERAGE=1.1
+
         if action_date_index == self.forward_returns_dates.shape[0]-1:
             #pass done if episode is end of time series
             done =True
@@ -249,11 +266,17 @@ class State:
 
             next_observation_date = self.forward_returns_dates.iloc[action_date_index].values[0]
             next_observation_date_index = self.weight_buffer.index.searchsorted(next_observation_date)
+
             self.weight_buffer.iloc[action_date_index:next_observation_date_index, :] = action
-        reward = self.reward_factory.get_reward(weights_bufffer=self.weight_buffer,
+        #TODO; Control portfolio weights
+        if np.sum(action)<.95:
+            reward= -2*(1-np.sum(action))
+        else:
+            reward = self.reward_factory.get_reward(weights_bufffer=self.weight_buffer,
                                                 forward_returns=self.forward_returns,
                                                 action_date_index=action_date_index,
                                                 reward_function=reward_function)
+
 
 
         extra_info = {}
@@ -355,7 +378,7 @@ class DeepTradingEnvironment(gym.Env):
         creates helper variables for the environment
         """
         self.number_of_assets = len(self.forward_returns.columns)
-        self.number_of_features=len(self.features)
+        self.number_of_features=len(self.features.columns)
     def _set_state(self,meta_parameters,objective_parameters):
         # logic to create state
         state_type=meta_parameters["state_type"]
@@ -471,4 +494,7 @@ class DeepTradingEnvironment(gym.Env):
 
 
         print(f'Step :{self.current_step}')
+
+
+
 

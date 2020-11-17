@@ -5,6 +5,38 @@ import numpy.random as npr
 
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Asset Simulation >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+
+class GBMBasketSimulation():
+
+
+    def __init__(self,n_assets,means,sigmas,correlation_matrix=None):
+        """
+
+        :param n_assets:
+        :param correlation_matrix:
+        """
+        self.n_assets=n_assets
+        self.means=means
+        self.sigmas=sigmas
+
+        if correlation_matrix is not None:
+            self.correlation_matrix = correlation_matrix
+        else:
+            self.correlation_matrix=np.eye(self.n_assets)
+
+
+    def simulate_returns(self,dt_in_years,n_returns):
+        T = dt_in_years
+        I = n_returns
+        M=1
+        cho_mat = np.linalg.cholesky(self.correlation_matrix)
+
+        ran_num = npr.standard_normal((2, M + 1, I))
+
+        returns = np.exp((self.means - 0.5 * self.sigmas ** 2) * T + self.sigmas * np.sqrt(T) * npr.standard_normal(I))
+
+
+
 class SimulatedAsset:
 
 
