@@ -2,10 +2,13 @@
 
 import os
 import pandas as pd
+import numpy as np
 from sklearn.pipeline import make_pipeline
 import datetime
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from timeseriescv.cross_validation import CombPurgedKFoldCV
+import talib
 import inspect
 
 
@@ -294,11 +297,7 @@ class DailySeries2Features:
         techinical = (serie.rolling(200).mean()).divide(serie)
         return techinical
 
-    def _add_fraction_diff(self, serie):
-        # Todo: Return optimal d rolling to make it full not future dependant
-        frac_time_serie, opt_d, adf, adf_limit = get_fractional_stationary_series(serie, lag_cutoff=100)
-        self.fractional_diff_optimal_d = opt_d
-        return frac_time_serie
+
 
     def _add_log_returns(self, serie):
         feature = self.log_prices.copy().diff()
@@ -360,10 +359,7 @@ class DailySeries2Features:
         return technical
 
 
-
-
-
-def build_and_persist_features_from_dir( meta_parameters, objective_parameters, data_hash,
+def build_and_persist_features_from_dir( meta_parameters, data_hash,
                                               data_dir="data_env",):
     """
     Do transformations that shouldnt be part of the class
@@ -396,10 +392,6 @@ def build_and_persist_features_from_dir( meta_parameters, objective_parameters, 
                                meta_parameters[
                                    "out_reward_window"],
                                data_hash=data_hash)
-
-
-
-
 
 def build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data_hash):
     """
@@ -444,3 +436,32 @@ def build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data
 
         print("features already persisted")
 
+def train_val_test_purge_combinatorial_kfold(data_as_supervised_df,y,eval_times_df,n_splits,n_test_splits,embargo_td,test_train_percent_split):
+    """
+
+    :param data_as_supervised_df:(pandas.DataFrame) DataFrame with data as supervised index=observation_date,columns=features/state
+    :param y: (pandas.Serie) predictions or rewards , index=observation_date
+    :param eval_times_df: (pandas.DataFrame)  time when the reward is obstained (index=prediction_time,evaluation_time)
+    :param n_splits:
+    :param embargo:
+    :param test_train_percent_split:
+    :return:
+    """
+    last_index=int(data_as_supervised_df.shape[0]*test_train_percent_split)
+    X_train=data_as_supervised_df.iloc[:last_index]
+    X_test=data_as_supervised_df.iloc[last_index:]
+    y_train = y.iloc[:last_index]
+    y_test = y.iloc[last_index:]
+    eval_times_df_train = eval_times_df.iloc[:last_index]
+    eval_times_df_test = eval_times_df.iloc[last_index:]
+
+
+    #time when the prediction is done corresponds to indes of supervised
+    pred_times = pd.Series(index=X_train.index, data=X_train.index)
+
+    tmp_combinatorial_purge = CombPurgedKFoldCV(n_splits=n_splits, n_test_splits=n_test_splits,
+                                                embargo_td=embargo_td)
+
+    splits_generator=tmp_combinatorial_purge.split(X=X_train,y=y_train,pred_times=pred_times,eval_times=eval_times_df_train)
+
+    return splits_generator, X_test,y_test

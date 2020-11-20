@@ -50,17 +50,6 @@ x=np.array(list(weights.values())).reshape(-1,1)
 p_vol=np.sqrt(np.matmul(np.matmul(x.T,cov),x))
 p_sharpe=np.matmul(x.T,mus)/p_vol
 
-deep_agent=DeepAgentPytorch(environment=env,out_reward_window_td=out_reward_window,pre_sample=True,
-                         reward_function="min_vol",sample_observations=64)
-
-
-deep_agent.set_plot_weights(weights=np.array([0,1]), benchmark_G=assets_simulation_details["asset_2"]["mean"])
-# deep_agent.set_plot_weights(weights=np.array(list(weights.values())),
-#                               benchmark_G=-p_vol.ravel()[0])
-
-deep_agent.ACTOR_CRITIC_fit()
-deep_agent.REINFORCE_fit()
-
 
 linear_agent=LinearAgent(environment=env,out_reward_window_td=out_reward_window,
                          reward_function="cum_return",sample_observations=32)

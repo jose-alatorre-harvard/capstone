@@ -1,13 +1,13 @@
 
-from lib.Environment2 import DeepTradingEnvironment
+from environments.open_ai import DeepTradingEnvironment
 
 import numpy as np
 import pandas as pd
 import datetime
 from spinup import vpg_pytorch
-from lib.vpg_capstone import vpg as vpg_capstone
-from lib.sac.sac import sac as sac_capstone
-from lib.sac.core import MLPActorCritic as MLPActorCriticCapstone
+from algorithms.vpg import vpg as vpg_capstone
+from algorithms.sac.sac import sac as sac_capstone
+from algorithms.sac.core import MLPActorCritic as MLPActorCriticCapstone
 from spinup import sac_pytorch
 
 out_reward_window=datetime.timedelta(days=7)

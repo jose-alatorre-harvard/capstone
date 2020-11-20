@@ -5,7 +5,7 @@ import os
 import datetime
 from tqdm import tqdm
 from lib.Benchmarks import SimulatedAsset
-from lib.DataHandling import DailyDataFrame2Features
+
 import matplotlib.pyplot as plt
 
 import copy
@@ -20,6 +20,7 @@ from joblib import Parallel, delayed
 # import tensorflow as tf
 # from tensorflow.keras import backend as K
 # import tensorflow.keras.initializers as initializers
+from utils import DailyDataFrame2Features
 import torch
 import torch.nn.functional as F
 class RewardFactory:
@@ -885,95 +886,6 @@ class LinearAgent(AgentDataBase):
 
         return states,actions,pd.concat(period_returns, axis=0)
 
-    def REINFORCE_refactor_fid(self,alpha=.01,gamma=.95,max_iterations=100000,record_average_weights=True):
-        """
-        WHY THIS DOESNT WORK!!!!
-        :param alpha:
-        :param gamma:
-        :param max_iterations:
-        :param record_average_weights:
-        :return:
-        """
-
-        observations = self.sample_observations
-        iters = 0
-        n_iters = []
-        average_weights = []
-        average_reward = []
-        theta_norm = []
-        pbar = tqdm(total=max_iterations)
-
-        all_states=[self.environment.state.get_flat_state_by_iloc(index_location=iloc).values for iloc in range(self.environment.state.weight_buffer.shape[0])]
-
-        while iters < max_iterations:
-
-
-            #step 1: sample_full_environment
-            for tmp_sample_indices in self.sample_indices.values():
-
-                rewards=self.environment.state.sample_rewards_by_indices(tmp_sample_indices, self.reward_function)
-                flat_states=[self.environment.state.get_flat_state_by_iloc(index_location=iloc).values for iloc in tmp_sample_indices]
-                actions=self.environment.state.weight_buffer.iloc[tmp_sample_indices].values
-
-                new_theta_mu = copy.deepcopy(self.theta_mu)
-                new_theta_sigma = copy.deepcopy(self.theta_sigma)
-                episode_size=len(rewards)
-
-                average_reward.append(np.mean(rewards))
-
-                for t in range(episode_size):
-                    n_iters.append(iters)
-                    action_t = actions[t]
-                    flat_state_t = flat_states[t]
-
-                    gamma_coef = np.array([gamma ** (k - t) for k in range(t, episode_size)])
-
-                    G = np.sum(rewards[t:] * gamma_coef)
-
-                    new_theta_mu = new_theta_mu + alpha * G * (gamma ** t) * self._theta_mu_log_gradient(
-                        action=action_t, flat_state=flat_state_t)
-                    new_theta_sigma = new_theta_sigma + alpha * G * (gamma ** t) * self._theta_sigma_log_gradient(
-                        action=action_t, flat_state=flat_state_t)
-
-                    if iters%32==0 and iters>0:
-                        old_full_theta = np.concatenate([self.theta_mu.ravel(), self.theta_sigma.ravel()])
-                        new_full_theta = np.concatenate([new_theta_mu.ravel(), new_theta_sigma.ravel()])
-
-                        # assign  update_of thetas
-                        self.theta_mu = copy.deepcopy(new_theta_mu)
-                        self.theta_sigma = copy.deepcopy(new_theta_sigma)
-
-                        # after an iteration we update weights with new prediction
-                        new_weights = [self.get_best_action(tmp_state) for tmp_state in all_states]
-                        self.environment.state.weight_buffer.loc[:, :] = new_weights
-                        #update rewards and indices
-
-                        rewards = self.environment.state.sample_rewards_by_indices(tmp_sample_indices,
-                                                                                   self.reward_function)
-                        flat_states = [self.environment.state.get_flat_state_by_iloc(index_location=iloc).values for
-                                       iloc in tmp_sample_indices]
-                        actions = self.environment.state.weight_buffer.iloc[tmp_sample_indices].values
-
-                    if iters % 200 == 0 and iters > 0:
-
-                        # Todo: implement in tensorboard
-                        average_weights.append(self.environment.state.weight_buffer.mean())
-                        weights = pd.concat(average_weights, axis=1).T
-                        ax = weights.plot()
-                        ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
-                        for row in range(ws.shape[0]):
-                            ax.plot(range(len(average_weights)), ws[row, :], label="benchmark_return" + str(row))
-                        plt.legend(loc="best")
-                        plt.show()
-
-                        # plt.plot(n_iters, average_reward, label=self.reward_function)
-                        # plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
-                        # plt.legend(loc="best")
-                        # plt.show()
-
-
-                    iters = iters + 1
-                    pbar.update(1)
 
     def ACTOR_CRITIC_FIT(self, alpha=.01, gamma=.99, theta_threshold=.001, max_iterations=10000, plot_gradients=False
                       , record_average_weights=True,  alpha_critic=.01,l_trace=.3,l_trace_critic=.3,use_traces=False):
@@ -989,6 +901,12 @@ class LinearAgent(AgentDataBase):
         pbar = tqdm(total=max_iterations)
         theta_mu_hist_gradients = []
         theta_sigma_hist_gradients = []
+
+        #for plotting
+        mu_deterministic=[]
+        sigma_deterministic=[]
+        V=[]
+
 
         while iters < max_iterations:
             n_iters.append(iters)
@@ -1046,8 +964,16 @@ class LinearAgent(AgentDataBase):
                     new_theta_mu = new_theta_mu + alpha * delta * (gamma ** t) * theta_mu_log_gradient
                     new_theta_sigma = new_theta_sigma + alpha * delta * (gamma ** t) * theta_sigma_log_gradient
 
+                # save values for plotting
+                mu_deterministic.append(self._mu_linear(flat_state=flat_state_t))
+                sigma_deterministic.append(self._sigma_linear(flat_state=flat_state_t))
+                V.append(self._state_linear(flat_state_t))
+
                 tmp_mu_gradient.append(theta_mu_log_gradient)
                 tmp_sigma_gradient.append(theta_sigma_log_gradient)
+
+
+
 
 
 
@@ -1069,28 +995,36 @@ class LinearAgent(AgentDataBase):
             iters = iters + 1
 
             if record_average_weights == True:
-                average_weights.append(self.environment.state.weight_buffer.mean())
-                # Todo: implement in tensorboard
+                # average_weights.append(self.environment.state.weight_buffer.mean())
+
                 if iters % 200 == 0:
 
-                    weights = pd.concat(average_weights, axis=1).T
-                    ax = weights.plot()
-                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
-                    for row in range(ws.shape[0]):
-                        ax.plot(n_iters, ws[row, :], label="benchmark_return" + str(row))
-                    plt.legend(loc="best")
-                    plt.show()
 
                     plt.plot(n_iters, average_reward, label=self.reward_function)
                     plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                     plt.legend(loc="best")
                     plt.show()
 
-                    # plt.plot(range(len(average_weights)),theta_norm,label="norm improvement")
-                    # plt.legend(loc="best")
-                    # plt.show()
+                    mu_chart = np.array(mu_deterministic)
+                    sigma_chart = np.array(sigma_deterministic)
+                    x_range = [round(i/observations,2) for i in range(mu_chart.shape[0])]
+                    cmap = plt.get_cmap('jet')
+                    colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
+                    for i in range(mu_chart.shape[1]):
+                        tmp_mu_plot = mu_chart[:, i]
+                        tmp_sigma_plot = sigma_chart[:, i]
+                        s_plus = tmp_mu_plot + tmp_sigma_plot
+                        s_minus = tmp_mu_plot - tmp_sigma_plot
+                        plt.plot(x_range,mu_chart[:, i], label="asset " + str(i), c=colors[i])
+                        plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
+                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
+                    for row in range(ws.shape[0]):
+                        plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
+                    plt.legend(loc="best")
+                    plt.show()
 
-                    # alpha=alpha/2
+                    plt.plot(V,label="Value Function")
+                    plt.show()
 
                     if plot_gradients == True:
 
@@ -1118,6 +1052,9 @@ class LinearAgent(AgentDataBase):
         theta_mu_hist_gradients=[]
         theta_sigma_hist_gradients=[]
 
+        # for plotting
+        mu_deterministic = []
+        sigma_deterministic = []
 
         while iters <max_iterations:
             n_iters.append(iters)
@@ -1157,6 +1094,10 @@ class LinearAgent(AgentDataBase):
                 new_theta_mu=new_theta_mu+alpha*delta*(gamma**t)*theta_mu_log_gradient
                 new_theta_sigma=new_theta_sigma+alpha*delta*(gamma**t)*theta_sigma_log_gradient
 
+                # save values for plotting
+                mu_deterministic.append(self._mu_linear(flat_state=flat_state_t))
+                sigma_deterministic.append(self._sigma_linear(flat_state=flat_state_t))
+
             theta_mu_hist_gradients.append(np.array(tmp_mu_gradient).mean(axis=1))
             theta_sigma_hist_gradients.append(np.array(tmp_sigma_gradient).mean(axis=1))
 
@@ -1175,29 +1116,32 @@ class LinearAgent(AgentDataBase):
             iters=iters+1
 
             if record_average_weights==True:
-                average_weights.append(self.environment.state.weight_buffer.mean())
+
                 #Todo: implement in tensorboard
                 if iters%200==0:
 
+                    plt.plot(n_iters, average_reward, label=self.reward_function)
+                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                    plt.legend(loc="best")
+                    plt.show()
 
-                    weights=pd.concat(average_weights, axis=1).T
-                    ax=weights.plot()
-                    ws=np.repeat(self._benchmark_weights.reshape(-1,1),len(average_weights),axis=1)
+                    mu_chart = np.array(mu_deterministic)
+                    sigma_chart = np.array(sigma_deterministic)
+                    x_range = [round(i / observations, 2) for i in range(mu_chart.shape[0])]
+                    cmap = plt.get_cmap('jet')
+                    colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
+                    for i in range(mu_chart.shape[1]):
+                        tmp_mu_plot = mu_chart[:, i]
+                        tmp_sigma_plot = sigma_chart[:, i]
+                        s_plus = tmp_mu_plot + tmp_sigma_plot
+                        s_minus = tmp_mu_plot - tmp_sigma_plot
+                        plt.plot(mu_chart[:, i], label="asset " + str(i), c=colors[i])
+                        plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
+                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
                     for row in range(ws.shape[0]):
-                        ax.plot(n_iters,ws[row,:],label="benchmark_return"+str(row))
+                        plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
                     plt.legend(loc="best")
                     plt.show()
-
-                    plt.plot(n_iters,average_reward,label=self.reward_function)
-                    plt.plot(n_iters,[self._benchmark_G for i in range(iters)])
-                    plt.legend(loc="best")
-                    plt.show()
-
-                    # plt.plot(range(len(average_weights)),theta_norm,label="norm improvement")
-                    # plt.legend(loc="best")
-                    # plt.show()
-
-                    # alpha=alpha/2
 
                     if plot_gradients==True:
 
@@ -1375,6 +1319,11 @@ class DeepAgentPytorch(AgentDataBase):
                                      lr=0.01)
 
         historical_grads = []
+
+        #for plotting
+        mus_deterministic=[]
+        sigma_deterministc=[]
+        V=[]
         while iters < max_iterations:
             n_iters.append(iters)
 
@@ -1402,7 +1351,10 @@ class DeepAgentPytorch(AgentDataBase):
                 delta = rewards[t] + gamma * flat_state_prime_value - self.critic_model(flat_state_t).detach().numpy()
 
                 advantages.append(delta[0])
-
+                tmp_mu,temp_s=self.actor_model(flat_state_t)
+                mus_deterministic.append(tmp_mu.detach().numpy())
+                sigma_deterministc.append(temp_s.detach().numpy())
+                V.append(self.critic_model(flat_state_t).detach().numpy())
 
             As=np.array(advantages)
             As=As.reshape(-1,1)
@@ -1431,34 +1383,38 @@ class DeepAgentPytorch(AgentDataBase):
             losses.append(float(loss_value))
 
             if record_average_weights == True:
-                average_weights.append(self.environment.state.weight_buffer.mean())
-                # Todo: implement in tensorboard
+
                 if iters % 200 == 0:
 
-                    weights = pd.concat(average_weights, axis=1).T
-                    ax = weights.plot()
-                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
+
+                    mu_chart = np.array(mus_deterministic)
+                    sigma_chart=np.array(sigma_deterministc)
+                    x_range=range(mu_chart.shape[0])
+                    cmap = plt.get_cmap('jet')
+                    colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
+                    for i in range(mu_chart.shape[1]):
+                        tmp_mu_plot=mu_chart[:,i]
+                        tmp_sigma_plot=sigma_chart[:,i]
+                        s_plus=tmp_mu_plot+tmp_sigma_plot
+                        s_minus = tmp_mu_plot -tmp_sigma_plot
+                        plt.plot(mu_chart[:,i],label="asset "+ str(i),c=colors[i])
+                        plt.fill_between(x_range,s_plus,s_minus,color=colors[i],alpha=.2)
+                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
                     for row in range(ws.shape[0]):
-                        ax.plot(n_iters, ws[row, :], label="benchmark_return" + str(row))
+                        plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
                     plt.legend(loc="best")
                     plt.show()
+
 
                     plt.plot(n_iters, average_reward, label=self.reward_function)
                     plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                     plt.legend(loc="best")
                     plt.show()
 
-                    # plt.plot(total_reward,label="total_reward")
-                    # plt.show()
+                    plt.plot(V, label="Value Function")
+                    plt.show()
 
 
-                    # plt.plot(losses,legend="losses")
-
-                    # grads_to_plot_1=np.array([i[:,0] for i in historical_grads])
-                    # grads_to_plot_2=np.array([i[:,1] for i in historical_grads])
-                    # plt.plot(grads_to_plot_1)
-                    # plt.plot(grads_to_plot_2)
-                    # plt.show()
     def REINFORCE_fit(self,  gamma=.99, max_iterations=10000
                       , record_average_weights=True):
 
@@ -1545,3 +1501,8 @@ class DeepAgentPytorch(AgentDataBase):
                     # plt.plot(grads_to_plot_1)
                     # plt.plot(grads_to_plot_2)
                     # plt.show()
+
+def get_cmap(n, name='hsv'):
+    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
+    RGB color; the keyword argument name must be a standard mpl colormap name.'''
+    return plt.cm.get_cmap(name, n)
