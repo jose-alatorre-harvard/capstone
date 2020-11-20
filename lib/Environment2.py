@@ -65,7 +65,7 @@ class RewardFactory:
         :param portfolio_returns:
         :return:
         """
-        return -100*portfolio_returns.iloc[-1]**2
+        return portfolio_returns.iloc[-1]**2
     def _reward_cum_return(self, portfolio_returns):
 
         return portfolio_returns.iloc[-1]
@@ -268,16 +268,13 @@ class State:
             next_observation_date_index = self.weight_buffer.index.searchsorted(next_observation_date)
 
             self.weight_buffer.iloc[action_date_index:next_observation_date_index, :] = action
-        #TODO; Control portfolio weights
-        if np.sum(action)<.95:
-            reward= -2*(1-np.sum(action))
-        else:
-            reward = self.reward_factory.get_reward(weights_bufffer=self.weight_buffer,
+
+        reward = self.reward_factory.get_reward(weights_bufffer=self.weight_buffer,
                                                 forward_returns=self.forward_returns,
                                                 action_date_index=action_date_index,
                                                 reward_function=reward_function)
 
-
+        # reward=reward-abs(1-action.sum())*abs(reward)/2
 
         extra_info = {}
         obs=self.get_flat_state_by_iloc(index_location=action_date_index)
