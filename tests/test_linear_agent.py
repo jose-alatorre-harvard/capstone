@@ -1,5 +1,5 @@
 
-from lib.Environment_refactored import DeepTradingEnvironment, LinearAgent,DeepAgentPytorch
+from environments.e_greedy import DeepTradingEnvironment, LinearAgent,DeepAgentPytorch
 import datetime
 import numpy as np
 
