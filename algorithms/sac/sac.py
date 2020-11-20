@@ -11,13 +11,16 @@ from spinup.utils.logx import EpochLogger
 
 import pandas as pd
 import matplotlib.pyplot as plt
-def plot_results(logger,w_means):
+def plot_results(logger,a):
     data=pd.read_csv(logger.output_dir+"/progress.txt",header=0, sep='\t',index_col="Epoch")
-    ax1=data[w_means.index].plot()
+    ax1=data[["asset_"+str(i) for i in range(len(a))]].plot()
+    # data[["asset_" + str(i) for i in range(len(a))]].rolling(200).mean().plot(ax=ax1)
     ax2 = ax1.twinx()
-    ax2.plot(data.AverageEpRet,color="green",alpha=.5)
+    ax2.plot(data.AverageTestEpRet,color="green",alpha=.5)
     plt.show()
 
+    data[["AverageQ1Vals","AverageQ2Vals"]].plot()
+    plt.show()
 class ReplayBuffer:
     """
     A simple FIFO experience replay buffer for SAC agents.
@@ -221,8 +224,8 @@ def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
         q_pi = torch.min(q1_pi, q2_pi)
 
         # Entropy-regularized policy loss
-        # loss_pi = (alpha * logp_pi - q_pi).mean()
-        loss_pi = (q_pi- alpha * logp_pi ).mean()
+        loss_pi = (alpha * logp_pi - q_pi).mean()
+        # loss_pi = (q_pi- alpha * logp_pi ).mean()
 
         # Useful info for logging
         pi_info = dict(LogPi=logp_pi.detach().numpy())
@@ -279,14 +282,23 @@ def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
         return action
 
     def test_agent():
+        actions=[]
         for j in range(num_test_episodes):
             o, d, ep_ret, ep_len = test_env.reset(), False, 0, 0
             while not (d or (ep_len == max_ep_len)):
                 # Take deterministic actions at test time
-                o, r, d, _ = test_env.step(get_action(o, True))
+                action=get_action(o,True)
+                o, r, d, _ = test_env.step(action)
                 ep_ret += r
                 ep_len += 1
+                actions.append(action)
             logger.store(TestEpRet=ep_ret, TestEpLen=ep_len)
+        actions=np.array(actions).mean(axis=0)
+        for action_i ,action in enumerate(actions):
+
+            logger.log_tabular("asset_"+str(action_i)
+                               ,action)
+
 
     # Prepare for interaction with environment
     total_steps = steps_per_epoch * epochs
@@ -302,7 +314,10 @@ def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
         if t > start_steps:
             a = get_action(o)
         else:
+            #JOSE Edit
             a = env.action_space.sample()
+
+            # JOSE Edit
 
         # Step the env
         o2, r, d, _ = env.step(a)
@@ -358,13 +373,12 @@ def sac(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
             logger.log_tabular('LossQ', average_only=True)
             logger.log_tabular('Time', time.time() - start_time)
 
-            w_means = env.state.weight_buffer.mean()
-            for col in w_means.index:
-                logger.log_tabular(col, w_means.loc[col])
+
+
             logger.dump_tabular()
 
             if epoch % 100 == 0 and epoch > 0:
-                plot_results(logger=logger, w_means=w_means)
+                plot_results(logger=logger, a=a)
 
 
 if __name__ == '__main__':

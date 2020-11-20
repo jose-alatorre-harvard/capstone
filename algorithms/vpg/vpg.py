@@ -4,16 +4,23 @@ from torch.optim import Adam
 import gym
 import time
 import spinup.algos.pytorch.vpg.core as core
-from .vpg_core_capstone import  MLPActorCriticPortfolio
+from .core import  MLPActorCriticPortfolio
 from spinup.utils.logx import EpochLogger
 from spinup.utils.mpi_pytorch import setup_pytorch_for_mpi, sync_params, mpi_avg_grads
 from spinup.utils.mpi_tools import mpi_fork, mpi_avg, proc_id, mpi_statistics_scalar, num_procs
 
 import pandas as pd
 import matplotlib.pyplot as plt
-def plot_results(logger,w_means):
+# def plot_results(logger,w_means):
+#     data=pd.read_csv(logger.output_dir+"/progress.txt",header=0, sep='\t',index_col="Epoch")
+#     ax1=data[w_means.index].plot()
+#     ax2 = ax1.twinx()
+#     ax2.plot(data.AverageEpRet,color="green",alpha=.5)
+#     plt.show()
+def plot_results(logger,a):
     data=pd.read_csv(logger.output_dir+"/progress.txt",header=0, sep='\t',index_col="Epoch")
-    ax1=data[w_means.index].plot()
+    ax1=data[["asset_"+str(i) for i in range(len(a))]].plot()
+    data[["asset_" + str(i) for i in range(len(a))]].rolling(200).mean().plot(ax=ax1)
     ax2 = ax1.twinx()
     ax2.plot(data.AverageEpRet,color="green",alpha=.5)
     plt.show()
@@ -335,11 +342,15 @@ def vpg(env_fn, actor_critic=MLPActorCriticPortfolio, ac_kwargs=dict(), seed=0,
         logger.log_tabular('Entropy', average_only=True)
         logger.log_tabular('KL', average_only=True)
         logger.log_tabular('Time', time.time() - start_time)
-        w_means= env.state.weight_buffer.mean()
-        for col in w_means.index:
-            logger.log_tabular(col,w_means.loc[col])
+        # w_means= env.state.weight_buffer.mean()
+        # for col in w_means.index:
+        #     logger.log_tabular(col,w_means.loc[col])
+
+        for counter, action in enumerate(a):
+            logger.log_tabular("asset_" + str(counter), a[counter])
+
         logger.dump_tabular()
 
 
         if epoch %100==0 and epoch>0:
-            plot_results(logger=logger,w_means=w_means)
+            plot_results(logger=logger,a=a)
