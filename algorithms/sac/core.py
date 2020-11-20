@@ -24,7 +24,7 @@ def count_vars(module):
 
 
 LOG_STD_MAX = -1
-LOG_STD_MIN = -3
+LOG_STD_MIN = -4
 
 class SquashedGaussianMLPActor(nn.Module):
 
@@ -36,13 +36,22 @@ class SquashedGaussianMLPActor(nn.Module):
         self.act_limit = act_limit
 
 
+
+
     def forward(self, obs, deterministic=False, with_logprob=True):
         net_out = self.net(obs)
         mu = self.mu_layer(net_out)
 
-        #JOSE EDIT
+        #JOSE EDIT for cum return
         # mu=torch.clamp(mu, 0, 1)
-        mu=torch.exp(mu)/torch.sum(torch.exp(mu))
+        # JOSE EDIT for min realized variance
+        if len(mu.shape) ==1:
+            mu=mu.reshape(-1,mu.shape[0])
+            mu=nn.Softmax(dim=1)(mu)
+            mu=mu.reshape(-1)
+        else:
+            mu=nn.Softmax(dim=1)(mu)
+
         log_std = self.log_std_layer(net_out)
         log_std = torch.clamp(log_std, LOG_STD_MIN, LOG_STD_MAX)
         std = torch.exp(log_std)
@@ -66,7 +75,8 @@ class SquashedGaussianMLPActor(nn.Module):
         else:
             logp_pi = None
 
-        pi_action = torch.tanh(pi_action)
+        #JOSE edit
+        # pi_action = torch.tanh(pi_action)
         pi_action = self.act_limit * pi_action
 
         return pi_action, logp_pi
