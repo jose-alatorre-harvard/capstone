@@ -25,6 +25,9 @@ def plot_results(logger,a):
     ax2.plot(data.AverageEpRet,color="green",alpha=.5)
     plt.show()
 
+    plt.plot(data.AverageVVals)
+    plt.show()
+
 class VPGBuffer:
     """
     A buffer for storing trajectories experienced by a VPG agent interacting

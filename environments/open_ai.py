@@ -281,8 +281,6 @@ class State:
 
         return next_observation_date_index, reward, done,obs, extra_info
 
-
-
     def encode(self, date):
         """
         convert current state to tensor

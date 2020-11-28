@@ -39,7 +39,7 @@ env_fun =lambda : DeepTradingEnvironment(objective_parameters=objective_paramete
 #uses standard version of spinning-up
 # vpg_pytorch(env_fn=env_fun,ac_kwargs={"hidden_sizes":(2,)},steps_per_epoch=32,epochs=2000)
 #uses modified version of spinning-up
-# vpg_capstone(env_fn=env_fun,ac_kwargs={"hidden_sizes":(2,)},steps_per_epoch=32,epochs=8000)
+vpg_capstone.vpg(env_fn=env_fun,ac_kwargs={"hidden_sizes":(2,)},steps_per_epoch=32,epochs=8000)
 
 #SAV standard version of spinning-up
 
@@ -50,6 +50,6 @@ env_fun =lambda : DeepTradingEnvironment(objective_parameters=objective_paramete
 #              start_steps=32,update_after=32*5,alpha=.001, lr=1e-3,save_freq=10000,num_test_episodes=1
 #             )
 
-sac_capstone(env_fn=env_fun,actor_critic=MLPActorCriticCapstone,ac_kwargs={"hidden_sizes":(1,)},update_every=32,steps_per_epoch=64,epochs=10000,
-             start_steps=32,update_after=32*5,alpha=.0001*0, lr=1e-3,save_freq=10000,num_test_episodes=1
-            )
+# sac_capstone(env_fn=env_fun,actor_critic=MLPActorCriticCapstone,ac_kwargs={"hidden_sizes":(1,)},update_every=32,steps_per_epoch=64,epochs=10000,
+#              start_steps=32,update_after=32*5,alpha=.0001*0, lr=1e-3,save_freq=10000,num_test_episodes=1
+#             )
