@@ -588,12 +588,42 @@ class AgentDataBase:
         self.number_of_assets = self.environment.number_of_assets
         self.state_dimension = self.environment.state.state_dimension
 
+    def backtest_policy(self,epoch,backtest):
+        """
+        backtest portfolio policy
+        :return:
+        """
+        activate_date=self.environment.features.index[0]
+        tmp_weights=self.environment.state.weight_buffer.copy()
 
+        fwd_return_date_name=self.environment.forward_returns_dates.columns[0]
+        while activate_date <= self.environment.forward_returns_dates.iloc[-10].values[0]:
+
+            i=self.environment.features.index.searchsorted(activate_date)
+            try:
+                obs=self.environment.state.get_flat_state_by_iloc(i)
+            except:
+                a=5
+            action=self.policy(obs,deterministic=True)
+            next_observation_date=self.environment.forward_returns_dates.iloc[i][fwd_return_date_name]
+
+            tmp_weights.loc[activate_date:next_observation_date,:]=action
+            activate_date=next_observation_date
+
+        tmp_backtest=((self.environment.forward_returns*tmp_weights).sum(axis=1)+1).cumprod()
+        tmp_backtest.name=epoch
+        if backtest is None:
+            backtest=tmp_backtest.to_frame()
+        else:
+            backtest=pd.concat([backtest,tmp_backtest],axis=1)
+
+        return backtest
     def _build_full_pre_sampled_indices(self):
         """
         build full pre sampled indices
         :return:
         """
+
         forward_return_dates_df=self.environment.forward_returns_dates
         first_forward_return_date=forward_return_dates_df.iloc[self.environment.state.in_bars_count+1].values[0]
 
@@ -624,6 +654,7 @@ class AgentDataBase:
         :param observations:
         :return:
         """
+
         frd=self.environment.forward_returns_dates
         column_name = frd.columns[0]
         end_date=frd[column_name].max()
@@ -672,7 +703,7 @@ class AgentDataBase:
 
         return action
 
-    def policy(self,flat_state):
+    def policy(self,flat_state,deterministic=False):
         raise NotImplementedError
     def _get_sars_by_date(self,action_date,verbose=False,pre_indices=None):
         """
@@ -787,6 +818,7 @@ class LinearAgent(AgentDataBase):
 
         self._initialize_linear_parameters()
 
+
     def _initialize_linear_parameters(self):
         """
         parameters are for mu and sigma
@@ -803,7 +835,7 @@ class LinearAgent(AgentDataBase):
         self.theta_state_baseline=np.random.rand(param_dim)
 
 
-    def policy(self,flat_state):
+    def policy(self,flat_state,deterministic=False):
         """
         return action give a linear policy
         :param state:
@@ -825,8 +857,14 @@ class LinearAgent(AgentDataBase):
         except:
             print("error on sampling")
             raise
+        if deterministic:
+            return mu
+        else:
+            return action
 
-        return action
+
+
+
     def _state_linear(self,flat_state):
         if isinstance(flat_state,pd.Series):
             flat_state=flat_state.values
@@ -999,6 +1037,16 @@ class LinearAgent(AgentDataBase):
 
                 if iters % 200 == 0:
 
+                    ## Create Plot Backtest
+                    if not "backtest" in locals():
+                        backtest=None
+                    backtest=self.backtest_policy(epoch=iters,backtest=backtest)
+
+                    n_cols=len(backtest.columns)
+                    for col_counter,col in enumerate(backtest):
+                        plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols)
+                    plt.show()
+                    #Baccktest plot finishes
 
                     plt.plot(n_iters, average_reward, label=self.reward_function)
                     plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
