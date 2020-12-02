@@ -665,7 +665,7 @@ class AgentDataBase:
             last_date_start_index = frd.index.searchsorted(last_date_start)
             end_date = frd.index[last_date_start_index][0]
         self.latest_posible_index_date=last_date_start_index[0]
-        self.max_available_obs_date=frd[column_name].index.max()
+        self.max_available_obs_date=frd[column_name].index.max().tz_localize(None)
 
         # presampled indices for environment sample
 

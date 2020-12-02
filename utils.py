@@ -465,3 +465,53 @@ def train_val_test_purge_combinatorial_kfold(data_as_supervised_df,y,eval_times_
     splits_generator=tmp_combinatorial_purge.split(X=X_train,y=y_train,pred_times=pred_times,eval_times=eval_times_df_train)
 
     return splits_generator, X_test,y_test
+
+def train_val_test(env):
+    """
+
+    :param feature_df:
+    :param returns_df:
+    :param return_dates_df:
+    :param weights:
+    :return:
+    """
+
+
+    features = env.features
+    features.index = pd.to_datetime(features.index)
+
+    returns = env.forward_returns
+    returns.index = pd.to_datetime(returns.index)
+    weights = env.state.weight_buffer
+    y = returns * weights
+    y = y.sum(axis=1)
+    print("y", y)
+
+    return_dates = env.forward_returns_dates
+
+    eval_times_df = pd.Series(return_dates.values, index=return_dates.index)
+    eval_times_df = pd.to_datetime(eval_times_df)
+    eval_times_df.index = pd.to_datetime(eval_times_df.index)
+
+    data_as_supervised_df = features
+    n_splits = 10
+    n_test_splits = 1
+    embargo_td = pd.Timedelta(1)
+    test_train_percent_split = 0.8
+
+    splits_generator, X_test, y_test = train_val_test_purge_combinatorial_kfold(data_as_supervised_df, y, eval_times_df,
+                                                                                n_splits, n_test_splits, embargo_td,
+                                                                                test_train_percent_split)
+
+    train_index, val_index = next(splits_generator)
+
+    print("TRAIN", train_index)
+    print("VALIDATION", val_index)
+
+    X_train = features.iloc[train_index, :]
+    X_train.to_csv('X_train.csv')
+
+    X_val = features.iloc[val_index, :]
+    X_val.to_csv('X_val.csv')
+
+    X_test.to_csv('X_test.csv')
