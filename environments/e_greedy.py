@@ -597,8 +597,10 @@ class AgentDataBase:
         tmp_weights=self.environment.state.weight_buffer.copy()
 
         fwd_return_date_name=self.environment.forward_returns_dates.columns[0]
-        while activate_date <= self.environment.forward_returns_dates.iloc[-10].values[0]:
+        fwd_return_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
+        fwd_return_date = fwd_return_date - self.out_reward_window_td
 
+        while activate_date <= fwd_return_date:
             i=self.environment.features.index.searchsorted(activate_date)
             try:
                 obs=self.environment.state.get_flat_state_by_iloc(i)
@@ -616,7 +618,6 @@ class AgentDataBase:
             backtest=tmp_backtest.to_frame()
         else:
             backtest=pd.concat([backtest,tmp_backtest],axis=1)
-
         return backtest
     def _build_full_pre_sampled_indices(self):
         """
@@ -1038,9 +1039,11 @@ class LinearAgent(AgentDataBase):
                 if iters % 200 == 0:
 
                     ## Create Plot Backtest
+
                     if not "backtest" in locals():
                         backtest=None
                     backtest=self.backtest_policy(epoch=iters,backtest=backtest)
+
 
                     n_cols=len(backtest.columns)
                     for col_counter,col in enumerate(backtest):

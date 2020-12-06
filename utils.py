@@ -466,7 +466,7 @@ def train_val_test_purge_combinatorial_kfold(data_as_supervised_df,y,eval_times_
 
     return splits_generator, X_test,y_test
 
-def train_val_test(env):
+def train_val_test(portfolio_df, y, return_dates):
     """
 
     :param feature_df:
@@ -477,41 +477,33 @@ def train_val_test(env):
     """
 
 
-    features = env.features
+    features = portfolio_df
     features.index = pd.to_datetime(features.index)
 
-    returns = env.forward_returns
-    returns.index = pd.to_datetime(returns.index)
-    weights = env.state.weight_buffer
-    y = returns * weights
-    y = y.sum(axis=1)
-    print("y", y)
-
-    return_dates = env.forward_returns_dates
-
-    eval_times_df = pd.Series(return_dates.values, index=return_dates.index)
+    eval_times_df = pd.Series(return_dates.values, index=portfolio_df.index)
     eval_times_df = pd.to_datetime(eval_times_df)
     eval_times_df.index = pd.to_datetime(eval_times_df.index)
 
     data_as_supervised_df = features
-    n_splits = 10
-    n_test_splits = 1
-    embargo_td = pd.Timedelta(1)
     test_train_percent_split = 0.8
 
-    splits_generator, X_test, y_test = train_val_test_purge_combinatorial_kfold(data_as_supervised_df, y, eval_times_df,
-                                                                                n_splits, n_test_splits, embargo_td,
-                                                                                test_train_percent_split)
+    # n_splits = 10
+    # n_test_splits = 1
+    embargo_td = 1
 
-    train_index, val_index = next(splits_generator)
+    # splits_generator, X_test, y_test = train_val_test_purge_combinatorial_kfold(data_as_supervised_df, y, eval_times_df,
+    #                                                                             n_splits, n_test_splits, embargo_td,
+    #                                                                             test_train_percent_split)
+    # train_index, val_index = next(splits_generator)
 
-    print("TRAIN", train_index)
-    print("VALIDATION", val_index)
+    last_index=int(data_as_supervised_df.shape[0]*test_train_percent_split)
+    X_train=data_as_supervised_df.iloc[:last_index-embargo_td]
+    X_test=data_as_supervised_df.iloc[last_index:]
 
-    X_train = features.iloc[train_index, :]
-    X_train.to_csv('X_train.csv')
+    print("TRAIN", X_train)
+    print("TEST", X_test)
 
-    X_val = features.iloc[val_index, :]
-    X_val.to_csv('X_val.csv')
+    X_train.to_csv('temp_persisted_data/X_train.csv')
+    X_test.to_csv('temp_persisted_data/X_test.csv')
 
-    X_test.to_csv('X_test.csv')
+    return last_index, embargo_td
