@@ -500,9 +500,6 @@ def train_val_test(portfolio_df, y, return_dates):
     X_train=data_as_supervised_df.iloc[:last_index-embargo_td]
     X_test=data_as_supervised_df.iloc[last_index:]
 
-    print("TRAIN", X_train)
-    print("TEST", X_test)
-
     X_train.to_csv('temp_persisted_data/X_train.csv')
     X_test.to_csv('temp_persisted_data/X_test.csv')
 

@@ -588,37 +588,69 @@ class AgentDataBase:
         self.number_of_assets = self.environment.number_of_assets
         self.state_dimension = self.environment.state.state_dimension
 
-    def backtest_policy(self,epoch,backtest):
+    def backtest_policy(self,epoch,backtest, env_test=None):
         """
         backtest portfolio policy
         :return:
         """
-        activate_date=self.environment.features.index[0]
-        tmp_weights=self.environment.state.weight_buffer.copy()
+        if env_test == None:
+            activate_date = self.environment.features.index[0]
+            tmp_weights = self.environment.state.weight_buffer.copy()
 
-        fwd_return_date_name=self.environment.forward_returns_dates.columns[0]
-        fwd_return_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
-        fwd_return_date = fwd_return_date - self.out_reward_window_td
+            fwd_return_date_name = self.environment.forward_returns_dates.columns[0]
+            fwd_return_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0]).tz_localize(
+                'utc')
 
-        while activate_date <= fwd_return_date:
-            i=self.environment.features.index.searchsorted(activate_date)
-            try:
-                obs=self.environment.state.get_flat_state_by_iloc(i)
-            except:
-                a=5
-            action=self.policy(obs,deterministic=True)
-            next_observation_date=self.environment.forward_returns_dates.iloc[i][fwd_return_date_name]
+            fwd_return_date = fwd_return_date - self.out_reward_window_td
 
-            tmp_weights.loc[activate_date:next_observation_date,:]=action
-            activate_date=next_observation_date
+            while activate_date <= fwd_return_date:
+                i = self.environment.features.index.searchsorted(activate_date)
+                try:
+                    obs = self.environment.state.get_flat_state_by_iloc(i)
+                except:
+                    a = 5
+                action = self.policy(obs, deterministic=True)
+                next_observation_date = self.environment.forward_returns_dates.iloc[i][fwd_return_date_name]
 
-        tmp_backtest=((self.environment.forward_returns*tmp_weights).sum(axis=1)+1).cumprod()
-        tmp_backtest.name=epoch
+                tmp_weights.loc[activate_date:next_observation_date, :] = action
+                activate_date = next_observation_date
+
+            tmp_backtest = ((self.environment.forward_returns * tmp_weights).sum(axis=1) + 1).cumprod()
+            tmp_backtest.name = epoch
+
+        else:
+            activate_date = env_test.features.index[0]
+            tmp_weights = env_test.state.weight_buffer.copy()
+
+            fwd_return_date_name = env_test.forward_returns_dates.columns[0]
+            fwd_return_date = pd.Timestamp(env_test.forward_returns_dates.iloc[-10].values[0]).tz_localize(
+                'utc')
+
+            fwd_return_date = fwd_return_date - self.out_reward_window_td
+
+            while activate_date <= fwd_return_date:
+                i = env_test.features.index.searchsorted(activate_date)
+                try:
+                    obs = env_test.state.get_flat_state_by_iloc(i)
+                except:
+                    a = 5
+                action = self.policy(obs, deterministic=True)
+                next_observation_date = env_test.forward_returns_dates.iloc[i][fwd_return_date_name]
+
+                tmp_weights.loc[activate_date:next_observation_date, :] = action
+                activate_date = next_observation_date
+
+            tmp_backtest = ((env_test.forward_returns * tmp_weights).sum(axis=1) + 1).cumprod()
+            tmp_backtest.name = epoch
+
+
         if backtest is None:
             backtest=tmp_backtest.to_frame()
         else:
             backtest=pd.concat([backtest,tmp_backtest],axis=1)
+
         return backtest
+
     def _build_full_pre_sampled_indices(self):
         """
         build full pre sampled indices
@@ -927,7 +959,7 @@ class LinearAgent(AgentDataBase):
 
 
     def ACTOR_CRITIC_FIT(self, alpha=.01, gamma=.99, theta_threshold=.001, max_iterations=10000, plot_gradients=False
-                      , record_average_weights=True,  alpha_critic=.01,l_trace=.3,l_trace_critic=.3,use_traces=False):
+                      , record_average_weights=True,  alpha_critic=.01,l_trace=.3,l_trace_critic=.3,use_traces=False, verbose=True):
 
         theta_diff = 1000
         observations = self.sample_observations
@@ -1037,58 +1069,64 @@ class LinearAgent(AgentDataBase):
                 # average_weights.append(self.environment.state.weight_buffer.mean())
 
                 if iters % 200 == 0:
+                    if verbose:
+                        ## Create Plot Backtest
 
-                    ## Create Plot Backtest
-
-                    if not "backtest" in locals():
-                        backtest=None
-                    backtest=self.backtest_policy(epoch=iters,backtest=backtest)
+                        if not "backtest" in locals():
+                            backtest=None
+                        backtest=self.backtest_policy(epoch=iters,backtest=backtest)
 
 
-                    n_cols=len(backtest.columns)
-                    for col_counter,col in enumerate(backtest):
-                        plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols)
-                    plt.show()
-                    #Baccktest plot finishes
-
-                    plt.plot(n_iters, average_reward, label=self.reward_function)
-                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
-                    plt.legend(loc="best")
-                    plt.show()
-
-                    mu_chart = np.array(mu_deterministic)
-                    sigma_chart = np.array(sigma_deterministic)
-                    x_range = [round(i/observations,2) for i in range(mu_chart.shape[0])]
-                    cmap = plt.get_cmap('jet')
-                    colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
-                    for i in range(mu_chart.shape[1]):
-                        tmp_mu_plot = mu_chart[:, i]
-                        tmp_sigma_plot = sigma_chart[:, i]
-                        s_plus = tmp_mu_plot + tmp_sigma_plot
-                        s_minus = tmp_mu_plot - tmp_sigma_plot
-                        plt.plot(x_range,mu_chart[:, i], label="asset " + str(i), c=colors[i])
-                        plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
-                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
-                    for row in range(ws.shape[0]):
-                        plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                    plt.legend(loc="best")
-                    plt.show()
-
-                    plt.plot(V,label="Value Function")
-                    plt.show()
-
-                    if plot_gradients == True:
-
-                        for asset in range(self.number_of_assets):
-                            tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
-                            plt.plot(tmp_mu_asset, label=str(asset) + "mu")
+                        n_cols=len(backtest.columns)
+                        for col_counter,col in enumerate(backtest):
+                            plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols)
                             plt.show()
+                            plt.close()
+                        #Baccktest plot finishes
+
+                        plt.plot(n_iters, average_reward, label=self.reward_function)
+                        plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                        plt.legend(loc="best")
+
+                        plt.show()
+                        plt.close()
+
+                        mu_chart = np.array(mu_deterministic)
+                        sigma_chart = np.array(sigma_deterministic)
+                        x_range = [round(i/observations,2) for i in range(mu_chart.shape[0])]
+                        cmap = plt.get_cmap('jet')
+                        colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
+                        for i in range(mu_chart.shape[1]):
+                            tmp_mu_plot = mu_chart[:, i]
+                            tmp_sigma_plot = sigma_chart[:, i]
+                            s_plus = tmp_mu_plot + tmp_sigma_plot
+                            s_minus = tmp_mu_plot - tmp_sigma_plot
+                            plt.plot(x_range,mu_chart[:, i], label="asset " + str(i), c=colors[i])
+                            plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
+                        ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
+                        for row in range(ws.shape[0]):
+                            plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
+                        plt.legend(loc="best")
+                        plt.show()
+                        plt.close()
+
+                        plt.plot(V,label="Value Function")
+                        plt.show()
+                        plt.close()
+
+                        if plot_gradients == True:
+
+                            for asset in range(self.number_of_assets):
+                                tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
+                                plt.plot(tmp_mu_asset, label=str(asset) + "mu")
+                                plt.show()
+                                plt.close()
 
         return average_weights
 
 
     def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000, plot_gradients=False
-                             ,record_average_weights=True,add_baseline=False,alpha_baseline=.01):
+                             ,record_average_weights=True,add_baseline=False,alpha_baseline=.01, verbose=True):
 
 
         theta_diff=1000
@@ -1171,35 +1209,43 @@ class LinearAgent(AgentDataBase):
                 #Todo: implement in tensorboard
                 if iters%200==0:
 
-                    plt.plot(n_iters, average_reward, label=self.reward_function)
-                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
-                    plt.legend(loc="best")
-                    plt.show()
+                    if verbose:
+                        plt.plot(n_iters, average_reward, label=self.reward_function)
+                        plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
 
-                    mu_chart = np.array(mu_deterministic)
-                    sigma_chart = np.array(sigma_deterministic)
-                    x_range = [round(i / observations, 2) for i in range(mu_chart.shape[0])]
-                    cmap = plt.get_cmap('jet')
-                    colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
-                    for i in range(mu_chart.shape[1]):
-                        tmp_mu_plot = mu_chart[:, i]
-                        tmp_sigma_plot = sigma_chart[:, i]
-                        s_plus = tmp_mu_plot + tmp_sigma_plot
-                        s_minus = tmp_mu_plot - tmp_sigma_plot
-                        plt.plot(mu_chart[:, i], label="asset " + str(i), c=colors[i])
-                        plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
-                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
-                    for row in range(ws.shape[0]):
-                        plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                    plt.legend(loc="best")
-                    plt.show()
 
-                    if plot_gradients==True:
+                        plt.legend(loc="best")
+                        plt.show()
+                        plt.close()
 
-                        for asset in range(self.number_of_assets):
-                            tmp_mu_asset=np.array([i[0,:] for i in theta_mu_hist_gradients])
-                            plt.plot(tmp_mu_asset,label=str(asset)+"mu")
-                            plt.show()
+                        mu_chart = np.array(mu_deterministic)
+                        sigma_chart = np.array(sigma_deterministic)
+                        x_range = [round(i / observations, 2) for i in range(mu_chart.shape[0])]
+                        cmap = plt.get_cmap('jet')
+                        colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
+                        for i in range(mu_chart.shape[1]):
+                            tmp_mu_plot = mu_chart[:, i]
+                            tmp_sigma_plot = sigma_chart[:, i]
+                            s_plus = tmp_mu_plot + tmp_sigma_plot
+                            s_minus = tmp_mu_plot - tmp_sigma_plot
+                            plt.plot(mu_chart[:, i], label="asset " + str(i), c=colors[i])
+                            plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
+                        ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
+
+                        for row in range(ws.shape[0]):
+                            plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
+
+                        plt.legend(loc="best")
+                        plt.show()
+                        plt.close()
+
+                        if plot_gradients==True:
+
+                            for asset in range(self.number_of_assets):
+                                tmp_mu_asset=np.array([i[0,:] for i in theta_mu_hist_gradients])
+                                plt.plot(tmp_mu_asset,label=str(asset)+"mu")
+                                plt.show()
+                                plt.close()
 
         return average_weights
 
@@ -1354,7 +1400,7 @@ class DeepAgentPytorch(AgentDataBase):
         self.actor_model=PolicyEstimator(state_dimension=self.state_dimension,number_of_assets=self.number_of_assets)
         self.critic_model=ActorEstimator(state_dimension=self.state_dimension,number_of_assets=self.number_of_assets)
 
-    def ACTOR_CRITIC_fit(self,gamma=.99, max_iterations=10000,record_average_weights=True):
+    def ACTOR_CRITIC_fit(self,gamma=.99, max_iterations=10000,record_average_weights=True, verbose=True):
 
         observations = self.sample_observations
         iters = 0
@@ -1437,37 +1483,39 @@ class DeepAgentPytorch(AgentDataBase):
 
                 if iters % 200 == 0:
 
+                    if verbose:
+                        mu_chart = np.array(mus_deterministic)
+                        sigma_chart=np.array(sigma_deterministc)
+                        x_range=range(mu_chart.shape[0])
+                        cmap = plt.get_cmap('jet')
+                        colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
+                        for i in range(mu_chart.shape[1]):
+                            tmp_mu_plot=mu_chart[:,i]
+                            tmp_sigma_plot=sigma_chart[:,i]
+                            s_plus=tmp_mu_plot+tmp_sigma_plot
+                            s_minus = tmp_mu_plot -tmp_sigma_plot
+                            plt.plot(mu_chart[:,i],label="asset "+ str(i),c=colors[i])
+                            plt.fill_between(x_range,s_plus,s_minus,color=colors[i],alpha=.2)
+                        ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
+                        for row in range(ws.shape[0]):
+                            plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
+                        plt.legend(loc="best")
+                        plt.show()
+                        plt.close()
 
-                    mu_chart = np.array(mus_deterministic)
-                    sigma_chart=np.array(sigma_deterministc)
-                    x_range=range(mu_chart.shape[0])
-                    cmap = plt.get_cmap('jet')
-                    colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
-                    for i in range(mu_chart.shape[1]):
-                        tmp_mu_plot=mu_chart[:,i]
-                        tmp_sigma_plot=sigma_chart[:,i]
-                        s_plus=tmp_mu_plot+tmp_sigma_plot
-                        s_minus = tmp_mu_plot -tmp_sigma_plot
-                        plt.plot(mu_chart[:,i],label="asset "+ str(i),c=colors[i])
-                        plt.fill_between(x_range,s_plus,s_minus,color=colors[i],alpha=.2)
-                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
-                    for row in range(ws.shape[0]):
-                        plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                    plt.legend(loc="best")
-                    plt.show()
 
+                        plt.plot(n_iters, average_reward, label=self.reward_function)
+                        plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                        plt.legend(loc="best")
+                        plt.show()
+                        plt.close()
 
-                    plt.plot(n_iters, average_reward, label=self.reward_function)
-                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
-                    plt.legend(loc="best")
-                    plt.show()
-
-                    plt.plot(V, label="Value Function")
-                    plt.show()
-
+                        plt.plot(V, label="Value Function")
+                        plt.show()
+                        plt.close()
 
     def REINFORCE_fit(self,  gamma=.99, max_iterations=10000
-                      , record_average_weights=True):
+                      , record_average_weights=True, verbose=True):
 
 
         observations = self.sample_observations
@@ -1531,18 +1579,23 @@ class DeepAgentPytorch(AgentDataBase):
                     weights = pd.concat(average_weights, axis=1).T
                     ax = weights.plot()
                     ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(average_weights), axis=1)
-                    for row in range(ws.shape[0]):
-                        ax.plot(n_iters, ws[row, :], label="benchmark_return" + str(row))
-                    plt.legend(loc="best")
-                    plt.show()
+                    if verbose:
+                        for row in range(ws.shape[0]):
+                            ax.plot(n_iters, ws[row, :], label="benchmark_return" + str(row))
+                            plt.legend(loc="best")
+                            plt.show()
+                            plt.close()
 
-                    plt.plot(n_iters, average_reward, label=self.reward_function)
-                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
-                    plt.legend(loc="best")
-                    plt.show()
+                            plt.plot(n_iters, average_reward, label=self.reward_function)
+                            plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                            plt.legend(loc="best")
+                            plt.show()
+                            plt.close()
 
                     # plt.plot(total_reward,label="total_reward")
-                    # plt.show()
+                    # if verbose:
+                    #     plt.show()
+                    #     plt.close()
 
 
                     # plt.plot(losses,legend="losses")
@@ -1551,7 +1604,9 @@ class DeepAgentPytorch(AgentDataBase):
                     # grads_to_plot_2=np.array([i[:,1] for i in historical_grads])
                     # plt.plot(grads_to_plot_1)
                     # plt.plot(grads_to_plot_2)
-                    # plt.show()
+                    # if verbose:
+                    #     plt.show()
+                    #     plt.close()
 
 def get_cmap(n, name='hsv'):
     '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
