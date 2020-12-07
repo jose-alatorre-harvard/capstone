@@ -485,7 +485,7 @@ def train_val_test(portfolio_df, y, return_dates):
     eval_times_df.index = pd.to_datetime(eval_times_df.index)
 
     data_as_supervised_df = features
-    test_train_percent_split = 0.8
+    test_train_percent_split = 0.7
 
     # n_splits = 10
     # n_test_splits = 1
