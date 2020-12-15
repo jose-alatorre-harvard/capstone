@@ -25,12 +25,15 @@ import torch
 import torch.nn.functional as F
 class RewardFactory:
 
-    def __init__(self,in_bars_count,percent_commission):
+
+    def __init__(self,in_bars_count,percent_commission,risk_aversion,
+                 ext_covariance=None):
 
 
         self.in_bars_count=in_bars_count
         self.percent_commission=percent_commission
-
+        self.risk_aversion=risk_aversion
+        self.ext_covariance=ext_covariance
 
     def get_reward(self, weights_bufffer,forward_returns,action_date_index,reward_function):
         """
@@ -38,7 +41,7 @@ class RewardFactory:
         :param reward:
         :return:
         """
-        portfolio_returns=self._calculate_returns_with_commisions( weights_bufffer, forward_returns, action_date_index)
+        portfolio_returns, action_variance=self._calculate_returns_with_commisions( weights_bufffer, forward_returns, action_date_index)
 
         if reward_function == "cum_return":
             return self._reward_cum_return(portfolio_returns)
@@ -46,6 +49,10 @@ class RewardFactory:
             return self._reward_max_sharpe(portfolio_returns)
         elif reward_function == "min_vol":
             return self._reward_to_min_vol(portfolio_returns)
+        elif reward_function =="min_variance":
+            return  self._reward_min_variance(portfolio_returns)
+        elif reward_function == "return_with_variance_risk":
+            return self._reward_with_variance_risk(portfolio_returns,action_variance)
 
     def _reward_to_min_vol(self, portfolio_returns):
         """
@@ -74,7 +81,21 @@ class RewardFactory:
 
     def _reward_cum_return(self, portfolio_returns):
 
+
+
         return portfolio_returns.iloc[-1]
+
+    def _reward_with_variance_risk(self,portfolio_returns,action_variance):
+        """
+        Markowitz type of reward
+        :param portfolio_returns:
+        :return:
+        """
+        return portfolio_returns.iloc[-1] -self.risk_aversion*action_variance
+
+    def _reward_min_variance(self,portfolio_returns):
+
+        return -100*portfolio_returns.iloc[-1]**2
 
     def _calculate_returns_with_commisions(self,weights_buffer,forward_returns,action_date_index):
         """
@@ -90,11 +111,21 @@ class RewardFactory:
 
         portfolio_returns=(target_forward_returns*target_weights).sum(axis=1)-commision_percent_cost
 
-        return portfolio_returns
+        if self.ext_covariance is not None:
+            cov = self.ext_covariance
+        else:
+            cov = target_forward_returns.cov().values
+
+        w=target_weights.iloc[-1]
+        variance=np.matmul(np.matmul(w.T,cov),w)
+
+
+
+        return portfolio_returns ,variance
 class State:
 
     def __init__(self, features,forward_returns,asset_names,in_bars_count,forward_returns_dates, objective_parameters,
-                 include_previous_weights=True):
+                 include_previous_weights=True,risk_aversion=1):
         """
 
           :param features:
@@ -114,7 +145,8 @@ class State:
         self._set_objective_function_parameters(objective_parameters)
 
         self._initialize_weights_buffer()
-        self.reward_factory=RewardFactory(in_bars_count=in_bars_count,percent_commission=self.percent_commission)
+        self.reward_factory=RewardFactory(in_bars_count=in_bars_count,percent_commission=self.percent_commission,
+                                          risk_aversion=risk_aversion)
 
     def get_flat_state_by_iloc(self,index_location):
         """
@@ -125,6 +157,8 @@ class State:
         state_features,weights_on_date=self.get_state_by_iloc(index_location=index_location)
         return self.flatten_state(state_features, weights_on_date)
 
+    def reset_buffer(self):
+        self._initialize_weights_buffer()
     def flatten_state(self,state_features, weights_on_date):
         """
         flatten states by adding weights to features
@@ -517,8 +551,8 @@ class DeepTradingEnvironment(gym.Env):
                                objective_parameters=objective_parameters,
                                forward_returns=self.forward_returns,
                                forward_returns_dates=self.forward_returns_dates,
-                               include_previous_weights=meta_parameters["include_previous_weights"]
-
+                               include_previous_weights=meta_parameters["include_previous_weights"],
+                                risk_aversion=meta_parameters["risk_aversion"]
                                 )
 
 
@@ -584,15 +618,23 @@ class AgentDataBase:
             # self._build_full_pre_sampled_indices()
             self._set_latest_posible_date()
 
+        self.b_w_set = False
+
     def _initialize_helper_properties(self):
         self.number_of_assets = self.environment.number_of_assets
         self.state_dimension = self.environment.state.state_dimension
 
-    def backtest_policy(self,epoch,backtest):
+    def backtest_policy(self,epoch,backtest,env_test=None):
         """
         backtest portfolio policy
         :return:
         """
+
+        if env_test==None:
+            features_df=self.environment.features.index[0]
+        else:
+            features_df=env_test.features.index[0]
+
         activate_date=self.environment.features.index[0]
         tmp_weights=self.environment.state.weight_buffer.copy()
 
@@ -773,6 +815,7 @@ class AgentDataBase:
 
     def set_plot_weights(self,weights,benchmark_G):
 
+        self.b_w_set=True
         self._benchmark_weights=weights
         self._benchmark_G=benchmark_G
 
@@ -925,7 +968,7 @@ class LinearAgent(AgentDataBase):
         return states,actions,pd.concat(period_returns, axis=0)
 
 
-    def ACTOR_CRITIC_FIT(self, alpha=.01, gamma=.99, theta_threshold=.001, max_iterations=10000, plot_gradients=False
+    def ACTOR_CRITIC_FIT(self, alpha=.01, gamma=.99, theta_threshold=.001, max_iterations=10000, plot_gradients=False,plot_every=2000
                       , record_average_weights=True,  alpha_critic=.01,l_trace=.3,l_trace_critic=.3,use_traces=False):
 
         theta_diff = 1000
@@ -1035,7 +1078,7 @@ class LinearAgent(AgentDataBase):
             if record_average_weights == True:
                 # average_weights.append(self.environment.state.weight_buffer.mean())
 
-                if iters % 200 == 0:
+                if iters % plot_every == 0:
 
                     ## Create Plot Backtest
                     if not "backtest" in locals():
@@ -1049,7 +1092,8 @@ class LinearAgent(AgentDataBase):
                     #Baccktest plot finishes
 
                     plt.plot(n_iters, average_reward, label=self.reward_function)
-                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                    if self.b_w_set == True:
+                        plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                     plt.legend(loc="best")
                     plt.show()
 
@@ -1065,10 +1109,13 @@ class LinearAgent(AgentDataBase):
                         s_minus = tmp_mu_plot - tmp_sigma_plot
                         plt.plot(x_range,mu_chart[:, i], label="asset " + str(i), c=colors[i])
                         plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
-                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
-                    for row in range(ws.shape[0]):
-                        plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
+                    if self.b_w_set == True:
+                        ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
+                        for row in range(ws.shape[0]):
+                            plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
                     plt.legend(loc="best")
+                    plt.xlabel("epochs")
+                    plt.ylabel("asset weights")
                     plt.show()
 
                     plt.plot(V,label="Value Function")
@@ -1084,7 +1131,7 @@ class LinearAgent(AgentDataBase):
         return average_weights
 
 
-    def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000, plot_gradients=False
+    def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000, plot_gradients=False,plot_every=2000
                              ,record_average_weights=True,add_baseline=False,alpha_baseline=.01):
 
 
@@ -1142,9 +1189,9 @@ class LinearAgent(AgentDataBase):
                 new_theta_mu=new_theta_mu+alpha*delta*(gamma**t)*theta_mu_log_gradient
                 new_theta_sigma=new_theta_sigma+alpha*delta*(gamma**t)*theta_sigma_log_gradient
 
-                # save values for plotting
-                mu_deterministic.append(self._mu_linear(flat_state=flat_state_t))
-                sigma_deterministic.append(self._sigma_linear(flat_state=flat_state_t))
+                # save values for plotting just using the last state
+            mu_deterministic.append(self._mu_linear(flat_state=flat_state_t))
+            sigma_deterministic.append(self._sigma_linear(flat_state=flat_state_t))
 
             theta_mu_hist_gradients.append(np.array(tmp_mu_gradient).mean(axis=1))
             theta_sigma_hist_gradients.append(np.array(tmp_sigma_gradient).mean(axis=1))
@@ -1166,10 +1213,11 @@ class LinearAgent(AgentDataBase):
             if record_average_weights==True:
 
                 #Todo: implement in tensorboard
-                if iters%200==0:
+                if iters%plot_every==0:
 
                     plt.plot(n_iters, average_reward, label=self.reward_function)
-                    plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                    if self.b_w_set == True:
+                        plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                     plt.legend(loc="best")
                     plt.show()
 
@@ -1184,11 +1232,16 @@ class LinearAgent(AgentDataBase):
                         s_plus = tmp_mu_plot + tmp_sigma_plot
                         s_minus = tmp_mu_plot - tmp_sigma_plot
                         plt.plot(mu_chart[:, i], label="asset " + str(i), c=colors[i])
-                        plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
-                    ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
-                    for row in range(ws.shape[0]):
-                        plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
+                        plt.fill_between([i for i in range(s_plus.shape[0])], s_plus, s_minus, color=colors[i], alpha=.2)
+
+                    if  self.b_w_set==True:
+                        ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
+                        for row in range(ws.shape[0]):
+                            plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
+
                     plt.legend(loc="best")
+                    plt.xlabel("epochs")
+                    plt.ylabel("asset weights")
                     plt.show()
 
                     if plot_gradients==True:

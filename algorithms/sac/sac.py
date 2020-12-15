@@ -13,10 +13,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 def plot_results(logger,a):
     data=pd.read_csv(logger.output_dir+"/progress.txt",header=0, sep='\t',index_col="Epoch")
-    ax1=data[["asset_"+str(i) for i in range(len(a))]].plot()
-    # data[["asset_" + str(i) for i in range(len(a))]].rolling(200).mean().plot(ax=ax1)
-    ax2 = ax1.twinx()
-    ax2.plot(data.AverageTestEpRet,color="green",alpha=.5)
+    # ax1=data[["asset_"+str(i) for i in range(len(a))]].plot()
+    data[["asset_" + str(i) for i in range(len(a))]].rolling(200).mean().plot()
+    # ax2 = ax1.twinx()
+    # ax2.plot(data.AverageTestEpRet,color="green",alpha=.5)
     plt.show()
 
     data[["AverageQ1Vals","AverageQ2Vals"]].plot()
