@@ -4,12 +4,13 @@ import datetime
 import numpy as np
 
 
-out_reward_window=datetime.timedelta(days=7)
+out_reward_window=datetime.timedelta(days=1)
 # parameters related to the transformation of data, this parameters govern an step before the algorithm
 meta_parameters = {"in_bars_count": 30,
                    "out_reward_window":out_reward_window ,
                    "state_type":"in_window_out_window",
                    "asset_names":["asset_1","asset_2"],
+                   "risk_aversion":1e3,
                    "include_previous_weights":False}
 
 # parameters that are related to the objective/reward function construction
@@ -50,9 +51,11 @@ x=np.array(list(weights.values())).reshape(-1,1)
 p_vol=np.sqrt(np.matmul(np.matmul(x.T,cov),x))
 p_sharpe=np.matmul(x.T,mus)/p_vol
 
-
+cov=np.array([[assets_simulation_details["asset_1"]["sigma"]**2,0],
+             [0,assets_simulation_details["asset_2"]["sigma"]**2]])
+env.state.reward_factory.ext_covariance=cov
 linear_agent=LinearAgent(environment=env,out_reward_window_td=out_reward_window,
-                         reward_function="cum_return",sample_observations=32)
+                         reward_function="return_with_variance_risk",sample_observations=32)
 
 # cla=CLA(mus,cov)
 # weights=cla.max_sharpe()
@@ -69,7 +72,7 @@ linear_agent.set_plot_weights(weights=np.array(list(weights.values())),
 # # linear_agent.set_plot_weights(weights=np.array(list(weights.values())),
 # #                               benchmark_G=p_sharpe.ravel()[0])
 #
-# linear_agent.REINFORCE_fit(add_baseline=True,plot_gradients=True)
+linear_agent.REINFORCE_fit(add_baseline=True)
 # # linear_agent.REINFORCE_refactor_fid()
 
 linear_agent.ACTOR_CRITIC_FIT(use_traces=True)

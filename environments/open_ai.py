@@ -65,7 +65,7 @@ class RewardFactory:
         :param portfolio_returns:
         :return:
         """
-        return portfolio_returns.iloc[-1]**2
+        return -portfolio_returns.iloc[-1]**2
     def _reward_cum_return(self, portfolio_returns):
 
         return portfolio_returns.iloc[-1]
