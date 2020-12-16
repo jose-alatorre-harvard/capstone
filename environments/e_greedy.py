@@ -25,8 +25,8 @@ import torch
 import torch.nn.functional as F
 class RewardFactory:
 
-
-    def __init__(self,in_bars_count,percent_commission,risk_aversion,
+    ROLLING_COV=128
+    def __init__(self,in_bars_count,percent_commission,risk_aversion,forward_returns_df,
                  ext_covariance=None):
 
 
@@ -34,6 +34,25 @@ class RewardFactory:
         self.percent_commission=percent_commission
         self.risk_aversion=risk_aversion
         self.ext_covariance=ext_covariance
+
+        self.calculate_smooth_covariance(forward_returns_df=forward_returns_df)
+
+        self.reward_buffer=[]
+        print("covariance rolling estimate", self.ROLLING_COV)
+
+    def calculate_smooth_covariance(self,forward_returns_df):
+        """
+
+        :param forward_returns_df:
+        :return:
+        """
+        full_sample_cov=forward_returns_df.cov().values
+        self.rolling_cov=forward_returns_df.rolling(self.ROLLING_COV).cov()
+        self.rolling_cov=[self.rolling_cov.loc[pd.IndexSlice[i[0],:]].values for i in self.rolling_cov.index]
+        self.rolling_cov=[full_sample_cov if np.isnan(i).any() else i  for i in self.rolling_cov]
+
+        self.condition_series=[np.linalg.cond(i) for i in self.rolling_cov]
+
 
     def get_reward(self, weights_bufffer,forward_returns,action_date_index,reward_function):
         """
@@ -91,7 +110,7 @@ class RewardFactory:
         :param portfolio_returns:
         :return:
         """
-        return portfolio_returns.iloc[-1] -self.risk_aversion*action_variance
+        return self.risk_aversion*portfolio_returns.iloc[-1] - (1-self.risk_aversion)*action_variance
 
     def _reward_min_variance(self,portfolio_returns):
 
@@ -114,14 +133,15 @@ class RewardFactory:
         if self.ext_covariance is not None:
             cov = self.ext_covariance
         else:
-            cov = target_forward_returns.cov().values
+            cov = self.rolling_cov[action_date_index]
+
 
         w=target_weights.iloc[-1]
         variance=np.matmul(np.matmul(w.T,cov),w)
 
-
-
         return portfolio_returns ,variance
+
+
 class State:
 
     def __init__(self, features,forward_returns,asset_names,in_bars_count,forward_returns_dates, objective_parameters,
@@ -145,7 +165,7 @@ class State:
         self._set_objective_function_parameters(objective_parameters)
 
         self._initialize_weights_buffer()
-        self.reward_factory=RewardFactory(in_bars_count=in_bars_count,percent_commission=self.percent_commission,
+        self.reward_factory=RewardFactory(in_bars_count=in_bars_count,percent_commission=self.percent_commission,forward_returns_df=forward_returns,
                                           risk_aversion=risk_aversion)
 
     def get_flat_state_by_iloc(self,index_location):
@@ -888,7 +908,10 @@ class LinearAgent(AgentDataBase):
         #
 
         #calculate mu and sigma
-        mu=self._mu_linear(flat_state=flat_state)
+        try:
+            mu=self._mu_linear(flat_state=flat_state)
+        except:
+            raise
         sigma=self._sigma_linear(flat_state=flat_state)
         cov = np.zeros((self.number_of_assets, self.number_of_assets))
         np.fill_diagonal(cov, sigma**2)
