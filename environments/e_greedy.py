@@ -657,8 +657,8 @@ class AgentDataBase:
             activate_date=self.environment.features.index[0]
             tmp_weights = self.environment.state.weight_buffer.copy()
             fwd_return_date_name = self.environment.forward_returns_dates.columns[0]
-            # end_date = self.environment.forward_returns_dates.iloc[-10].values[0]
-            end_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
+            end_date = self.environment.forward_returns_dates.iloc[-10].values[0]
+            # end_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
             while activate_date <= end_date:
                 i = self.environment.features.index.searchsorted(activate_date)
                 try:
@@ -1162,6 +1162,9 @@ class LinearAgent(AgentDataBase):
                     if self.b_w_set == True:
                         plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                     plt.legend(loc="best")
+                    plt.xlabel("Epochs")
+                    plt.ylabel("Reward")
+                    plt.savefig(os.getcwd() + '/temp_persisted_data/plot_reward_actor_critic_traces_0_' + str(use_traces) + '.png')
                     plt.show()
 
                     plt.figure(figsize=(8,4))
@@ -1187,7 +1190,7 @@ class LinearAgent(AgentDataBase):
                     plt.legend(loc="upper left")
                     plt.xlabel("Epochs")
                     plt.ylabel("Asset Weights")
-                    plt.savefig(os.getcwd() + '/temp_persisted_data/plot_actor_critic_traces_1e3_' + str(use_traces) + '.png')
+                    plt.savefig(os.getcwd() + '/temp_persisted_data/plot_actor_critic_traces_0_' + str(use_traces) + '.png')
                     plt.show()
                     plt.plot(V,label="Value Function")
                     plt.show()
@@ -1288,10 +1291,15 @@ class LinearAgent(AgentDataBase):
                 if iters%plot_every==0:
 
                     if verbose:
+                        plt.figure(figsize=(8, 4))
                         plt.plot(n_iters, average_reward, label=self.reward_function)
                         if self.b_w_set == True:
                             plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                         plt.legend(loc="best")
+                        plt.xlabel("Epochs")
+                        plt.ylabel("Reward")
+                        plt.savefig(
+                            os.getcwd() + '/temp_persisted_data/plot_reward_reinforce_baseline_0_' + str(add_baseline) + '.png')
                         plt.show()
 
                         plt.figure(figsize=(8, 4))
@@ -1589,7 +1597,7 @@ class DeepAgentPytorch(AgentDataBase):
                         plt.ylim(0, 1)
                         plt.legend(loc="upper left")
                         plt.savefig(
-                            os.getcwd() + '/temp_persisted_data/plot_actor_critic_traces_1e3_' + str(use_traces) + '.png')
+                            os.getcwd() + '/temp_persisted_data/plot_actor_critic_traces_0_' + str(use_traces) + '.png')
                         plt.show()
                         plt.close()
 

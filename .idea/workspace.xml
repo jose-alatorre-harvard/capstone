@@ -19,7 +19,15 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="" />
+    <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ACTOR_CRITIC.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/ACTOR_CRITIC.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/REINFORCE.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/REINFORCE.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real_World_Data_Demonstration.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real_World_Data_Demonstration.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/User Steps for main module.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/User Steps for main module.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/environments/e_greedy.py" beforeDir="false" afterPath="$PROJECT_DIR$/environments/e_greedy.py" afterDir="false" />
+    </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -530,7 +538,35 @@
       <option name="project" value="LOCAL" />
       <updated>1608366901004</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="master branch consolidation">
+      <created>1608366976341</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1608366976341</updated>
+    </task>
+    <task id="LOCAL-00034" summary="master branch consolidation">
+      <created>1608367045574</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1608367045574</updated>
+    </task>
+    <task id="LOCAL-00035" summary="Real_World data demonstration">
+      <created>1608367109972</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1608367109972</updated>
+    </task>
+    <task id="LOCAL-00036" summary="master branch consolidation">
+      <created>1608367147550</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1608367147550</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -559,7 +595,6 @@
     <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Modified docstring spacing" />
     <MESSAGE value="Updated data_handler / notebook with new Environment feature call reference" />
     <MESSAGE value="creates DeepTradingEnvironment with features which user can specify" />
     <MESSAGE value="Revert &quot;Updated data_handler / notebook with new Environment feature call reference&quot;&#10;&#10;This reverts commit 8ce7f6ec" />
@@ -583,6 +618,7 @@
     <MESSAGE value="updated backtest_policy function" />
     <MESSAGE value="update" />
     <MESSAGE value="integration into master branch" />
+    <MESSAGE value="Real_World data demonstration" />
     <MESSAGE value="master branch consolidation" />
     <option name="LAST_COMMIT_MESSAGE" value="master branch consolidation" />
   </component>
@@ -604,12 +640,12 @@
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601347440560" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
-    <state x="359" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608366898228">
+    <state x="359" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608367144986">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="192" y="0" key="CommitChangelistDialog2/0.0.1280.680@0.0.1280.680" timestamp="1600146717066" />
-    <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608366898228" />
+    <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367144986" />
     <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608365162203" />
     <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364617930">
       <screen x="2560" y="0" width="1680" height="1010" />
@@ -701,13 +737,13 @@
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="3068" y="124" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343621009" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1608366901613">
-      <screen x="0" y="0" width="1463" height="783" />
+    <state x="2867" y="110" key="Vcs.Push.Dialog.v2" timestamp="1608390427827">
+      <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344614359" />
     <state x="234" y="74" key="Vcs.Push.Dialog.v2/0.0.1280.680@0.0.1280.680" timestamp="1600196937024" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608366901613" />
-    <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608365165797" />
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367153713" />
+    <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608390427827" />
     <state x="128" y="-7" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1608363268828">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
