@@ -76,6 +76,7 @@ class DailyDataFrame2Features:
         :param configuration_dict
         """
 
+
         #all time series should have the same time index
         for counter,ts in enumerate(bars_dict.values()):
             if counter ==0:
@@ -370,7 +371,9 @@ def build_and_persist_features_from_dir( meta_parameters, data_hash,
     """
     # optimally this should be only features
     # RESAMPLE NEEDS RE-CREATION OF TIME SERIE SO JUST USE THIS FOR TESTING
-    assets_dict = {file: pd.read_parquet(data_dir + "/" + file).resample("30min").first() for file in
+    # assets_dict = {file: pd.read_parquet(data_dir + "/" + file).resample("30min").first() for file in
+    #                os.listdir(data_dir)}
+    assets_dict = {file: pd.read_parquet(data_dir + "/" + file).first() for file in
                    os.listdir(data_dir)}
     counter = 0
     for key, value in assets_dict.items():
@@ -408,11 +411,13 @@ def build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data
     PERSISTED_DATA_DIRECTORY = "temp_persisted_data"
     # Todo: Hash csv file
     if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash):
+        print("assets_dict", assets_dict)
         features_instance=DailyDataFrame2Features(bars_dict=assets_dict
                                                   ,configuration_dict={},
                                                   forward_returns_time_delta=[out_reward_window])
 
         features=features_instance.all_features
+
 
         only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
         forward_returns_dates = features_instance.forward_returns_dates
