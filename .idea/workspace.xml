@@ -19,7 +19,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="REINFORCE with baseline implementation" />
+    <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="" />
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -302,6 +302,7 @@
       <workItem from="1608234720710" duration="19629000" />
       <workItem from="1608305883575" duration="23564000" />
       <workItem from="1608363292891" duration="186000" />
+      <workItem from="1608363500131" duration="471000" />
     </task>
     <task id="LOCAL-00001" summary="commit">
       <created>1600146718068</created>
@@ -485,7 +486,14 @@
       <option name="project" value="LOCAL" />
       <updated>1608362995644</updated>
     </task>
-    <option name="localTasksCounter" value="27" />
+    <task id="LOCAL-00027" summary="update">
+      <created>1608363566536</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1608363566536</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -537,7 +545,8 @@
     <MESSAGE value="added file" />
     <MESSAGE value="update formatting" />
     <MESSAGE value="updated backtest_policy function" />
-    <option name="LAST_COMMIT_MESSAGE" value="updated backtest_policy function" />
+    <MESSAGE value="update" />
+    <option name="LAST_COMMIT_MESSAGE" value="update" />
   </component>
   <component name="WindowStateProjectService">
     <state x="3151" y="329" key="#Notifications" timestamp="1608363464836">
@@ -557,13 +566,13 @@
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601347440560" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
-    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608362992469">
+    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608363563493">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="192" y="0" key="CommitChangelistDialog2/0.0.1280.680@0.0.1280.680" timestamp="1600146717066" />
     <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1607373568886" />
-    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608362992469" />
+    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363563493" />
     <state x="80" y="71" width="1382" height="659" key="DiffContextDialog" timestamp="1606612432636">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
@@ -611,23 +620,23 @@
     <state width="1238" height="2" key="GridCell.Tab.0.right/0.0.1280.680@0.0.1280.680" timestamp="1600202540198" />
     <state width="960" height="219" key="GridCell.Tab.0.right/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1603829040413" />
     <state width="1638" height="179" key="GridCell.Tab.0.right/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607246592130" />
-    <state x="0" y="0" width="1619" height="662" key="MergeDialog" timestamp="1608055102337">
-      <screen x="0" y="0" width="1463" height="783" />
+    <state x="2560" y="0" width="1619" height="662" key="MergeDialog" timestamp="1608363932766">
+      <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="2585" y="76" width="1583" height="580" key="MergeDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344280219" />
     <state x="122" y="51" key="MergeDialog/0.0.1280.680@0.0.1280.680" timestamp="1600196819199" />
     <state x="0" y="0" width="1463" height="568" key="MergeDialog/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608055102337" />
-    <state x="2560" y="0" width="1619" height="662" key="MergeDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607460598672" />
+    <state x="2560" y="0" width="1619" height="662" key="MergeDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363932766" />
     <state x="0" y="0" key="MergeDialog/0.0.1463.783@0.0.1463.783" timestamp="1603596265580" />
     <state x="1702" y="0" key="MergeDialog/1680.0.1463.800/0.0.1680.1010@1680.0.1463.800" timestamp="1601788245048" />
-    <state x="320" y="118" key="MultipleFileMergeDialog" timestamp="1608055102350">
-      <screen x="0" y="0" width="1463" height="783" />
+    <state x="2928" y="152" key="MultipleFileMergeDialog" timestamp="1608363932781">
+      <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="280" y="102" key="MultipleFileMergeDialog/0.0.1280.680/2560.0.1680.1010@0.0.1280.680" timestamp="1601340661756" />
     <state x="2928" y="152" key="MultipleFileMergeDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344576333" />
     <state x="280" y="102" key="MultipleFileMergeDialog/0.0.1280.680@0.0.1280.680" timestamp="1600196961825" />
     <state x="320" y="118" key="MultipleFileMergeDialog/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608055102350" />
-    <state x="2928" y="152" key="MultipleFileMergeDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1604899754505" />
+    <state x="2928" y="152" key="MultipleFileMergeDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363932781" />
     <state x="2993" y="64" key="RollbackChangesDialog" timestamp="1608240154799">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
@@ -654,26 +663,26 @@
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="3068" y="124" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343621009" />
-    <state x="2867" y="110" key="Vcs.Push.Dialog.v2" timestamp="1608363000024">
+    <state x="2867" y="110" key="Vcs.Push.Dialog.v2" timestamp="1608363792622">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344614359" />
     <state x="234" y="74" key="Vcs.Push.Dialog.v2/0.0.1280.680@0.0.1280.680" timestamp="1600196937024" />
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1607373615362" />
-    <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363000024" />
+    <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363792622" />
     <state x="128" y="-7" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1608363268828">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2626" y="61" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601161044324" />
     <state x="128" y="-7" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363268828" />
-    <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1608363390586">
+    <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1608363789228">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="459" y="255" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1280.680/2560.0.1680.1010@0.0.1280.680" timestamp="1601339463972" />
     <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601341272345" />
     <state x="459" y="255" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1280.680@0.0.1280.680" timestamp="1600196911452" />
     <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608053778890" />
-    <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363390586" />
+    <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363789228" />
     <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783@0.0.1463.783" timestamp="1603734369727" />
     <state x="2204" y="300" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/1680.0.1463.800/0.0.1680.1010@1680.0.1463.800" timestamp="1601787823614" />
     <state x="91" y="0" width="1252" height="749" key="dock-window-1" timestamp="1604346235360">
