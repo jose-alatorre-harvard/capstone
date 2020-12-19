@@ -8,7 +8,7 @@ import datetime
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from timeseriescv.cross_validation import CombPurgedKFoldCV
-# import talib
+import talib
 import inspect
 
 

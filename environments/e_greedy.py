@@ -40,7 +40,7 @@ class RewardFactory:
         self.calculate_smooth_covariance(forward_returns_df=forward_returns_df)
 
         self.reward_buffer=[]
-        print("covariance rolling estimate", self.ROLLING_COV)
+        # print("covariance rolling estimate", self.ROLLING_COV)
 
     def calculate_smooth_covariance(self,forward_returns_df):
         """
