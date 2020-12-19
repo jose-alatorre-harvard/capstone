@@ -5,6 +5,8 @@ import os
 import datetime
 from tqdm import tqdm
 from lib.Benchmarks import SimulatedAsset
+import quantstats as qs
+qs.extend_pandas()
 
 import matplotlib.pyplot as plt
 
@@ -489,7 +491,10 @@ class DeepTradingEnvironment(gym.Env):
         """
         # optimally this should be only features
         #RESAMPLE NEEDS RE-CREATION OF TIME SERIE SO JUST USE THIS FOR TESTING
-        assets_dict = {file: pd.read_parquet(data_dir + "/" + file).resample("30min").first() for file in os.listdir(data_dir)}
+        #assets_dict = {file: pd.read_parquet(data_dir + "/" + file).resample("30min").first() for file in os.listdir(data_dir)}
+        assets_dict = {file: pd.read_parquet(data_dir + "/" + file) for file in
+                       os.listdir(data_dir)}
+
         counter=0
         for key, value in assets_dict.items():
             if counter==0:
@@ -502,10 +507,8 @@ class DeepTradingEnvironment(gym.Env):
             tmp_df=tmp_df.fillna(method='ffill')
             assets_dict[key]=tmp_df
 
-
         environment=cls._create_environment_from_assets_dict(assets_dict=assets_dict,data_hash=data_hash,
                                                               meta_parameters=meta_parameters,objective_parameters=objective_parameters)
-
         return environment
 
     def __init__(self, features, forward_returns,forward_returns_dates, objective_parameters,
@@ -624,36 +627,73 @@ class AgentDataBase:
         self.number_of_assets = self.environment.number_of_assets
         self.state_dimension = self.environment.state.state_dimension
 
-    def backtest_policy(self,epoch,backtest,env_test=None):
+    def backtest_policy(self,epoch,backtest, env_test=None, test_input=None):
         """
         backtest portfolio policy
         :return:
         """
 
         if env_test==None:
-            features_df=self.environment.features.index[0]
+            activate_date=self.environment.features.index[0]
+            tmp_weights = self.environment.state.weight_buffer.copy()
+            fwd_return_date_name = self.environment.forward_returns_dates.columns[0]
+            # end_date = self.environment.forward_returns_dates.iloc[-10].values[0]
+            end_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
+            while activate_date <= end_date:
+                i = self.environment.features.index.searchsorted(activate_date)
+                try:
+                    obs = self.environment.state.get_flat_state_by_iloc(i)
+                except:
+                    a = 5
+                action = self.policy(obs, deterministic=True)
+                next_observation_date = self.environment.forward_returns_dates.iloc[i][fwd_return_date_name]
+
+                tmp_weights.loc[activate_date:next_observation_date, :] = action
+                activate_date = next_observation_date
+
+            tmp_backtest = ((self.environment.forward_returns * tmp_weights).sum(axis=1) + 1).cumprod()
+
         else:
-            features_df=env_test.features.index[0]
+            test_input_returns = test_input.to_returns().dropna()
+            test_input_returns = test_input_returns.loc[(test_input_returns != 0).any(1)]
+            activate_date=test_input.index[0]
+            tmp_weights = env_test.state.weight_buffer[1:].copy()
+            tmp_weights.columns = test_input_returns.columns
+            fwd_return_date_name = env_test.forward_returns_dates.columns[0]
+            # end_date = env_test.forward_returns_dates.iloc[-10].values[0]
+            # end_date = pd.Timestamp(env_test.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
+            end_date = pd.Timestamp(test_input_returns.index[-7])
+            while activate_date <= end_date:
+                i = env_test.features.index.searchsorted(activate_date)
+                try:
+                    obs = env_test.state.get_flat_state_by_iloc(i)
+                except:
+                    a = 5
+                action = self.policy(obs, deterministic=True)
+                next_observation_date = env_test.forward_returns_dates.iloc[i][fwd_return_date_name]
 
-        activate_date=self.environment.features.index[0]
-        tmp_weights=self.environment.state.weight_buffer.copy()
+                tmp_weights.loc[activate_date:next_observation_date, :] = action
+                activate_date = next_observation_date
+            tmp_backtest = ((test_input_returns * tmp_weights).sum(axis=1)+1).cumprod()
 
-        fwd_return_date_name=self.environment.forward_returns_dates.columns[0]
-        while activate_date <= self.environment.forward_returns_dates.iloc[-10].values[0].tz_localize(
-                'utc'):
+        # activate_date=self.environment.features.index[0]
+        # tmp_weights=self.environment.state.weight_buffer.copy()
 
-            i=self.environment.features.index.searchsorted(activate_date)
-            try:
-                obs=self.environment.state.get_flat_state_by_iloc(i)
-            except:
-                a=5
-            action=self.policy(obs,deterministic=True)
-            next_observation_date=self.environment.forward_returns_dates.iloc[i][fwd_return_date_name]
-
-            tmp_weights.loc[activate_date:next_observation_date,:]=action
-            activate_date=next_observation_date
-
-        tmp_backtest=((self.environment.forward_returns*tmp_weights).sum(axis=1)+1).cumprod()
+        # fwd_return_date_name=self.environment.forward_returns_dates.columns[0]
+        # while activate_date <= end_date:
+        #
+        #     i=self.environment.features.index.searchsorted(activate_date)
+        #     try:
+        #         obs=self.environment.state.get_flat_state_by_iloc(i)
+        #     except:
+        #         a=5
+        #     action=self.policy(obs,deterministic=True)
+        #     next_observation_date=self.environment.forward_returns_dates.iloc[i][fwd_return_date_name]
+        #
+        #     tmp_weights.loc[activate_date:next_observation_date,:]=action
+        #     activate_date=next_observation_date
+        #
+        # tmp_backtest=((self.environment.forward_returns*tmp_weights).sum(axis=1)+1).cumprod()
         tmp_backtest.name=epoch
         if backtest is None:
             backtest=tmp_backtest.to_frame()
@@ -709,7 +749,7 @@ class AgentDataBase:
             last_date_start_index = frd.index.searchsorted(last_date_start)
             end_date = frd.index[last_date_start_index][0]
         self.latest_posible_index_date=last_date_start_index[0]
-        self.max_available_obs_date=frd[column_name].index.max().tz_localize(None)
+        self.max_available_obs_date=frd[column_name].index.max().tz_localize(None) #.tz_localize(None)
 
         # presampled indices for environment sample
 
@@ -1088,11 +1128,11 @@ class LinearAgent(AgentDataBase):
                     backtest=self.backtest_policy(epoch=iters,backtest=backtest)
 
 
-                        n_cols=len(backtest.columns)
-                        for col_counter,col in enumerate(backtest):
-                            plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols)
-                            plt.show()
-                            plt.close()
+                    n_cols=len(backtest.columns)
+                    for col_counter,col in enumerate(backtest):
+                        plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols)
+                        plt.show()
+                        plt.close()
                         #Baccktest plot finishes
 
                     plt.plot(n_iters, average_reward, label=self.reward_function)
@@ -1101,9 +1141,11 @@ class LinearAgent(AgentDataBase):
                     plt.legend(loc="best")
                     plt.show()
 
+                    plt.figure(figsize=(8,4))
                     mu_chart = np.array(mu_deterministic)
                     sigma_chart = np.array(sigma_deterministic)
                     x_range = [round(i/observations,2) for i in range(mu_chart.shape[0])]
+                    ticker=["EEMV", "EFAV","MTUM","QUAL","SIZE","USMV","VLUE"]
                     cmap = plt.get_cmap('jet')
                     colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
                     for i in range(mu_chart.shape[1]):
@@ -1111,17 +1153,19 @@ class LinearAgent(AgentDataBase):
                         tmp_sigma_plot = sigma_chart[:, i]
                         s_plus = tmp_mu_plot + tmp_sigma_plot
                         s_minus = tmp_mu_plot - tmp_sigma_plot
-                        plt.plot(x_range,mu_chart[:, i], label="asset " + str(i), c=colors[i])
-                        plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
+                        plt.plot(x_range,mu_chart[:, i], label="Asset " + ticker[i], c=colors[i])
+                        # plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
+
                     if self.b_w_set == True:
                         ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
                         for row in range(ws.shape[0]):
                             plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                    plt.legend(loc="best")
-                    plt.xlabel("epochs")
-                    plt.ylabel("asset weights")
+                    plt.ylim(0, 1)
+                    plt.legend(loc="upper left")
+                    plt.xlabel("Epochs")
+                    plt.ylabel("Asset Weights")
+                    plt.savefig(os.getcwd() + '/temp_persisted_data/plot_actor_critic_traces_1e3_' + str(use_traces) + '.png')
                     plt.show()
-
                     plt.plot(V,label="Value Function")
                     plt.show()
                     plt.close()
@@ -1133,7 +1177,7 @@ class LinearAgent(AgentDataBase):
                             plt.plot(tmp_mu_asset, label=str(asset) + "mu")
                             plt.show()
 
-            return average_weights
+        return average_weights
 
 
     def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000, plot_gradients=False, plot_every=2000
@@ -1227,9 +1271,11 @@ class LinearAgent(AgentDataBase):
                         plt.legend(loc="best")
                         plt.show()
 
+                        plt.figure(figsize=(8, 4))
                         mu_chart = np.array(mu_deterministic)
                         sigma_chart = np.array(sigma_deterministic)
                         x_range = [round(i / observations, 2) for i in range(mu_chart.shape[0])]
+                        ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
                         for i in range(mu_chart.shape[1]):
@@ -1237,17 +1283,20 @@ class LinearAgent(AgentDataBase):
                             tmp_sigma_plot = sigma_chart[:, i]
                             s_plus = tmp_mu_plot + tmp_sigma_plot
                             s_minus = tmp_mu_plot - tmp_sigma_plot
-                            plt.plot(mu_chart[:, i], label="asset " + str(i), c=colors[i])
-                            plt.fill_between([i for i in range(s_plus.shape[0])], s_plus, s_minus, color=colors[i], alpha=.2)
+                            plt.plot(mu_chart[:, i], label="Asset " + ticker[i], c=colors[i])
+
+                            # plt.fill_between([i for i in range(s_plus.shape[0])], s_plus, s_minus, color=colors[i], alpha=.2)
 
                         if  self.b_w_set==True:
                             ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
                             for row in range(ws.shape[0]):
                                 plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-
-                        plt.legend(loc="best")
-                        plt.xlabel("epochs")
-                        plt.ylabel("asset weights")
+                        plt.ylim(0, 1)
+                        plt.legend(loc="upper left")
+                        plt.xlabel("Epochs")
+                        plt.ylabel("Asset Weights")
+                        plt.savefig(
+                            os.getcwd() + '/temp_persisted_data/plot_reinforce_baseline_1e3_' + str(add_baseline) + '.png')
                         plt.show()
                         plt.close()
 
@@ -1499,19 +1548,25 @@ class DeepAgentPytorch(AgentDataBase):
                         mu_chart = np.array(mus_deterministic)
                         sigma_chart=np.array(sigma_deterministc)
                         x_range=range(mu_chart.shape[0])
+                        ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
+                        plt.figure(figsize=(8, 4))
                         for i in range(mu_chart.shape[1]):
                             tmp_mu_plot=mu_chart[:,i]
                             tmp_sigma_plot=sigma_chart[:,i]
                             s_plus=tmp_mu_plot+tmp_sigma_plot
                             s_minus = tmp_mu_plot -tmp_sigma_plot
-                            plt.plot(mu_chart[:,i],label="asset "+ str(i),c=colors[i])
-                            plt.fill_between(x_range,s_plus,s_minus,color=colors[i],alpha=.2)
+                            plt.plot(mu_chart[:,i],label="Asset "+ ticker[i],c=colors[i])
+
+                            # plt.fill_between(x_range,s_plus,s_minus,color=colors[i],alpha=.2)
                         ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
                         for row in range(ws.shape[0]):
                             plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                        plt.legend(loc="best")
+                        plt.ylim(0, 1)
+                        plt.legend(loc="upper left")
+                        plt.savefig(
+                            os.getcwd() + '/temp_persisted_data/plot_actor_critic_traces_1e3_' + str(use_traces) + '.png')
                         plt.show()
                         plt.close()
 
