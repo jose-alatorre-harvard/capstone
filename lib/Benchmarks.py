@@ -2,6 +2,7 @@
 import numpy as np
 import numpy.random as npr
 from tqdm import tqdm
+import pandas as pd
 
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Asset Simulation >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 

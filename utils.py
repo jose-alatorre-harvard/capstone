@@ -76,6 +76,7 @@ class DailyDataFrame2Features:
         :param configuration_dict
         """
 
+
         #all time series should have the same time index
         for counter,ts in enumerate(bars_dict.values()):
             if counter ==0:
@@ -370,7 +371,9 @@ def build_and_persist_features_from_dir( meta_parameters, data_hash,
     """
     # optimally this should be only features
     # RESAMPLE NEEDS RE-CREATION OF TIME SERIE SO JUST USE THIS FOR TESTING
-    assets_dict = {file: pd.read_parquet(data_dir + "/" + file).resample("30min").first() for file in
+    # assets_dict = {file: pd.read_parquet(data_dir + "/" + file).resample("30min").first() for file in
+    #                os.listdir(data_dir)}
+    assets_dict = {file: pd.read_parquet(data_dir + "/" + file).first() for file in
                    os.listdir(data_dir)}
     counter = 0
     for key, value in assets_dict.items():
@@ -408,11 +411,13 @@ def build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data
     PERSISTED_DATA_DIRECTORY = "temp_persisted_data"
     # Todo: Hash csv file
     if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash):
+        print("assets_dict", assets_dict)
         features_instance=DailyDataFrame2Features(bars_dict=assets_dict
                                                   ,configuration_dict={},
                                                   forward_returns_time_delta=[out_reward_window])
 
         features=features_instance.all_features
+
 
         only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
         forward_returns_dates = features_instance.forward_returns_dates
@@ -465,3 +470,42 @@ def train_val_test_purge_combinatorial_kfold(data_as_supervised_df,y,eval_times_
     splits_generator=tmp_combinatorial_purge.split(X=X_train,y=y_train,pred_times=pred_times,eval_times=eval_times_df_train)
 
     return splits_generator, X_test,y_test
+
+def train_val_test(portfolio_df, y, return_dates):
+    """
+
+    :param feature_df:
+    :param returns_df:
+    :param return_dates_df:
+    :param weights:
+    :return:
+    """
+
+
+    features = portfolio_df
+    features.index = pd.to_datetime(features.index)
+
+    eval_times_df = pd.Series(return_dates.values, index=portfolio_df.index)
+    eval_times_df = pd.to_datetime(eval_times_df)
+    eval_times_df.index = pd.to_datetime(eval_times_df.index)
+
+    data_as_supervised_df = features
+    test_train_percent_split = 0.7
+
+    # n_splits = 10
+    # n_test_splits = 1
+    embargo_td = 1
+
+    # splits_generator, X_test, y_test = train_val_test_purge_combinatorial_kfold(data_as_supervised_df, y, eval_times_df,
+    #                                                                             n_splits, n_test_splits, embargo_td,
+    #                                                                             test_train_percent_split)
+    # train_index, val_index = next(splits_generator)
+
+    last_index=int(data_as_supervised_df.shape[0]*test_train_percent_split)
+    X_train=data_as_supervised_df.iloc[:last_index-embargo_td]
+    X_test=data_as_supervised_df.iloc[last_index:]
+
+    X_train.to_csv('temp_persisted_data/X_train.csv')
+    X_test.to_csv('temp_persisted_data/X_test.csv')
+
+    return last_index, embargo_td
