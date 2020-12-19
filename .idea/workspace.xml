@@ -20,23 +20,37 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/data_env/HYG.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_test/EEMV.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_test/EFAV.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_test/HYG.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_test/MTUM.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_test/QUAL.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_test/SIZE.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_test/USMV.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_test/VLUE.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_train/EEMV.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_train/EFAV.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_train/HYG.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_train/MTUM.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_train/QUAL.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_train/SIZE.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_train/USMV.parquet" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_train/VLUE.parquet" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Environment.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/Environment.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Functional_Prototype_Demo_1.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/presentations/Functional_Prototype_Demo_1.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Functional_Prototype_Demo_2.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/presentations/Functional_Prototype_Demo_2.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Functional_Prototype_Demo_2_Slides.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/presentations/Functional_Prototype_Demo_2_Slides.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/REINFORCE-TTV_Loop.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/REINFORCE-TTV_Loop.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sprints Capstone.docx" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/Sprints Capstone.docx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/asset_simulation_benchmarks.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/asset_simulation_benchmarks.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_handler_test.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/data_handler_test.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/environment_data_presentation.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/presentations/environment_data_presentation.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/environment_gymai.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/environment_gymai.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fin_pren.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/presentations/fin_pren.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/finance_environment_jose-Copy1.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/finance_environment_jose-Copy1.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results_1.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/results_1.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sharpe sample.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/sharpe sample.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/Screenshot from 2020-11-28 14-04-15.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/Screenshot from 2020-11-28 14-04-15.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/ac_1_max_return.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/ac_1_max_return.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/ac_1_min_var.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/ac_1_min_var.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/ac_1_step.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/ac_1_step.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/ac_l_return.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/ac_l_return.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/conv2.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/conv2.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/conver_1.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/conver_1.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/reinforce_baseline_max_return_sim.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/reinforce_baseline_max_return_sim.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/reinforce_baseline_min_var_sim.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/reinforce_baseline_min_var_sim.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/reinforce_max_return_sim.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/reinforce_max_return_sim.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/reinforce_min_var_sim.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/reinforce_min_var_sim.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/reminder.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/reminder.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/sac_max_ret.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/sac_max_ret.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/img/sac_min_var.png" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/static/img/sac_min_var.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/files_to_remove/test.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_michael.py" beforeDir="false" />
     </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
@@ -85,11 +99,13 @@
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\tests" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\files_to_remove" />
+      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\presentations" />
+      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone" />
     </key>
   </component>
   <component name="RunManager" selected="Python.Environment">
@@ -320,7 +336,7 @@
       <workItem from="1608234720710" duration="19629000" />
       <workItem from="1608305883575" duration="23564000" />
       <workItem from="1608363292891" duration="186000" />
-      <workItem from="1608363500131" duration="786000" />
+      <workItem from="1608363500131" duration="1640000" />
     </task>
     <task id="LOCAL-00001" summary="commit">
       <created>1600146718068</created>
@@ -518,7 +534,14 @@
       <option name="project" value="LOCAL" />
       <updated>1608364036638</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="integration into master branch">
+      <created>1608364602150</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1608364602150</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -571,7 +594,8 @@
     <MESSAGE value="update formatting" />
     <MESSAGE value="updated backtest_policy function" />
     <MESSAGE value="update" />
-    <option name="LAST_COMMIT_MESSAGE" value="update" />
+    <MESSAGE value="integration into master branch" />
+    <option name="LAST_COMMIT_MESSAGE" value="integration into master branch" />
   </component>
   <component name="WindowStateProjectService">
     <state x="3151" y="329" key="#Notifications" timestamp="1608363464836">
@@ -591,20 +615,20 @@
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601347440560" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
-    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608364035415">
+    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608364599151">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="192" y="0" key="CommitChangelistDialog2/0.0.1280.680@0.0.1280.680" timestamp="1600146717066" />
     <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1607373568886" />
-    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608364035415" />
-    <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364061937">
+    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608364599151" />
+    <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364617930">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="70" y="62" width="1125" height="572" key="DiffContextDialog/0.0.1280.680/2560.0.1680.1010@0.0.1280.680" timestamp="1601425566853" />
     <state x="2652" y="92" width="1496" height="826" key="DiffContextDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343700230" />
     <state x="80" y="71" width="1382" height="659" key="DiffContextDialog/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606612432636" />
-    <state x="2652" y="92" width="1477" height="850" key="DiffContextDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608364061937" />
+    <state x="2652" y="92" width="1477" height="850" key="DiffContextDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608364617930" />
     <state x="3112" y="141" key="FileChooserDialogImpl" timestamp="1608362661048">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
@@ -688,26 +712,26 @@
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="3068" y="124" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343621009" />
-    <state x="2867" y="110" key="Vcs.Push.Dialog.v2" timestamp="1608364139424">
+    <state x="2867" y="110" key="Vcs.Push.Dialog.v2" timestamp="1608364627985">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344614359" />
     <state x="234" y="74" key="Vcs.Push.Dialog.v2/0.0.1280.680@0.0.1280.680" timestamp="1600196937024" />
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1607373615362" />
-    <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608364139424" />
+    <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608364627985" />
     <state x="128" y="-7" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1608363268828">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2626" y="61" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601161044324" />
     <state x="128" y="-7" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363268828" />
-    <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1608363789228">
+    <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1608364677753">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="459" y="255" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1280.680/2560.0.1680.1010@0.0.1280.680" timestamp="1601339463972" />
     <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601341272345" />
     <state x="459" y="255" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1280.680@0.0.1280.680" timestamp="1600196911452" />
     <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608053778890" />
-    <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363789228" />
+    <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608364677753" />
     <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783@0.0.1463.783" timestamp="1603734369727" />
     <state x="2204" y="300" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/1680.0.1463.800/0.0.1680.1010@1680.0.1463.800" timestamp="1601787823614" />
     <state x="91" y="0" width="1252" height="749" key="dock-window-1" timestamp="1604346235360">
