@@ -655,10 +655,13 @@ class AgentDataBase:
 
         if env_test==None:
             activate_date=self.environment.features.index[0]
+            print("type activate_date", type(activate_date))
             tmp_weights = self.environment.state.weight_buffer.copy()
             fwd_return_date_name = self.environment.forward_returns_dates.columns[0]
-            end_date = self.environment.forward_returns_dates.iloc[-10].values[0]
-            # end_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
+            if type(activate_date)== pd.Timestamp:
+                end_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
+            else:
+                end_date = self.environment.forward_returns_dates.iloc[-10].values[0]
             while activate_date <= end_date:
                 i = self.environment.features.index.searchsorted(activate_date)
                 try:
@@ -680,9 +683,7 @@ class AgentDataBase:
             tmp_weights = env_test.state.weight_buffer[1:].copy()
             tmp_weights.columns = test_input_returns.columns
             fwd_return_date_name = env_test.forward_returns_dates.columns[0]
-            # end_date = env_test.forward_returns_dates.iloc[-10].values[0]
-            # end_date = pd.Timestamp(env_test.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
-            end_date = pd.Timestamp(test_input_returns.index[-7])
+            end_date = pd.Timestamp(test_input_returns.index[-10])
             while activate_date <= end_date:
                 i = env_test.features.index.searchsorted(activate_date)
                 try:
@@ -1164,7 +1165,7 @@ class LinearAgent(AgentDataBase):
                     plt.legend(loc="best")
                     plt.xlabel("Epochs")
                     plt.ylabel("Reward")
-                    plt.savefig(os.getcwd() + '/temp_persisted_data/plot_reward_actor_critic_traces_0_' + str(use_traces) + '.png')
+                    plt.savefig(os.getcwd() + '/temp_persisted_data/plot_reward_actor_critic_traces_10_' + str(use_traces) + '.png')
                     plt.show()
 
                     plt.figure(figsize=(8,4))
@@ -1190,7 +1191,7 @@ class LinearAgent(AgentDataBase):
                     plt.legend(loc="upper left")
                     plt.xlabel("Epochs")
                     plt.ylabel("Asset Weights")
-                    plt.savefig(os.getcwd() + '/temp_persisted_data/plot_actor_critic_traces_0_' + str(use_traces) + '.png')
+                    plt.savefig(os.getcwd() + '/temp_persisted_data/plot_actor_critic_traces_10_' + str(use_traces) + '.png')
                     plt.show()
                     plt.plot(V,label="Value Function")
                     plt.show()
@@ -1299,7 +1300,7 @@ class LinearAgent(AgentDataBase):
                         plt.xlabel("Epochs")
                         plt.ylabel("Reward")
                         plt.savefig(
-                            os.getcwd() + '/temp_persisted_data/plot_reward_reinforce_baseline_0_' + str(add_baseline) + '.png')
+                            os.getcwd() + '/temp_persisted_data/plot_reward_reinforce_baseline_10_' + str(add_baseline) + '.png')
                         plt.show()
 
                         plt.figure(figsize=(8, 4))
@@ -1327,7 +1328,7 @@ class LinearAgent(AgentDataBase):
                         plt.xlabel("Epochs")
                         plt.ylabel("Asset Weights")
                         plt.savefig(
-                            os.getcwd() + '/temp_persisted_data/plot_reinforce_baseline_1e3_' + str(add_baseline) + '.png')
+                            os.getcwd() + '/temp_persisted_data/plot_reinforce_baseline_10_' + str(add_baseline) + '.png')
                         plt.show()
                         plt.close()
 
