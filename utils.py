@@ -141,8 +141,6 @@ class DailyDataFrame2Features:
         :param exclude_feature_columns:
         :return:
         """
-        # todo: exclude features that shouldnt be take in count for PCA like categorical
-
         # windsorize data as PCA is sensitive
 
         # scale and transform
@@ -363,16 +361,13 @@ class DailySeries2Features:
 def build_and_persist_features_from_dir( meta_parameters, data_hash,
                                               data_dir="data_env",):
     """
-    Do transformations that shouldnt be part of the class
+    Do transformations that shouldn't be part of the class
 
-    Also using the meta parameters
+    Also uses the meta parameters
 
 
     """
-    # optimally this should be only features
-    # RESAMPLE NEEDS RE-CREATION OF TIME SERIE SO JUST USE THIS FOR TESTING
-    # assets_dict = {file: pd.read_parquet(data_dir + "/" + file).resample("30min").first() for file in
-    #                os.listdir(data_dir)}
+
     assets_dict = {file: pd.read_parquet(data_dir + "/" + file).first() for file in
                    os.listdir(data_dir)}
     counter = 0
@@ -431,8 +426,6 @@ def build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data
         #Add bias to features
         only_features["bias"] = 1
 
-
-
         only_features.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_" + data_hash)
         only_forward_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_" + data_hash)
         forward_returns_dates.to_parquet(PERSISTED_DATA_DIRECTORY + "/forward_return_dates_" + data_hash)
@@ -446,7 +439,7 @@ def train_val_test_purge_combinatorial_kfold(data_as_supervised_df,y,eval_times_
 
     :param data_as_supervised_df:(pandas.DataFrame) DataFrame with data as supervised index=observation_date,columns=features/state
     :param y: (pandas.Serie) predictions or rewards , index=observation_date
-    :param eval_times_df: (pandas.DataFrame)  time when the reward is obstained (index=prediction_time,evaluation_time)
+    :param eval_times_df: (pandas.DataFrame)  time when the reward is obtained (index=prediction_time,evaluation_time)
     :param n_splits:
     :param embargo:
     :param test_train_percent_split:
@@ -471,16 +464,15 @@ def train_val_test_purge_combinatorial_kfold(data_as_supervised_df,y,eval_times_
 
     return splits_generator, X_test,y_test
 
-def train_val_test(portfolio_df, y, return_dates):
+def train_test(portfolio_df, y, return_dates):
     """
-
+    Performs a train test split
     :param feature_df:
     :param returns_df:
     :param return_dates_df:
     :param weights:
     :return:
     """
-
 
     features = portfolio_df
     features.index = pd.to_datetime(features.index)
@@ -492,14 +484,7 @@ def train_val_test(portfolio_df, y, return_dates):
     data_as_supervised_df = features
     test_train_percent_split = 0.7
 
-    # n_splits = 10
-    # n_test_splits = 1
     embargo_td = 1
-
-    # splits_generator, X_test, y_test = train_val_test_purge_combinatorial_kfold(data_as_supervised_df, y, eval_times_df,
-    #                                                                             n_splits, n_test_splits, embargo_td,
-    #                                                                             test_train_percent_split)
-    # train_index, val_index = next(splits_generator)
 
     last_index=int(data_as_supervised_df.shape[0]*test_train_percent_split)
     X_train=data_as_supervised_df.iloc[:last_index-embargo_td]
