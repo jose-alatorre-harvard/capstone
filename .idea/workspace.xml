@@ -19,9 +19,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+    <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="updated data requirements">
       <change beforePath="$PROJECT_DIR$/User Steps for Real-World Data.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/User Steps for Real-World Data.ipynb" afterDir="false" />
     </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
@@ -309,7 +307,7 @@
       <workItem from="1608305883575" duration="23564000" />
       <workItem from="1608363292891" duration="186000" />
       <workItem from="1608363500131" duration="1988000" />
-      <workItem from="1608393886422" duration="24854000" />
+      <workItem from="1608393886422" duration="25494000" />
     </task>
     <task id="LOCAL-00001" summary="commit">
       <created>1600146718068</created>
@@ -647,7 +645,14 @@
       <option name="project" value="LOCAL" />
       <updated>1608443685987</updated>
     </task>
-    <option name="localTasksCounter" value="49" />
+    <task id="LOCAL-00049" summary="updated README.md">
+      <created>1608447783733</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1608447783733</updated>
+    </task>
+    <option name="localTasksCounter" value="50" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -699,9 +704,9 @@
     <MESSAGE value="formatting update" />
     <MESSAGE value="master branch integration" />
     <MESSAGE value="code formatting improvements" />
-    <MESSAGE value="updated README.md" />
     <MESSAGE value="master branch consolidation" />
-    <option name="LAST_COMMIT_MESSAGE" value="master branch consolidation" />
+    <MESSAGE value="updated README.md" />
+    <option name="LAST_COMMIT_MESSAGE" value="updated README.md" />
   </component>
   <component name="WindowStateProjectService">
     <state x="3151" y="329" key="#Notifications" timestamp="1608363464836">
@@ -721,13 +726,13 @@
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601347440560" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
-    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608443684208">
+    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608447805972">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="192" y="0" key="CommitChangelistDialog2/0.0.1280.680@0.0.1280.680" timestamp="1600146717066" />
     <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367144986" />
-    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608443684208" />
+    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608447805972" />
     <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364617930">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
