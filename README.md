@@ -5,7 +5,7 @@
 *CSCI E-599a | Data Science Capstone | Harvard Extension School | Fall 2020*  
 
 #### Project Website
-https://nikatpatel.github.io/epsilon-greedy-quants/website/
+https://nikatpatel.github.io/epsilon-greedy-quants/
 
 #### Installation Instructions
 Please refer to https://nikatpatel.github.io/epsilon-greedy-quants/website/user_guide.html for details of the installation requirements and installation instructions.
