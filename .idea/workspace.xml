@@ -21,15 +21,9 @@
   <component name="ChangeListManager">
     <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Real_World_Data_Demonstration.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real_World_Data_Demonstration.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/User Steps for Real-World Data.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/User Steps for Real-World Data.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/environments/e_greedy.py" beforeDir="false" afterPath="$PROJECT_DIR$/environments/e_greedy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp_persisted_data/forward_return_dates_real_data_test" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp_persisted_data/forward_return_dates_real_data_train" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp_persisted_data/only_features_real_data_test" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp_persisted_data/only_features_real_data_train" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp_persisted_data/only_forward_returns_real_data_test" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp_persisted_data/only_forward_returns_real_data_train" beforeDir="false" />
     </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
@@ -316,7 +310,7 @@
       <workItem from="1608305883575" duration="23564000" />
       <workItem from="1608363292891" duration="186000" />
       <workItem from="1608363500131" duration="1988000" />
-      <workItem from="1608393886422" duration="9307000" />
+      <workItem from="1608393886422" duration="14070000" />
     </task>
     <task id="LOCAL-00001" summary="commit">
       <created>1600146718068</created>
@@ -584,7 +578,21 @@
       <option name="project" value="LOCAL" />
       <updated>1608409023062</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="Updated User Steps for real world data">
+      <created>1608427282523</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1608427282523</updated>
+    </task>
+    <task id="LOCAL-00040" summary="fix code for handling multiple inputs">
+      <created>1608427322963</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1608427322963</updated>
+    </task>
+    <option name="localTasksCounter" value="41" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -613,7 +621,6 @@
     <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="creates DeepTradingEnvironment with features which user can specify" />
     <MESSAGE value="Revert &quot;Updated data_handler / notebook with new Environment feature call reference&quot;&#10;&#10;This reverts commit 8ce7f6ec" />
     <MESSAGE value="Revert &quot;Modified docstring spacing&quot;&#10;&#10;This reverts commit f192ba3c" />
     <MESSAGE value="Modified notebook" />
@@ -638,7 +645,8 @@
     <MESSAGE value="Real_World data demonstration" />
     <MESSAGE value="master branch consolidation" />
     <MESSAGE value="Updated User Steps for real world data" />
-    <option name="LAST_COMMIT_MESSAGE" value="Updated User Steps for real world data" />
+    <MESSAGE value="fix code for handling multiple inputs" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix code for handling multiple inputs" />
   </component>
   <component name="WindowStateProjectService">
     <state x="3151" y="329" key="#Notifications" timestamp="1608363464836">
@@ -658,13 +666,13 @@
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601347440560" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
-    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608409021331">
+    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608427321227">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="192" y="0" key="CommitChangelistDialog2/0.0.1280.680@0.0.1280.680" timestamp="1600146717066" />
     <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367144986" />
-    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608409021331" />
+    <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608427321227" />
     <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364617930">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
