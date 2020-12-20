@@ -1,5 +1,3 @@
-
-
 import os
 import pandas as pd
 import numpy as np
@@ -15,7 +13,7 @@ import inspect
 def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta,
                          return_indices=False):
     """
-
+    calculates the return in the specified time period
     :param serie:
     :param origin_time_delta:
     :param finish_time_delta:
@@ -44,7 +42,6 @@ def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_li
     period_return = period_return.sort_index()
 
     try:
-
         index_name=serie.index.name  if serie.index.name is not None else "index"
         numerators_df=pd.DataFrame(index=obs_dates,
                                      data=serie.iloc[numerators].reset_index()[index_name].values )
@@ -64,7 +61,7 @@ def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_li
 
 class DailyDataFrame2Features:
     """
-
+    Convert daily data into features
     """
 
     def __init__(self, bars_dict, configuration_dict, features_list=None, exclude_features=None,forward_returns_time_delta=None ):
@@ -76,8 +73,7 @@ class DailyDataFrame2Features:
         :param configuration_dict
         """
 
-
-        #all time series should have the same time index
+        # check that all time series have the same time index
         for counter,ts in enumerate(bars_dict.values()):
             if counter ==0:
                 base_index=ts.index
@@ -93,12 +89,10 @@ class DailyDataFrame2Features:
             technical_features.columns = [asset_name + "_" + i for i in technical_features.columns]
             all_features = pd.concat([all_features, technical_features], axis=1)
 
-
-
         # we drop N/A because there are no features available on certains dates like moving averages
         self.all_features = all_features.dropna()
 
-        # set forward_returns
+        # set forward returns
         if forward_returns_time_delta is not None:
             self.forward_returns_dates = features_instance.forward_returns_dates[0]
             self.forward_returns_dates = self.forward_returns_dates.reindex(self.all_features.index)
@@ -137,7 +131,7 @@ class DailyDataFrame2Features:
 
     def create_pca_projection(self, exclude_feature_columns, var_limit=.02):
         """
-        Create PCA features
+        create PCA features
         :param exclude_feature_columns:
         :return:
         """
@@ -164,7 +158,6 @@ class DailySeries2Features:
 
     def __init__(self, serie_or_df, features_list=None, exclude_features=None, forward_returns_time_delta=None):
         """
-
         :param serie: pandas.Serie
         :param serie_or_df:
         :param features_list:
@@ -245,19 +238,27 @@ class DailySeries2Features:
             raise
 
     def _set_features(self, features_list):
-
         for feature in features_list:
-
             try:
                 getattr(self, "_add_" + feature)
             except:
                 print("feature " + feature + "  not found")
 
     def _add_rsi(self, serie):
+        """
+        calculates the relative strength index
+        :param serie:
+        :return:
+        """
         technical = talib.RSI(serie, self.RSI_TIME_FRAME)
         return technical
 
     def _add_bollinger_bands(self, serie):
+        """
+        calculates the Bollinger Bands
+        :param serie:
+        :return:
+        """
         technical = talib.BBANDS(serie, self.BOLLINGER_TIME_FRAME)
         technical = pd.DataFrame(technical).T
         technical.columns = ["bollinger_up", "bollinger_mid", "bollinger_low"]
@@ -265,7 +266,11 @@ class DailySeries2Features:
         return technical
 
     def _add_ewma_vol(self, serie):
-
+        """
+        calculates the exponentially weighted moving average (EWMA)
+        :param serie:
+        :return:
+        """
         techinical = serie.ewm(alpha=self.EWMA_VOL_ALPHA).std() * np.sqrt(self.ANUALIZING_FACTOR)
         return techinical
 
@@ -280,30 +285,31 @@ class DailySeries2Features:
 
     def _add_100_days_ma(self, serie):
         """
-       moving average is normalized to last close value to be comparable
-       :param serie:
-       :return:
-       """
+        moving average is normalized to last close value to be comparable
+        :param serie:
+        :return:
+        """
         techinical = (serie.rolling(100).mean()).divide(serie)
         return techinical
 
     def _add_200_days_ma(self, serie):
         """
-       moving average is normalized to last close value to be comparable
-       :param serie:
-       :return:
-       """
+        moving average is normalized to last close value to be comparable
+        :param serie:
+        :return:
+        """
         techinical = (serie.rolling(200).mean()).divide(serie)
         return techinical
 
 
-
     def _add_log_returns(self, serie):
+        """
+        taking the log of the returns
+        :param serie:
+        :return:
+        """
         feature = self.log_prices.copy().diff()
         return feature
-
-    # def _addhlc_natr(self,data_frame):
-    #     pass
 
     def _add_12m1_past_return(self, serie):
         """
@@ -362,10 +368,7 @@ def build_and_persist_features_from_dir( meta_parameters, data_hash,
                                               data_dir="data_env",):
     """
     Do transformations that shouldn't be part of the class
-
     Also uses the meta parameters
-
-
     """
 
     assets_dict = {file: pd.read_parquet(data_dir + "/" + file).first() for file in
@@ -382,18 +385,12 @@ def build_and_persist_features_from_dir( meta_parameters, data_hash,
         tmp_df = tmp_df.fillna(method='ffill')
         assets_dict[key] = tmp_df
 
-    build_and_persist_features(assets_dict=assets_dict,
-                               in_bars_count=
-                               meta_parameters[
-                                   "in_bars_count"],
-                               out_reward_window=
-                               meta_parameters[
-                                   "out_reward_window"],
-                               data_hash=data_hash)
+    build_and_persist_features(assets_dict=assets_dict, in_bars_count=meta_parameters["in_bars_count"],
+                               out_reward_window=meta_parameters["out_reward_window"],data_hash=data_hash)
 
 def build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data_hash):
     """
-     builds close-to-close returns for a specif
+    builds close-to-close returns for a specified dataset
     :param assets_dict:
     :param out_reward_window:
     :param in_bars_count:
@@ -401,42 +398,35 @@ def build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data
     :return:
     """
 
-
-
     PERSISTED_DATA_DIRECTORY = "temp_persisted_data"
-    # Todo: Hash csv file
     if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash):
-        print("assets_dict", assets_dict)
+
         features_instance=DailyDataFrame2Features(bars_dict=assets_dict
                                                   ,configuration_dict={},
                                                   forward_returns_time_delta=[out_reward_window])
-
         features=features_instance.all_features
-
-
         only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
         forward_returns_dates = features_instance.forward_returns_dates
-        #Todo: get all features
         only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
-        #get the lagged returns as features
+
+        # get the lagged returns as features
         only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
         only_features=only_features.dropna()
         only_forward_returns=only_forward_returns.reindex(only_features.index)
         forward_returns_dates=forward_returns_dates.reindex(only_features.index)
-        #Add bias to features
-        only_features["bias"] = 1
 
+        # Add bias to features
+        only_features["bias"] = 1
         only_features.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_" + data_hash)
         only_forward_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_" + data_hash)
         forward_returns_dates.to_parquet(PERSISTED_DATA_DIRECTORY + "/forward_return_dates_" + data_hash)
 
     else:
-
         print("features already persisted")
 
 def train_val_test_purge_combinatorial_kfold(data_as_supervised_df,y,eval_times_df,n_splits,n_test_splits,embargo_td,test_train_percent_split):
     """
-
+    performs a train/val/test split using combinatorial purged cross-validation
     :param data_as_supervised_df:(pandas.DataFrame) DataFrame with data as supervised index=observation_date,columns=features/state
     :param y: (pandas.Serie) predictions or rewards , index=observation_date
     :param eval_times_df: (pandas.DataFrame)  time when the reward is obtained (index=prediction_time,evaluation_time)
@@ -453,7 +443,6 @@ def train_val_test_purge_combinatorial_kfold(data_as_supervised_df,y,eval_times_
     eval_times_df_train = eval_times_df.iloc[:last_index]
     eval_times_df_test = eval_times_df.iloc[last_index:]
 
-
     #time when the prediction is done corresponds to indes of supervised
     pred_times = pd.Series(index=X_train.index, data=X_train.index)
 
@@ -466,7 +455,7 @@ def train_val_test_purge_combinatorial_kfold(data_as_supervised_df,y,eval_times_
 
 def train_test(portfolio_df, y, return_dates):
     """
-    Performs a train test split
+    Performs a train/test split
     :param feature_df:
     :param returns_df:
     :param return_dates_df:
