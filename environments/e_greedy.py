@@ -649,33 +649,49 @@ class AgentDataBase:
 
     def backtest_policy(self,epoch,backtest, env_test=None, test_input=None):
         """
-        backtest portfolio policy
+        Performs a backtest based on the environment's policy
         :return:
         """
-
+        # used for calculating backtest within the same environment
         if env_test==None:
-            activate_date=self.environment.features.index[0]
-            print("type activate_date", type(activate_date))
-            tmp_weights = self.environment.state.weight_buffer.copy()
-            fwd_return_date_name = self.environment.forward_returns_dates.columns[0]
-            if type(activate_date)== pd.Timestamp:
-                end_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
-            else:
-                end_date = self.environment.forward_returns_dates.iloc[-10].values[0]
-            while activate_date <= end_date:
-                i = self.environment.features.index.searchsorted(activate_date)
-                try:
-                    obs = self.environment.state.get_flat_state_by_iloc(i)
-                except:
-                    a = 5
-                action = self.policy(obs, deterministic=True)
-                next_observation_date = self.environment.forward_returns_dates.iloc[i][fwd_return_date_name]
+            # try/except clause used to account for difference in datetime formats
+            try:
+                activate_date=pd.Timestamp(self.environment.features.index[0])
+                tmp_weights = self.environment.state.weight_buffer.copy()
+                fwd_return_date_name = self.environment.forward_returns_dates.columns[0]
+                end_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0])
+                while activate_date <= end_date:
+                    i = self.environment.features.index.searchsorted(activate_date)
+                    try:
+                        obs = self.environment.state.get_flat_state_by_iloc(i)
+                    except:
+                        a = 5
+                    action = self.policy(obs, deterministic=True)
+                    next_observation_date = self.environment.forward_returns_dates.iloc[i][fwd_return_date_name]
 
-                tmp_weights.loc[activate_date:next_observation_date, :] = action
-                activate_date = next_observation_date
+                    tmp_weights.loc[activate_date:next_observation_date, :] = action
+                    activate_date = next_observation_date
+
+            except:
+                activate_date = pd.Timestamp(self.environment.features.index[0]).tz_convert('utc')
+                tmp_weights = self.environment.state.weight_buffer.copy()
+                fwd_return_date_name = self.environment.forward_returns_dates.columns[0]
+                end_date = pd.Timestamp(self.environment.forward_returns_dates.iloc[-10].values[0]).tz_localize('utc')
+                while activate_date <= end_date:
+                    i = self.environment.features.index.searchsorted(activate_date)
+                    try:
+                        obs = self.environment.state.get_flat_state_by_iloc(i)
+                    except:
+                        a = 5
+                    action = self.policy(obs, deterministic=True)
+                    next_observation_date = self.environment.forward_returns_dates.iloc[i][fwd_return_date_name]
+
+                    tmp_weights.loc[activate_date:next_observation_date, :] = action
+                    activate_date = next_observation_date
 
             tmp_backtest = ((self.environment.forward_returns * tmp_weights).sum(axis=1) + 1).cumprod()
 
+        # used for backtest of a test environment using a training environment's policy
         else:
             test_input_returns = test_input.to_returns().dropna()
             test_input_returns = test_input_returns.loc[(test_input_returns != 0).any(1)]
@@ -697,24 +713,6 @@ class AgentDataBase:
                 activate_date = next_observation_date
             tmp_backtest = ((test_input_returns * tmp_weights).sum(axis=1)+1).cumprod()
 
-        # activate_date=self.environment.features.index[0]
-        # tmp_weights=self.environment.state.weight_buffer.copy()
-
-        # fwd_return_date_name=self.environment.forward_returns_dates.columns[0]
-        # while activate_date <= end_date:
-        #
-        #     i=self.environment.features.index.searchsorted(activate_date)
-        #     try:
-        #         obs=self.environment.state.get_flat_state_by_iloc(i)
-        #     except:
-        #         a=5
-        #     action=self.policy(obs,deterministic=True)
-        #     next_observation_date=self.environment.forward_returns_dates.iloc[i][fwd_return_date_name]
-        #
-        #     tmp_weights.loc[activate_date:next_observation_date,:]=action
-        #     activate_date=next_observation_date
-        #
-        # tmp_backtest=((self.environment.forward_returns*tmp_weights).sum(axis=1)+1).cumprod()
         tmp_backtest.name=epoch
         if backtest is None:
             backtest=tmp_backtest.to_frame()
