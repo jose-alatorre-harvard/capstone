@@ -13,5 +13,4 @@ Please refer to https://nikatpatel.github.io/epsilon-greedy-quants/website/user_
 #### User Guide
 Please refer to **User Steps for Real-World Data.ipynb** for a user guide showing how to load real-world data, set up an environment, and run our Policy Gradient Methods.
 
-Please refer to **User Steps for Statistics and Benchmarks.ipynb** for a user guide showing how to load real-world data, run data statistics, perform benchmarks.  
-This guide also shows how to load backtests generated from the Real-World Data User Guide and compare them to the benchmarks.  
+Please refer to **User Steps for Statistics and Benchmarks.ipynb** for a user guide showing how to load real-world data, run data statistics, perform benchmarks. This guide also shows how to load backtests generated from the Real-World Data User Guide and compare them to the benchmarks.  
