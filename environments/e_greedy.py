@@ -688,6 +688,7 @@ class AgentDataBase:
                 next_observation_date = env_test.forward_returns_dates.iloc[i][fwd_return_date_name]
 
                 tmp_weights.loc[activate_date:next_observation_date, :] = action
+
                 activate_date = next_observation_date
             tmp_backtest = ((test_input_returns * tmp_weights).sum(axis=1)+1).cumprod()
 
@@ -697,7 +698,7 @@ class AgentDataBase:
         else:
             backtest=pd.concat([backtest,tmp_backtest],axis=1)
 
-        return backtest
+        return backtest, tmp_weights
 
     def _build_full_pre_sampled_indices(self):
         """
@@ -736,15 +737,26 @@ class AgentDataBase:
         :return:
         """
         frd=self.environment.forward_returns_dates
+        # frd.to_csv("dates.csv")
         column_name = frd.columns[0]
         end_date=frd[column_name].max()
 
         for obs in range(self.sample_observations+1):
-            last_date_start = frd[frd[column_name] == end_date].index
+            # find next observation date based on end date of previous observation date.  If observation date not found in index,
+            # search for next date where observation is recorded.
+            try:
+                last_date_start = frd[frd[column_name] == end_date].index
+                assert len(last_date_start) > 0
+            except:
+                end_date = end_date+pd.Timedelta('1 days')
+                last_date_start = frd[frd[column_name] == end_date].index
+                assert len(last_date_start) > 0
+
             last_date_start_index = frd.index.searchsorted(last_date_start)
             end_date = frd.index[last_date_start_index][0]
         self.latest_posible_index_date=last_date_start_index[0]
-        self.max_available_obs_date=frd[column_name].index.max().tz_localize(None) #.tz_localize(None)
+
+        self.max_available_obs_date=frd[column_name].index.max().tz_localize(None)
 
         # presampled indices for environment sample
 
@@ -1101,7 +1113,7 @@ class LinearAgent(AgentDataBase):
                     # Create Plot Backtest
                     if not "backtest" in locals():
                         backtest=None
-                    backtest=self.backtest_policy(epoch=iters,backtest=backtest)
+                    backtest, tmp_weights =self.backtest_policy(epoch=iters,backtest=backtest)
                     n_cols=len(backtest.columns)
                     for col_counter,col in enumerate(backtest):
                         plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols)

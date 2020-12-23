@@ -21,6 +21,8 @@
   <component name="ChangeListManager">
     <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/environments/e_greedy.py" beforeDir="false" afterPath="$PROJECT_DIR$/environments/e_greedy.py" afterDir="false" />
     </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
@@ -310,6 +312,7 @@
       <workItem from="1608363500131" duration="1988000" />
       <workItem from="1608393886422" duration="26562000" />
       <workItem from="1608481205631" duration="2436000" />
+      <workItem from="1608663855776" duration="12632000" />
     </task>
     <task id="LOCAL-00009" summary="updated notebook with html slides">
       <created>1602015187717</created>
