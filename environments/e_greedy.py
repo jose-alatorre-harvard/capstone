@@ -413,6 +413,10 @@ class DeepTradingEnvironment(gym.Env):
             #get the lagged returns as features
             only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
             only_features=only_features.dropna()
+
+            # add bias to features
+            only_features["bias"] = 1
+
             only_forward_returns=only_forward_returns.reindex(only_features.index)
             forward_returns_dates=forward_returns_dates.reindex(only_features.index)
 
@@ -468,8 +472,8 @@ class DeepTradingEnvironment(gym.Env):
                                              out_reward_window=meta_parameters["out_reward_window"],
                                              data_hash=data_hash)
 
-        # add bias to features
-        features["bias"]=1
+        # # add bias to features
+        # features["bias"]=1
 
         return DeepTradingEnvironment(features=features,forward_returns_dates=forward_returns_dates,
                                forward_returns=forward_returns, meta_parameters=meta_parameters,
