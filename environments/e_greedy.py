@@ -629,7 +629,7 @@ class AgentDataBase:
         self.number_of_assets = self.environment.number_of_assets
         self.state_dimension = self.environment.state.state_dimension
 
-    def backtest_policy(self,epoch,backtest, env_test=None, test_input=None):
+    def backtest_policy(self,epoch,backtest, env_test=None, train_input=None, test_input=None):
         """
         Performs a backtest based on the environment's policy
         :return:
@@ -637,6 +637,8 @@ class AgentDataBase:
         # used for calculating backtest within the same environment
         if env_test==None:
             # try/except clause used to account for difference in datetime formats
+            train_input_returns = train_input.to_returns().dropna()
+            train_input_returns = train_input_returns.loc[(train_input_returns != 0).any(1)]
             try:
                 activate_date=pd.Timestamp(self.environment.features.index[0])
                 tmp_weights = self.environment.state.weight_buffer.copy()
@@ -670,8 +672,10 @@ class AgentDataBase:
 
                     tmp_weights.loc[activate_date:next_observation_date, :] = action
                     activate_date = next_observation_date
-
-            tmp_backtest = ((self.environment.forward_returns * tmp_weights).sum(axis=1) + 1).cumprod()
+            tmp_weights.columns = train_input_returns.columns
+            print("train_input_returns", train_input_returns)
+            print("tmp weights", tmp_weights)
+            tmp_backtest = ((train_input_returns * tmp_weights).sum(axis=1) + 1).cumprod()
 
         # used for backtest of a test environment using a training environment's policy
         else:
@@ -1007,7 +1011,7 @@ class LinearAgent(AgentDataBase):
 
 
     def ACTOR_CRITIC_FIT(self, alpha=.01, gamma=.99, theta_threshold=.001, max_iterations=10000, plot_gradients=False, plot_every=2000
-                      , record_average_weights=True,  alpha_critic=.01,l_trace=.3,l_trace_critic=.3,use_traces=False, verbose=True):
+                      , record_average_weights=True,  alpha_critic=.01,l_trace=.3,l_trace_critic=.3,use_traces=False, train_input = None, model_run=None,verbose=True):
         """
         performs the Actor-Critic Policy Gradient Model with option to add eligibility traces
         :return:
@@ -1117,13 +1121,25 @@ class LinearAgent(AgentDataBase):
                     # Create Plot Backtest
                     if not "backtest" in locals():
                         backtest=None
-                    backtest, tmp_weights =self.backtest_policy(epoch=iters,backtest=backtest)
+                    backtest, tmp_weights =self.backtest_policy(epoch=iters,backtest=backtest, train_input=train_input)
                     n_cols=len(backtest.columns)
+                    print("backtest", backtest)
+                    print("backtest cols", n_cols)
+                    plt.figure(figsize=(8, 4))
                     for col_counter,col in enumerate(backtest):
-                        plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols)
-                        plt.show()
-                        plt.close()
-                        # Backtest plot finishes
+                        plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols, label="epoch"+str(col))
+                    plt.gcf().autofmt_xdate()
+                    plt.xlabel("Date")
+                    plt.ylabel("Backtest Return")
+                    plt.legend(loc="upper left")
+                    plt.savefig('temp_persisted_data/' + model_run + 'training_backtest_actor_critic_traces'+
+                                    str(use_traces)+ '.png')
+                    plt.show()
+                    plt.close()
+                    # Backtest plot finishes
+
+                    backtest.to_csv('temp_persisted_data/' + model_run + 'training_backtest_actor_critic_traces'+
+                                    str(use_traces)+'.csv')
 
                     plt.plot(n_iters, average_reward, label=self.reward_function)
                     if self.b_w_set == True:
@@ -1138,15 +1154,28 @@ class LinearAgent(AgentDataBase):
                     sigma_chart = np.array(sigma_deterministic)
                     x_range = [round(i/observations,2) for i in range(mu_chart.shape[0])]
                     ticker=["EEMV", "EFAV","MTUM","QUAL","SIZE","USMV","VLUE"]
+                    ticker2 = ["MTUM", "Simulated Asset"]
+                    ticker3 = ["MTUM", "USMV"]
                     cmap = plt.get_cmap('jet')
                     colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
                     for i in range(mu_chart.shape[1]):
+                        if mu_chart.shape[1] == 7:
+                            symbol = ticker
+                        elif mu_chart.shape[1] == 2 and np.mean(train_input.iloc[:,1]) < 1:
+                                symbol = ticker2
+                        elif mu_chart.shape[1] == 2 and np.mean(train_input.iloc[:,1]) > 1:
+                                symbol = ticker3
+                        else:
+                            symbol = range(mu_chart.shape[1])
+
                         tmp_mu_plot = mu_chart[:, i]
                         tmp_sigma_plot = sigma_chart[:, i]
                         s_plus = tmp_mu_plot + tmp_sigma_plot
                         s_minus = tmp_mu_plot - tmp_sigma_plot
-                        plt.plot(x_range,mu_chart[:, i], label="Asset " + ticker[i], c=colors[i])
-                        # plt.fill_between(x_range, s_plus, s_minus, color=colors[i], alpha=.2)
+                        plt.plot(mu_chart[:, i], label="Asset " + symbol[i], c=colors[i])
+                        if mu_chart.shape[1] == 2:
+                            plt.fill_between([i for i in range(s_plus.shape[0])], s_plus, s_minus, color=colors[i],
+                                         alpha=.2)
 
                     if self.b_w_set == True:
                         ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
@@ -1171,7 +1200,7 @@ class LinearAgent(AgentDataBase):
 
 
     def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000, plot_gradients=False, plot_every=2000
-                             ,record_average_weights=True,add_baseline=False,alpha_baseline=.01, verbose=True):
+                             ,record_average_weights=True,add_baseline=False,alpha_baseline=.01, train_input = None, model_run=None, verbose=True):
         """
         performs the REINFORCE Policy Gradient Method with option to run the REINFORCE with baseline Policy Gradient Method
         :return:
@@ -1209,8 +1238,6 @@ class LinearAgent(AgentDataBase):
                 flat_state_t=states[t]
 
                 gamma_coef=np.array([gamma**(k-t) for k in range(t,observations)])
-
-
                 G=np.sum(rewards[t:]*gamma_coef)
 
                 if add_baseline==True:
@@ -1254,6 +1281,27 @@ class LinearAgent(AgentDataBase):
             if record_average_weights==True:
                 if iters%plot_every==0:
                     if verbose:
+                        # Create Plot Backtest
+                        if not "backtest" in locals():
+                            backtest = None
+                        backtest, tmp_weights = self.backtest_policy(epoch=iters, backtest=backtest, train_input=train_input)
+                        n_cols = len(backtest.columns)
+                        print("backtest", backtest)
+                        print("backtest cols", n_cols)
+                        plt.figure(figsize=(8, 4))
+                        for col_counter, col in enumerate(backtest):
+                            plt.plot(backtest[col], color="blue", alpha=(col_counter + 1) / n_cols, label="epoch "+str(col))
+                        plt.gcf().autofmt_xdate()
+                        plt.xlabel("Date")
+                        plt.ylabel("Backtest Return")
+                        plt.legend(loc="upper left")
+                        plt.savefig('temp_persisted_data/' + model_run + 'training_backtest_reinforce_baseline_' +
+                                    str(add_baseline) + '.png')
+                        plt.show()
+                        plt.close()
+                        # Backtest plot finishes
+                        backtest.to_csv('temp_persisted_data/' + model_run + 'training_backtest_reinforce_baseline_' + str(add_baseline) + '.csv')
+
                         plt.figure(figsize=(8, 4))
                         plt.plot(n_iters, average_reward, label=self.reward_function)
                         if self.b_w_set == True:
@@ -1268,15 +1316,27 @@ class LinearAgent(AgentDataBase):
                         sigma_chart = np.array(sigma_deterministic)
                         x_range = [round(i / observations, 2) for i in range(mu_chart.shape[0])]
                         ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
+                        ticker2 = ["MTUM", "Simulated Asset"]
+                        ticker3 = ["MTUM", "USMV"]
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
                         for i in range(mu_chart.shape[1]):
+                            if mu_chart.shape[1] == 7:
+                                symbol=ticker
+                            elif mu_chart.shape[1] == 2 and np.mean(train_input.iloc[:,1]) < 1:
+                                symbol = ticker2
+                            elif mu_chart.shape[1] == 2 and np.mean(train_input.iloc[:,1]) > 1:
+                                symbol = ticker3
+                            else:
+                                symbol = range(mu_chart.shape[1])
+
                             tmp_mu_plot = mu_chart[:, i]
                             tmp_sigma_plot = sigma_chart[:, i]
                             s_plus = tmp_mu_plot + tmp_sigma_plot
                             s_minus = tmp_mu_plot - tmp_sigma_plot
-                            plt.plot(mu_chart[:, i], label="Asset " + ticker[i], c=colors[i])
-                            # plt.fill_between([i for i in range(s_plus.shape[0])], s_plus, s_minus, color=colors[i], alpha=.2)
+                            plt.plot(mu_chart[:, i], label="Asset " + symbol[i], c=colors[i])
+                            if mu_chart.shape[1] == 2:
+                                plt.fill_between([i for i in range(s_plus.shape[0])], s_plus, s_minus, color=colors[i], alpha=.2)
 
                         if  self.b_w_set==True:
                             ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
@@ -1440,7 +1500,7 @@ class DeepAgentPytorch(AgentDataBase):
         self.actor_model=PolicyEstimator(state_dimension=self.state_dimension,number_of_assets=self.number_of_assets)
         self.critic_model=ActorEstimator(state_dimension=self.state_dimension,number_of_assets=self.number_of_assets)
 
-    def ACTOR_CRITIC_fit(self,gamma=.99, max_iterations=10000,record_average_weights=True, verbose=True):
+    def ACTOR_CRITIC_fit(self,gamma=.99, max_iterations=10000,record_average_weights=True, train_input=None, verbose=True):
         """
         performs the Actor-Critic Policy Gradient Model with option to add eligibility traces in PyTorch
         :return:
@@ -1517,20 +1577,48 @@ class DeepAgentPytorch(AgentDataBase):
             if record_average_weights == True:
                 if iters % 200 == 0:
                     if verbose:
+                        # Create Plot Backtest
+                        if not "backtest" in locals():
+                            backtest = None
+                        backtest, tmp_weights = self.backtest_policy(epoch=iters, backtest=backtest, train_input=train_input)
+                        n_cols = len(backtest.columns)
+                        print("backtest", backtest)
+                        print("backtest cols", n_cols)
+                        for col_counter, col in enumerate(backtest):
+                            plt.plot(backtest[col], color="blue", alpha=(col_counter + 1) / n_cols, label="epoch"+str(col))
+                        plt.gcf().autofmt_xdate()
+                        plt.xlabel("Date")
+                        plt.ylabel("Backtest Return")
+                        plt.legend(loc="upper left")
+                        plt.show()
+                        plt.close()
+                        # Backtest plot finishes
+
                         mu_chart = np.array(mus_deterministic)
                         sigma_chart=np.array(sigma_deterministc)
                         x_range=range(mu_chart.shape[0])
                         ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
+                        ticker2 = ["MTUM", "Simulated Asset"]
+                        ticker3 = ["MTUM", "USMV"]
+                        print("train_input.iloc[1]", train_input.iloc[:,1])
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
-                        plt.figure(figsize=(8, 4))
                         for i in range(mu_chart.shape[1]):
-                            tmp_mu_plot=mu_chart[:,i]
-                            tmp_sigma_plot=sigma_chart[:,i]
-                            s_plus=tmp_mu_plot+tmp_sigma_plot
-                            s_minus = tmp_mu_plot -tmp_sigma_plot
-                            plt.plot(mu_chart[:,i],label="Asset "+ ticker[i],c=colors[i])
-                            # plt.fill_between(x_range,s_plus,s_minus,color=colors[i],alpha=.2)
+                            if mu_chart.shape[1] == 7:
+                                symbol = ticker
+                            elif mu_chart.shape[1] == 2:
+                                symbol = ticker2
+                            else:
+                                symbol = range(mu_chart.shape[1])
+
+                            tmp_mu_plot = mu_chart[:, i]
+                            tmp_sigma_plot = sigma_chart[:, i]
+                            s_plus = tmp_mu_plot + tmp_sigma_plot
+                            s_minus = tmp_mu_plot - tmp_sigma_plot
+                            plt.plot(mu_chart[:, i], label="Asset " + symbol[i], c=colors[i])
+                            if mu_chart.shape[1] == 2:
+                                plt.fill_between([i for i in range(s_plus.shape[0])], s_plus, s_minus, color=colors[i],
+                                             alpha=.2)
 
                         ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
                         for row in range(ws.shape[0]):
