@@ -1163,19 +1163,17 @@ class LinearAgent(AgentDataBase):
                     sigma_chart = np.array(sigma_deterministic)
                     x_range = [round(i/observations,2) for i in range(mu_chart.shape[0])]
 
-                    ticker=["EEMV", "EFAV","MTUM","QUAL","SIZE","USMV","VLUE"]
-                    ticker2 = ["MTUM", "Simulated Asset"]
-                    ticker3 = ["MTUM", "USMV"]
+                    # ticker=["EEMV", "EFAV","MTUM","QUAL","SIZE","USMV","VLUE"]
+                    # ticker2 = ["MTUM", "Simulated Asset"]
+                    # ticker3 = ["MTUM", "USMV"]
                     cmap = plt.get_cmap('jet')
                     colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
 
+                    column_names = list(train_input.columns)
+                    column_names = list(map(lambda x: x if x != 'simulated_asset' else 'Simulated Asset', column_names))
                     for i in range(mu_chart.shape[1]):
-                        if mu_chart.shape[1] == 7:
-                            symbol = ticker
-                        elif mu_chart.shape[1] == 2 and train_input.iloc[:,1].name == "simulated_asset":
-                                symbol = ticker2
-                        elif mu_chart.shape[1] == 2 and train_input.iloc[:,1].name == "USMV":
-                                symbol = ticker3
+                        if mu_chart.shape[1] == 7 or mu_chart.shape[1] == 2:
+                            symbol = column_names
                         else:
                             symbol = range(mu_chart.shape[1])
 
@@ -1367,19 +1365,17 @@ class LinearAgent(AgentDataBase):
                         sigma_chart = np.array(sigma_deterministic)
                         x_range = [round(i / observations, 2) for i in range(mu_chart.shape[0])]
 
-                        ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
-                        ticker2 = ["MTUM", "Simulated Asset"]
-                        ticker3 = ["MTUM", "USMV"]
+                        # ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
+                        # ticker2 = ["MTUM", "Simulated Asset"]
+                        # ticker3 = ["MTUM", "USMV"]
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
 
+                        column_names = list(train_input.columns)
+                        column_names = list(map(lambda x: x if x != 'simulated_asset' else 'Simulated Asset', column_names))
                         for i in range(mu_chart.shape[1]):
-                            if mu_chart.shape[1] == 7:
-                                symbol = ticker
-                            elif mu_chart.shape[1] == 2 and train_input.iloc[:, 1].name == "simulated_asset":
-                                symbol = ticker2
-                            elif mu_chart.shape[1] == 2 and train_input.iloc[:, 1].name == "USMV":
-                                symbol = ticker3
+                            if mu_chart.shape[1] == 7 or mu_chart.shape[1] == 2:
+                                symbol = column_names
                             else:
                                 symbol = range(mu_chart.shape[1])
 
@@ -1688,17 +1684,18 @@ class DeepAgentPytorch(AgentDataBase):
                         mu_chart = np.array(mus_deterministic)
                         sigma_chart=np.array(sigma_deterministc)
                         x_range=range(mu_chart.shape[0])
-                        ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
-                        ticker2 = ["MTUM", "Simulated Asset"]
-                        ticker3 = ["MTUM", "USMV"]
+                        # ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
+                        # ticker2 = ["MTUM", "Simulated Asset"]
+                        # ticker3 = ["MTUM", "USMV"]
 
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
+
+                        column_names = list(train_input.columns)
+                        column_names = list(map(lambda x: x if x != 'simulated_asset' else 'Simulated Asset', column_names))
                         for i in range(mu_chart.shape[1]):
-                            if mu_chart.shape[1] == 7:
-                                symbol = ticker
-                            elif mu_chart.shape[1] == 2:
-                                symbol = ticker2
+                            if mu_chart.shape[1] == 7 or mu_chart.shape[1] == 2:
+                                symbol = column_names
                             else:
                                 symbol = range(mu_chart.shape[1])
 
