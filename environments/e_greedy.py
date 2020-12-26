@@ -390,7 +390,7 @@ class DeepTradingEnvironment(gym.Env):
     metadata = {'render.modes': ['human']}
 
     @staticmethod
-    def _build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data_hash):
+    def _build_and_persist_features(assets_dict, out_reward_window,in_bars_count,data_hash, detrend=False):
         """
          builds close-to-close returns for a specified asset dataset
         :param assets_dict:
@@ -400,35 +400,44 @@ class DeepTradingEnvironment(gym.Env):
         :return:
         """
         PERSISTED_DATA_DIRECTORY = "temp_persisted_data"
-        if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash):
-            features_instance=DailyDataFrame2Features(bars_dict=assets_dict
-                                                      ,configuration_dict={},
-                                                      forward_returns_time_delta=[out_reward_window])
+        # if not os.path.exists(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash):
+        features_instance=DailyDataFrame2Features(bars_dict=assets_dict
+                                                  ,configuration_dict={},
+                                                  forward_returns_time_delta=[out_reward_window])
 
-            features=features_instance.all_features
+        features=features_instance.all_features
 
-            only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
-            forward_returns_dates = features_instance.forward_returns_dates
+        only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
+        forward_returns_dates = features_instance.forward_returns_dates
+        if detrend == True:
+            detrend = only_features[[col for col in only_features.columns if "detrend" in col or "demeaned" in col]]
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
             #get the lagged returns as features
             only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
-            only_features=only_features.dropna()
-
-            # add bias to features
-            only_features["bias"] = 1
-
-            only_forward_returns=only_forward_returns.reindex(only_features.index)
-            forward_returns_dates=forward_returns_dates.reindex(only_features.index)
-
-            only_features.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_" + data_hash)
-            only_forward_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_" + data_hash)
-            forward_returns_dates.to_parquet(PERSISTED_DATA_DIRECTORY + "/forward_return_dates_" + data_hash)
-
+            only_features=pd.concat([only_features, detrend],axis=1)
         else:
+            only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
+            #get the lagged returns as features
+            only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
 
-            only_features = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash)
-            only_forward_returns=pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_"+data_hash)
-            forward_returns_dates=pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/forward_return_dates_" + data_hash)
+        only_features=only_features.dropna()
+
+
+        # add bias to features
+        only_features["bias"] = 1
+
+        only_forward_returns=only_forward_returns.reindex(only_features.index)
+        forward_returns_dates=forward_returns_dates.reindex(only_features.index)
+
+        only_features.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_" + data_hash)
+        only_forward_returns.to_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_" + data_hash)
+        forward_returns_dates.to_parquet(PERSISTED_DATA_DIRECTORY + "/forward_return_dates_" + data_hash)
+
+        # else:
+        #
+        #     only_features = pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/only_features_"+data_hash)
+        #     only_forward_returns=pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/only_forward_returns_"+data_hash)
+        #     forward_returns_dates=pd.read_parquet(PERSISTED_DATA_DIRECTORY + "/forward_return_dates_" + data_hash)
 
         return only_features, only_forward_returns,forward_returns_dates
 
@@ -457,9 +466,9 @@ class DeepTradingEnvironment(gym.Env):
         assets_dict={col :asset_prices[col] for col in asset_prices.columns}
 
         return cls._create_environment_from_assets_dict(assets_dict=assets_dict,data_hash=data_hash,
-                                                         meta_parameters=meta_parameters,objective_parameters=objective_parameters)
+                                                         meta_parameters=meta_parameters,objective_parameters=objective_parameters, detrend=False)
     @classmethod
-    def _create_environment_from_assets_dict(cls,assets_dict,meta_parameters,objective_parameters,data_hash,*args,**kwargs):
+    def _create_environment_from_assets_dict(cls,assets_dict,meta_parameters,objective_parameters,data_hash,detrend, *args,**kwargs):
         """
         creates an environment from a dictionary of asset data
         :param assets_prices:  (pandas.DataFrame)
@@ -470,7 +479,7 @@ class DeepTradingEnvironment(gym.Env):
         features, forward_returns,forward_returns_dates = cls._build_and_persist_features(assets_dict=assets_dict,
                                                                     in_bars_count=meta_parameters["in_bars_count"],
                                              out_reward_window=meta_parameters["out_reward_window"],
-                                             data_hash=data_hash)
+                                             data_hash=data_hash, detrend=detrend)
 
         # # add bias to features
         # features["bias"]=1
@@ -480,7 +489,7 @@ class DeepTradingEnvironment(gym.Env):
                                objective_parameters=objective_parameters)
 
     @classmethod
-    def build_environment_from_dirs_and_transform(cls, meta_parameters, objective_parameters,data_hash, data_dir="data_env", **kwargs):
+    def build_environment_from_dirs_and_transform(cls, meta_parameters, objective_parameters,data_hash, data_dir="data_env", detrend=False, **kwargs):
         """
         Do transformations that shouldn't be part of the class
         Also uses the meta parameters
@@ -502,7 +511,7 @@ class DeepTradingEnvironment(gym.Env):
             assets_dict[key]=tmp_df
 
         environment=cls._create_environment_from_assets_dict(assets_dict=assets_dict,data_hash=data_hash,
-                                                              meta_parameters=meta_parameters,objective_parameters=objective_parameters)
+                                                              meta_parameters=meta_parameters,objective_parameters=objective_parameters, detrend=detrend)
         return environment
 
     def __init__(self, features, forward_returns,forward_returns_dates, objective_parameters,
@@ -673,8 +682,7 @@ class AgentDataBase:
                     tmp_weights.loc[activate_date:next_observation_date, :] = action
                     activate_date = next_observation_date
             tmp_weights.columns = train_input_returns.columns
-            print("train_input_returns", train_input_returns)
-            print("tmp weights", tmp_weights)
+
             tmp_backtest = ((train_input_returns * tmp_weights).sum(axis=1) + 1).cumprod()
 
         # used for backtest of a test environment using a training environment's policy
@@ -756,7 +764,7 @@ class AgentDataBase:
                 last_date_start = frd[frd[column_name] == end_date].index
                 assert len(last_date_start) > 0
             except:
-                end_date = end_date+pd.Timedelta('1 days')
+                end_date = end_date + pd.Timedelta('1 days')
                 last_date_start = frd[frd[column_name] == end_date].index
                 assert len(last_date_start) > 0
 
@@ -1010,8 +1018,8 @@ class LinearAgent(AgentDataBase):
         return states,actions,pd.concat(period_returns, axis=0)
 
 
-    def ACTOR_CRITIC_FIT(self, alpha=.01, gamma=.99, theta_threshold=.001, max_iterations=10000, plot_gradients=False, plot_every=2000
-                      , record_average_weights=True,  alpha_critic=.01,l_trace=.3,l_trace_critic=.3,use_traces=False, train_input = None, model_run=None,verbose=True):
+    def ACTOR_CRITIC_FIT(self, alpha=.01, gamma=.99, theta_threshold=.001, max_iterations=10000, plot_gradients=True, plot_every=2000, detrend=False
+                      , record_average_weights=True, alpha_critic=.01,l_trace=.3,l_trace_critic=.3,use_traces=False, train_input = None, model_run=None, verbose=True):
         """
         performs the Actor-Critic Policy Gradient Model with option to add eligibility traces
         :return:
@@ -1053,6 +1061,7 @@ class LinearAgent(AgentDataBase):
             z_theta_mu=np.zeros(self.theta_mu.shape)
             z_theta_sigma=np.zeros(self.theta_sigma.shape)
             I=1
+
             for t in range(observations):
                 action_t = actions[t]
                 flat_state_t = states[t]
@@ -1090,13 +1099,13 @@ class LinearAgent(AgentDataBase):
                     new_theta_mu = new_theta_mu + alpha * delta * (gamma ** t) * theta_mu_log_gradient
                     new_theta_sigma = new_theta_sigma + alpha * delta * (gamma ** t) * theta_sigma_log_gradient
 
-                # save values for plotting
-                mu_deterministic.append(self._mu_linear(flat_state=flat_state_t))
-                sigma_deterministic.append(self._sigma_linear(flat_state=flat_state_t))
-                V.append(self._state_linear(flat_state_t))
+            # save values for plotting
+            mu_deterministic.append(self._mu_linear(flat_state=flat_state_t))
+            sigma_deterministic.append(self._sigma_linear(flat_state=flat_state_t))
+            V.append(self._state_linear(flat_state_t))
 
-                tmp_mu_gradient.append(theta_mu_log_gradient)
-                tmp_sigma_gradient.append(theta_sigma_log_gradient)
+            tmp_mu_gradient.append(theta_mu_log_gradient)
+            tmp_sigma_gradient.append(theta_sigma_log_gradient)
 
             theta_mu_hist_gradients.append(np.array(tmp_mu_gradient).mean(axis=1))
             theta_sigma_hist_gradients.append(np.array(tmp_sigma_gradient).mean(axis=1))
@@ -1108,6 +1117,7 @@ class LinearAgent(AgentDataBase):
             theta_diff = np.linalg.norm(new_full_theta - old_full_theta)
             theta_norm.append(theta_diff)
             # print("iteration", iters,theta_diff, end="\r", flush=True)
+
             pbar.update(1)
             # assign  update_of thetas
             self.theta_mu = copy.deepcopy(new_theta_mu)
@@ -1123,11 +1133,10 @@ class LinearAgent(AgentDataBase):
                         backtest=None
                     backtest, tmp_weights =self.backtest_policy(epoch=iters,backtest=backtest, train_input=train_input)
                     n_cols=len(backtest.columns)
-                    print("backtest", backtest)
-                    print("backtest cols", n_cols)
-                    plt.figure(figsize=(8, 4))
+
+                    plt.figure(figsize=(12, 6))
                     for col_counter,col in enumerate(backtest):
-                        plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols, label="epoch"+str(col))
+                        plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols, label="epoch "+str(col))
                     plt.gcf().autofmt_xdate()
                     plt.xlabel("Date")
                     plt.ylabel("Backtest Return")
@@ -1149,21 +1158,23 @@ class LinearAgent(AgentDataBase):
                     plt.ylabel("Reward")
                     plt.show()
 
-                    plt.figure(figsize=(8,4))
+                    plt.figure(figsize=(12,6))
                     mu_chart = np.array(mu_deterministic)
                     sigma_chart = np.array(sigma_deterministic)
                     x_range = [round(i/observations,2) for i in range(mu_chart.shape[0])]
+
                     ticker=["EEMV", "EFAV","MTUM","QUAL","SIZE","USMV","VLUE"]
                     ticker2 = ["MTUM", "Simulated Asset"]
                     ticker3 = ["MTUM", "USMV"]
                     cmap = plt.get_cmap('jet')
                     colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
+
                     for i in range(mu_chart.shape[1]):
                         if mu_chart.shape[1] == 7:
                             symbol = ticker
-                        elif mu_chart.shape[1] == 2 and np.mean(train_input.iloc[:,1]) < 1:
+                        elif mu_chart.shape[1] == 2 and train_input.iloc[:,1].name == "simulated_asset":
                                 symbol = ticker2
-                        elif mu_chart.shape[1] == 2 and np.mean(train_input.iloc[:,1]) > 1:
+                        elif mu_chart.shape[1] == 2 and train_input.iloc[:,1].name == "USMV":
                                 symbol = ticker3
                         else:
                             symbol = range(mu_chart.shape[1])
@@ -1187,19 +1198,60 @@ class LinearAgent(AgentDataBase):
                     plt.ylabel("Asset Weights")
                     plt.show()
                     plt.plot(V,label="Value Function")
+                    plt.legend(loc="upper left")
                     plt.show()
                     plt.close()
 
                     if plot_gradients == True:
-                        for asset in range(self.number_of_assets):
-                            tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
-                            plt.plot(tmp_mu_asset, label=str(asset) + "mu")
-                            plt.show()
+                        plt.figure(figsize=(12, 6))
+                        # colors = cmap(np.linspace(0, 1, 4))
+                        tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
+                        if mu_chart.shape[1] == 7:
+                            if detrend == True:
+                                colors = cmap(np.linspace(0, 1, 9))
+                                plt.plot(tmp_mu_asset[:, 119], label="mu asset 1 log return", c=colors[0])
+                                plt.plot(tmp_mu_asset[:, 118], label="mu asset 2 log return", c=colors[1])
+                                plt.plot(tmp_mu_asset[:, 117], label="mu asset 3 log return", c=colors[2])
+                                plt.plot(tmp_mu_asset[:, 14], label="mu asset 1 detrend", c=colors[3])
+                                plt.plot(tmp_mu_asset[:, 12], label="mu asset 2 detrend", c=colors[4])
+                                plt.plot(tmp_mu_asset[:, 10], label="mu asset 3 detrend", c=colors[5])
+                                plt.plot(tmp_mu_asset[:, 13], label="mu asset 1 demeaned residuals", c=colors[6])
+                                plt.plot(tmp_mu_asset[:, 11], label="mu asset 2 demeaned residuals", c=colors[7])
+                                plt.plot(tmp_mu_asset[:, 9], label="mu asset 3 demeaned residuals", c=colors[8])
+                            elif detrend == False:
+                                colors = cmap(np.linspace(0, 1, 7))
+                                plt.plot(tmp_mu_asset[:, 105], label="mu asset 1 log return", c=colors[0])
+                                plt.plot(tmp_mu_asset[:, 104], label="mu asset 2 log return", c=colors[1])
+                                plt.plot(tmp_mu_asset[:, 103], label="mu asset 3 log return", c=colors[2])
+                                plt.plot(tmp_mu_asset[:, 102], label="mu asset 4 log return", c=colors[3])
+                                plt.plot(tmp_mu_asset[:, 101], label="mu asset 5 log return", c=colors[4])
+                                plt.plot(tmp_mu_asset[:, 100], label="mu asset 6 log return", c=colors[5])
+                                plt.plot(tmp_mu_asset[:, 99], label="mu asset 7 log return", c=colors[6])
+                        else:
+                            if detrend == True:
+                                colors = cmap(np.linspace(0, 1, 6))
+                                plt.plot(tmp_mu_asset[:, 34], label="mu asset 1 log return", c=colors[0])
+                                plt.plot(tmp_mu_asset[:, 33], label="mu asset 2 log return", c=colors[1])
+                                plt.plot(tmp_mu_asset[:, 4], label="mu asset 1 detrend", c=colors[2])
+                                plt.plot(tmp_mu_asset[:, 2], label="mu asset 2 detrend", c=colors[3])
+                                plt.plot(tmp_mu_asset[:, 3], label="mu asset 1 demeaned residuals", c=colors[4])
+                                plt.plot(tmp_mu_asset[:, 1], label="mu asset 2 demeaned residuals", c=colors[5])
+                            elif detrend == False:
+                                colors = cmap(np.linspace(0, 1, 2))
+                                plt.plot(tmp_mu_asset[:, 30], label="mu asset 1 log return", c=colors[0])
+                                plt.plot(tmp_mu_asset[:, 29], label="mu asset 2 log return", c=colors[1])
+
+                        plt.title("Gradients")
+                        plt.legend(loc="upper left")
+                        plt.xlabel("Epochs")
+                        plt.ylabel("Gradient")
+                        plt.show()
+                        plt.close()
 
         return average_weights
 
 
-    def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000, plot_gradients=False, plot_every=2000
+    def REINFORCE_fit(self,alpha=.01,gamma=.99,theta_threshold=.001,max_iterations=10000, plot_gradients=True, plot_every=2000, detrend=False
                              ,record_average_weights=True,add_baseline=False,alpha_baseline=.01, train_input = None, model_run=None, verbose=True):
         """
         performs the REINFORCE Policy Gradient Method with option to run the REINFORCE with baseline Policy Gradient Method
@@ -1233,6 +1285,7 @@ class LinearAgent(AgentDataBase):
 
             tmp_mu_gradient=[]
             tmp_sigma_gradient=[]
+
             for t in range(observations):
                 action_t=actions[t]
                 flat_state_t=states[t]
@@ -1286,9 +1339,7 @@ class LinearAgent(AgentDataBase):
                             backtest = None
                         backtest, tmp_weights = self.backtest_policy(epoch=iters, backtest=backtest, train_input=train_input)
                         n_cols = len(backtest.columns)
-                        print("backtest", backtest)
-                        print("backtest cols", n_cols)
-                        plt.figure(figsize=(8, 4))
+                        plt.figure(figsize=(12, 6))
                         for col_counter, col in enumerate(backtest):
                             plt.plot(backtest[col], color="blue", alpha=(col_counter + 1) / n_cols, label="epoch "+str(col))
                         plt.gcf().autofmt_xdate()
@@ -1302,7 +1353,7 @@ class LinearAgent(AgentDataBase):
                         # Backtest plot finishes
                         backtest.to_csv('temp_persisted_data/' + model_run + 'training_backtest_reinforce_baseline_' + str(add_baseline) + '.csv')
 
-                        plt.figure(figsize=(8, 4))
+                        plt.figure(figsize=(12, 6))
                         plt.plot(n_iters, average_reward, label=self.reward_function)
                         if self.b_w_set == True:
                             plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
@@ -1311,21 +1362,23 @@ class LinearAgent(AgentDataBase):
                         plt.ylabel("Reward")
                         plt.show()
 
-                        plt.figure(figsize=(8, 4))
+                        plt.figure(figsize=(12, 6))
                         mu_chart = np.array(mu_deterministic)
                         sigma_chart = np.array(sigma_deterministic)
                         x_range = [round(i / observations, 2) for i in range(mu_chart.shape[0])]
+
                         ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
                         ticker2 = ["MTUM", "Simulated Asset"]
                         ticker3 = ["MTUM", "USMV"]
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
+
                         for i in range(mu_chart.shape[1]):
                             if mu_chart.shape[1] == 7:
-                                symbol=ticker
-                            elif mu_chart.shape[1] == 2 and np.mean(train_input.iloc[:,1]) < 1:
+                                symbol = ticker
+                            elif mu_chart.shape[1] == 2 and train_input.iloc[:, 1].name == "simulated_asset":
                                 symbol = ticker2
-                            elif mu_chart.shape[1] == 2 and np.mean(train_input.iloc[:,1]) > 1:
+                            elif mu_chart.shape[1] == 2 and train_input.iloc[:, 1].name == "USMV":
                                 symbol = ticker3
                             else:
                                 symbol = range(mu_chart.shape[1])
@@ -1349,13 +1402,52 @@ class LinearAgent(AgentDataBase):
                         plt.show()
                         plt.close()
 
-                        if plot_gradients==True:
+                        if plot_gradients == True:
+                            plt.figure(figsize=(12, 6))
+                            colors = cmap(np.linspace(0, 1, 4))
+                            tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
+                            if mu_chart.shape[1] == 7:
+                                if detrend == True:
+                                    colors = cmap(np.linspace(0, 1, 9))
+                                    plt.plot(tmp_mu_asset[:, 119], label="mu asset 1 log return", c=colors[0])
+                                    plt.plot(tmp_mu_asset[:, 118], label="mu asset 2 log return", c=colors[1])
+                                    plt.plot(tmp_mu_asset[:, 117], label="mu asset 3 log return", c=colors[2])
+                                    plt.plot(tmp_mu_asset[:, 14], label="mu asset 1 detrend", c=colors[3])
+                                    plt.plot(tmp_mu_asset[:, 12], label="mu asset 2 detrend", c=colors[4])
+                                    plt.plot(tmp_mu_asset[:, 10], label="mu asset 3 detrend", c=colors[5])
+                                    plt.plot(tmp_mu_asset[:, 13], label="mu asset 1 demeaned residuals", c=colors[6])
+                                    plt.plot(tmp_mu_asset[:, 11], label="mu asset 2 demeaned residuals", c=colors[7])
+                                    plt.plot(tmp_mu_asset[:, 9], label="mu asset 3 demeaned residuals", c=colors[8])
+                                elif detrend == False:
+                                    colors = cmap(np.linspace(0, 1, 7))
+                                    plt.plot(tmp_mu_asset[:, 105], label="mu asset 1 log return", c=colors[0])
+                                    plt.plot(tmp_mu_asset[:, 104], label="mu asset 2 log return", c=colors[1])
+                                    plt.plot(tmp_mu_asset[:, 103], label="mu asset 3 log return", c=colors[2])
+                                    plt.plot(tmp_mu_asset[:, 102], label="mu asset 4 log return", c=colors[3])
+                                    plt.plot(tmp_mu_asset[:, 101], label="mu asset 5 log return", c=colors[4])
+                                    plt.plot(tmp_mu_asset[:, 100], label="mu asset 6 log return", c=colors[5])
+                                    plt.plot(tmp_mu_asset[:, 99], label="mu asset 7 log return", c=colors[6])
+                            else:
+                                if detrend == True:
+                                    colors = cmap(np.linspace(0, 1, 6))
+                                    plt.plot(tmp_mu_asset[:, 34], label="mu asset 1 log return", c=colors[0])
+                                    plt.plot(tmp_mu_asset[:, 33], label="mu asset 2 log return", c=colors[1])
+                                    plt.plot(tmp_mu_asset[:, 4], label="mu asset 1 detrend", c=colors[2])
+                                    plt.plot(tmp_mu_asset[:, 2], label="mu asset 2 detrend", c=colors[3])
+                                    plt.plot(tmp_mu_asset[:, 3], label="mu asset 1 demeaned residuals", c=colors[4])
+                                    plt.plot(tmp_mu_asset[:, 1], label="mu asset 2 demeaned residuals", c=colors[5])
+                                elif detrend == False:
+                                    colors = cmap(np.linspace(0, 1, 2))
+                                    plt.plot(tmp_mu_asset[:, 30], label="mu asset 1 log return", c=colors[0])
+                                    plt.plot(tmp_mu_asset[:, 29], label="mu asset 2 log return", c=colors[1])
 
-                            for asset in range(self.number_of_assets):
-                                tmp_mu_asset=np.array([i[0,:] for i in theta_mu_hist_gradients])
-                                plt.plot(tmp_mu_asset,label=str(asset)+"mu")
-                                plt.show()
-                                plt.close()
+
+                            plt.title("Gradients")
+                            plt.legend(loc="upper left")
+                            plt.xlabel("Epochs")
+                            plt.ylabel("Gradient")
+                            plt.show()
+                            plt.close()
 
         return average_weights
 
@@ -1582,8 +1674,7 @@ class DeepAgentPytorch(AgentDataBase):
                             backtest = None
                         backtest, tmp_weights = self.backtest_policy(epoch=iters, backtest=backtest, train_input=train_input)
                         n_cols = len(backtest.columns)
-                        print("backtest", backtest)
-                        print("backtest cols", n_cols)
+
                         for col_counter, col in enumerate(backtest):
                             plt.plot(backtest[col], color="blue", alpha=(col_counter + 1) / n_cols, label="epoch"+str(col))
                         plt.gcf().autofmt_xdate()
@@ -1600,7 +1691,7 @@ class DeepAgentPytorch(AgentDataBase):
                         ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
                         ticker2 = ["MTUM", "Simulated Asset"]
                         ticker3 = ["MTUM", "USMV"]
-                        print("train_input.iloc[1]", train_input.iloc[:,1])
+
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
                         for i in range(mu_chart.shape[1]):
