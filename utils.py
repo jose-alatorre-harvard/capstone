@@ -8,7 +8,8 @@ from sklearn.preprocessing import StandardScaler
 from timeseriescv.cross_validation import CombPurgedKFoldCV
 import talib
 import inspect
-
+from scipy.signal import detrend
+from sklearn import preprocessing
 
 def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta,
                          return_indices=False):
@@ -85,12 +86,14 @@ class DailyDataFrame2Features:
         for asset_name, bars_time_serie_df in bars_dict.items():
             features_instance = DailySeries2Features(bars_time_serie_df, features_list, exclude_features,
                                                      forward_returns_time_delta)
+
             technical_features = features_instance.technical_features.copy()
             technical_features.columns = [asset_name + "_" + i for i in technical_features.columns]
             all_features = pd.concat([all_features, technical_features], axis=1)
 
         # we drop N/A because there are no features available on certains dates like moving averages
         self.all_features = all_features.dropna()
+
 
         # set forward returns
         if forward_returns_time_delta is not None:
@@ -308,7 +311,9 @@ class DailySeries2Features:
         :param serie:
         :return:
         """
+
         feature = self.log_prices.copy().diff()
+
         return feature
 
     def _add_12m1_past_return(self, serie):
@@ -361,6 +366,35 @@ class DailySeries2Features:
         forward_limit_time_delta = datetime.timedelta(days=0)
         technical = get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta)
 
+        return technical
+
+    def _add_detrend(self, serie):
+        """
+        detrend the asset prices and scale
+        :param data_frame:
+        :return:
+        """
+        detrend_result = detrend(serie, axis=- 1, type='linear', bp=0, overwrite_data=False).reshape(-1, 1)
+
+        scaler = preprocessing.MinMaxScaler().fit(detrend_result)
+        detrend_scaled= scaler.transform(detrend_result)
+
+        technical = pd.Series(detrend_scaled.flatten())
+        technical.index = serie.index
+        return technical
+
+    def _add_demeaned(self, serie):
+        """
+        demean and scale the returns of the residual
+        :param data_frame:
+        :return:
+        """
+        demeaned_result = detrend(serie, axis=- 1, type='constant', bp=0, overwrite_data=False)
+        demeaned_return = np.diff(demeaned_result, prepend=demeaned_result[0]).reshape(-1, 1)
+        scaler = preprocessing.MinMaxScaler().fit(demeaned_return)
+        demeaned_scaled= scaler.transform(demeaned_return)
+        technical = pd.Series(demeaned_scaled.flatten())
+        technical.index = serie.index
         return technical
 
 
