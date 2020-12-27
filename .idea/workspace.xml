@@ -20,14 +20,25 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-0.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-10.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-15.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-5.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-0.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-10.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-5.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-0-detrend.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-10-detrend.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-5-detrend.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-USMV-lambda-5-detrend.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-0-detrend.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-5-detrend.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-0.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-USMV-lambda-0-detrend.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-10.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-15.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-5.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-USMV-lambda-0.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-USMV-lambda-10.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-USMV-lambda-5.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-0-AlgoLabels.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-0-AlgoLabels.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-0.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-10.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-5.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/environments/e_greedy.py" beforeDir="false" afterPath="$PROJECT_DIR$/environments/e_greedy.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
@@ -61,6 +72,13 @@
   </component>
   <component name="JupyterTrust" id="dfb0f22d-b8d1-46d3-be09-8e2b93d84436">
     <option name="files">
+      <option value="Real-World Data Demonstration-7ETF-lambda-0-detrend.ipynb" />
+      <option value="Real-World Data Demonstration-7ETF-lambda-10-detrend.ipynb" />
+      <option value="Real-World Data Demonstration-7ETF-lambda-5-detrend.ipynb" />
+      <option value="Real-World Data Demonstration-MTUM-USMV-lambda-0-detrend.ipynb" />
+      <option value="Real-World Data Demonstration-MTUM-USMV-lambda-5-detrend.ipynb" />
+      <option value="Real-World Data Demonstration-MTUM-simulated-lambda-0-detrend.ipynb" />
+      <option value="Real-World Data Demonstration-MTUM-simulated-lambda-5-detrend.ipynb" />
       <option value="michael_actor_critic_test.ipynb" />
     </option>
   </component>
@@ -324,13 +342,10 @@
       <workItem from="1608663855776" duration="12632000" />
       <workItem from="1608763569678" duration="17689000" />
       <workItem from="1608837228999" duration="45156000" />
-    </task>
-    <task id="LOCAL-00011" summary="REINFORCE with baseline implementation">
-      <created>1603137527530</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1603137527530</updated>
+      <workItem from="1608981005922" duration="1081000" />
+      <workItem from="1609006755128" duration="3965000" />
+      <workItem from="1609038221193" duration="7263000" />
+      <workItem from="1609088965635" duration="2334000" />
     </task>
     <task id="LOCAL-00012" summary="REINFORCE with baseline and Actor_Critic implementation">
       <created>1604220065461</created>
@@ -668,7 +683,14 @@
       <option name="project" value="LOCAL" />
       <updated>1608870943784</updated>
     </task>
-    <option name="localTasksCounter" value="60" />
+    <task id="LOCAL-00060" summary="checking for convergence">
+      <created>1608981103119</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1608981103119</updated>
+    </task>
+    <option name="localTasksCounter" value="61" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -697,7 +719,6 @@
     <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="test" />
     <MESSAGE value="added file" />
     <MESSAGE value="update formatting" />
     <MESSAGE value="updated backtest_policy function" />
@@ -722,7 +743,8 @@
     <MESSAGE value="updated description of guide" />
     <MESSAGE value="updated website link" />
     <MESSAGE value="formatting improvements" />
-    <option name="LAST_COMMIT_MESSAGE" value="formatting improvements" />
+    <MESSAGE value="checking for convergence" />
+    <option name="LAST_COMMIT_MESSAGE" value="checking for convergence" />
   </component>
   <component name="WindowStateProjectService">
     <state x="3151" y="329" key="#Notifications" timestamp="1608363464836">
@@ -742,13 +764,13 @@
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783@0.0.1463.783" timestamp="1608934067572" />
-    <state x="359" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608870941951">
+    <state x="359" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1608981096149">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367144986" />
     <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483047946" />
-    <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1608870941951" />
+    <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1608981096149" />
     <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364617930">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
@@ -761,7 +783,6 @@
     </state>
     <state x="421" y="95" key="FileChooserDialogImpl/0.0.1280.680/2560.0.1680.1010@0.0.1280.680" timestamp="1601435115940" />
     <state x="3113" y="141" key="FileChooserDialogImpl/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601161599887" />
-    <state x="421" y="95" key="FileChooserDialogImpl/0.0.1280.680@0.0.1280.680" timestamp="1600377461795" />
     <state x="481" y="109" key="FileChooserDialogImpl/0.0.1463.783/-1680.0.1680.1010@0.0.1463.783" timestamp="1601977008376" />
     <state x="3112" y="141" key="FileChooserDialogImpl/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608362661048" />
     <state width="1638" height="179" key="GridCell.Tab.0.bottom" timestamp="1607246592130">
@@ -832,27 +853,27 @@
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="3068" y="124" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343621009" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1608870944895">
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1608981105121">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344614359" />
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367153713" />
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483052383" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1608870944895" />
-    <state x="2" y="11" width="1479" height="826" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1608960450250">
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1608981105121" />
+    <state x="2" y="11" width="1479" height="826" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1609090461589">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2626" y="61" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601161044324" />
     <state x="128" y="-7" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363268828" />
-    <state x="2" y="11" width="1479" height="826" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1463.783@0.0.1463.783" timestamp="1608960450250" />
-    <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1608481306700">
-      <screen x="2560" y="0" width="1680" height="1010" />
+    <state x="2" y="11" width="1479" height="826" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1463.783@0.0.1463.783" timestamp="1609090461589" />
+    <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1609089491185">
+      <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="459" y="255" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1280.680/2560.0.1680.1010@0.0.1280.680" timestamp="1601339463972" />
     <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601341272345" />
     <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608053778890" />
     <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608481306700" />
-    <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783@0.0.1463.783" timestamp="1603734369727" />
+    <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783@0.0.1463.783" timestamp="1609089491185" />
     <state x="2204" y="300" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/1680.0.1463.800/0.0.1680.1010@1680.0.1463.800" timestamp="1601787823614" />
     <state x="91" y="0" width="1252" height="749" key="dock-window-1" timestamp="1604346235360">
       <screen x="0" y="0" width="1463" height="783" />

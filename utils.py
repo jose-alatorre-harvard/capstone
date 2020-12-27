@@ -397,6 +397,14 @@ class DailySeries2Features:
         technical.index = serie.index
         return technical
 
+    def _add_rolling_volatility(self, serie):
+        """
+        rolling volatility of the returns
+        :param data_frame:
+        :return:
+        """
+        technical = serie.rolling(14).std(ddof=0)
+        return technical
 
 def build_and_persist_features_from_dir( meta_parameters, data_hash,
                                               data_dir="data_env",):

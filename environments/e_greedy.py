@@ -99,6 +99,7 @@ class RewardFactory:
         :param portfolio_returns:
         :return:
         """
+
         return self.risk_aversion*portfolio_returns.iloc[-1] - (1-self.risk_aversion)*action_variance
 
     def _reward_min_variance(self,portfolio_returns):
@@ -409,17 +410,22 @@ class DeepTradingEnvironment(gym.Env):
 
         only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
         forward_returns_dates = features_instance.forward_returns_dates
+        print("only features", only_features)
+        rolling_vol = only_features[[col for col in only_features.columns if "rolling_volatility" in col]]
         if detrend == True:
             detrend = only_features[[col for col in only_features.columns if "detrend" in col or "demeaned" in col]]
+
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
             #get the lagged returns as features
             only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
             only_features=pd.concat([only_features, detrend],axis=1)
+
         else:
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
             #get the lagged returns as features
             only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
 
+        only_features = pd.concat([only_features, rolling_vol], axis=1)
         only_features=only_features.dropna()
 
 
@@ -1032,7 +1038,7 @@ class LinearAgent(AgentDataBase):
         average_reward = []
         theta_norm = []
 
-        pbar = tqdm(total=max_iterations)
+        # pbar = tqdm(total=max_iterations)
         theta_mu_hist_gradients = []
         theta_sigma_hist_gradients = []
 
@@ -1118,7 +1124,7 @@ class LinearAgent(AgentDataBase):
             theta_norm.append(theta_diff)
             # print("iteration", iters,theta_diff, end="\r", flush=True)
 
-            pbar.update(1)
+            # pbar.update(1)
             # assign  update_of thetas
             self.theta_mu = copy.deepcopy(new_theta_mu)
             self.theta_sigma = copy.deepcopy(new_theta_sigma)
@@ -1163,9 +1169,6 @@ class LinearAgent(AgentDataBase):
                     sigma_chart = np.array(sigma_deterministic)
                     x_range = [round(i/observations,2) for i in range(mu_chart.shape[0])]
 
-                    # ticker=["EEMV", "EFAV","MTUM","QUAL","SIZE","USMV","VLUE"]
-                    # ticker2 = ["MTUM", "Simulated Asset"]
-                    # ticker3 = ["MTUM", "USMV"]
                     cmap = plt.get_cmap('jet')
                     colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
 
@@ -1190,7 +1193,7 @@ class LinearAgent(AgentDataBase):
                         ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
                         for row in range(ws.shape[0]):
                             plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                    plt.ylim(0, 1)
+                    plt.ylim(-0.1, 1.1)
                     plt.legend(loc="upper left")
                     plt.xlabel("Epochs")
                     plt.ylabel("Asset Weights")
@@ -1263,7 +1266,7 @@ class LinearAgent(AgentDataBase):
         average_reward=[]
         theta_norm=[]
 
-        pbar = tqdm(total=max_iterations)
+        # pbar = tqdm(total=max_iterations)
         theta_mu_hist_gradients=[]
         theta_sigma_hist_gradients=[]
 
@@ -1322,7 +1325,7 @@ class LinearAgent(AgentDataBase):
             theta_diff=np.linalg.norm(new_full_theta-old_full_theta)
             theta_norm.append(theta_diff)
             # print("iteration", iters,theta_diff, end="\r", flush=True)
-            pbar.update(1)
+            # pbar.update(1)
             #assign  update_of thetas
             self.theta_mu=copy.deepcopy(new_theta_mu)
             self.theta_sigma=copy.deepcopy(new_theta_sigma)
@@ -1365,9 +1368,6 @@ class LinearAgent(AgentDataBase):
                         sigma_chart = np.array(sigma_deterministic)
                         x_range = [round(i / observations, 2) for i in range(mu_chart.shape[0])]
 
-                        # ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
-                        # ticker2 = ["MTUM", "Simulated Asset"]
-                        # ticker3 = ["MTUM", "USMV"]
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
 
@@ -1391,7 +1391,7 @@ class LinearAgent(AgentDataBase):
                             ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
                             for row in range(ws.shape[0]):
                                 plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                        plt.ylim(0, 1)
+                        plt.ylim(-0.1, 1.1)
                         plt.legend(loc="upper left")
                         plt.xlabel("Epochs")
                         plt.ylabel("Asset Weights")
@@ -1402,6 +1402,11 @@ class LinearAgent(AgentDataBase):
                             plt.figure(figsize=(12, 6))
                             colors = cmap(np.linspace(0, 1, 4))
                             tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
+                            np.save('theta_mu_hist_gradients.npy', theta_mu_hist_gradients)
+                            print(tmp_mu_asset)
+                            np.save('tmp_mu_asset.npy', tmp_mu_asset)
+
+
                             if mu_chart.shape[1] == 7:
                                 if detrend == True:
                                     colors = cmap(np.linspace(0, 1, 9))
@@ -1601,7 +1606,7 @@ class DeepAgentPytorch(AgentDataBase):
         total_reward = []
         theta_norm = []
         losses = []
-        pbar = tqdm(total=max_iterations)
+        # pbar = tqdm(total=max_iterations)
 
         optimizer = torch.optim.Adam(self.actor_model.parameters(),
                                      lr=0.01)
@@ -1655,7 +1660,7 @@ class DeepAgentPytorch(AgentDataBase):
             # apply gradients
             optimizer.step()
 
-            pbar.update(1)
+            # pbar.update(1)
             iters = iters + 1
             # historical_grads.append(loss_value.grad.numpy())
 
@@ -1684,9 +1689,6 @@ class DeepAgentPytorch(AgentDataBase):
                         mu_chart = np.array(mus_deterministic)
                         sigma_chart=np.array(sigma_deterministc)
                         x_range=range(mu_chart.shape[0])
-                        # ticker = ["EEMV", "EFAV", "MTUM", "QUAL", "SIZE", "USMV", "VLUE"]
-                        # ticker2 = ["MTUM", "Simulated Asset"]
-                        # ticker3 = ["MTUM", "USMV"]
 
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1.0, mu_chart.shape[1]))
@@ -1711,7 +1713,7 @@ class DeepAgentPytorch(AgentDataBase):
                         ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
                         for row in range(ws.shape[0]):
                             plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                        plt.ylim(0, 1)
+                        plt.ylim(-0.1, 1.1)
                         plt.legend(loc="upper left")
                         plt.show()
                         plt.close()
@@ -1740,7 +1742,7 @@ class DeepAgentPytorch(AgentDataBase):
         total_reward=[]
         theta_norm = []
         losses=[]
-        pbar = tqdm(total=max_iterations)
+        # pbar = tqdm(total=max_iterations)
 
         optimizer = torch.optim.Adam(self.actor_model.parameters(),
                                lr=0.01)
@@ -1779,11 +1781,11 @@ class DeepAgentPytorch(AgentDataBase):
             #apply gradients
             optimizer.step()
 
-            pbar.update(1)
+            # pbar.update(1)
             iters = iters + 1
             # historical_grads.append(loss_value.grad.numpy())
 
-            pbar.set_description("loss "+str(loss_value))
+            # pbar.set_description("loss "+str(loss_value))
             losses.append(float(loss_value))
             if record_average_weights == True:
                 average_weights.append(self.environment.state.weight_buffer.mean())
