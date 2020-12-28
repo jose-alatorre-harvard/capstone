@@ -390,13 +390,13 @@ class DailySeries2Features:
         linear_model = LinearRegression()
         linear_model.fit(dates, y)
         trend_coef = linear_model.predict(dates)
-        print("trend_coef", trend_coef)
+
         trend_coef_array = np.array(trend_coef / np.std(trend_coef)).reshape(-1, 1)
         trend_coef_scaler = preprocessing.MinMaxScaler().fit(trend_coef_array)
         trend_coef_scaled = pd.Series(trend_coef_scaler.transform(trend_coef_array).flatten())
-        print("trend_coef scaled", trend_coef_scaled)
+
         trend_resid = [y[i] - trend_coef[i] for i in range(0, len(y))]
-        print("trend_resid", trend_resid)
+
 
         trend_return = np.diff(trend_resid, prepend=trend_resid[0]).reshape(-1, 1)
         demeaned_return = trend_return - np.mean(trend_return)
@@ -404,7 +404,7 @@ class DailySeries2Features:
         demeaned_return_scaler = preprocessing.MinMaxScaler().fit(demeaned_return_scale)
         demeaned_return_scaled = pd.Series(demeaned_return_scaler.transform(demeaned_return_scale).flatten())
         technical = pd.concat([trend_coef_scaled, demeaned_return_scaled], axis=1)
-        print("demeaned_return", demeaned_return_scaled)
+
         technical.columns = ["trend_coef", "demeaned_return"]
         technical.index = serie.index
         return technical

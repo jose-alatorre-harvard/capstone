@@ -414,7 +414,7 @@ class DeepTradingEnvironment(gym.Env):
 
         only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
         forward_returns_dates = features_instance.forward_returns_dates
-        print("only features", only_features)
+
         rolling_vol = only_features[[col for col in only_features.columns if "rolling_volatility" in col]]
         if detrend == True:
             detrend = only_features[[col for col in only_features.columns if "trend" in col or "demeaned" in col]]
