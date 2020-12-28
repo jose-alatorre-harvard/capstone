@@ -1,17 +1,18 @@
+import datetime
+import inspect
+import numpy as np
 import os
 import pandas as pd
-import numpy as np
-from sklearn.pipeline import make_pipeline
-import datetime
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-from timeseriescv.cross_validation import CombPurgedKFoldCV
 import talib
-import inspect
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures
 from sklearn import preprocessing
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.preprocessing import StandardScaler
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from timeseriescv.cross_validation import CombPurgedKFoldCV
+
 
 def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta,
                          return_indices=False):
@@ -383,15 +384,15 @@ class DailySeries2Features:
         dates = serie_smoothed.index.to_julian_date() - serie_smoothed.index.to_julian_date()[0]
         dates = np.reshape(dates, (len(dates), 1))
         y = serie_smoothed.values
-        polyfeatures = PolynomialFeatures(degree=4)
-        xp = polyfeatures.fit_transform(dates)
+        # polyfeatures = PolynomialFeatures(degree=4)
+        # xp = polyfeatures.fit_transform(dates)
 
         linear_model = LinearRegression()
-        linear_model.fit(xp, y)
-        trend_coef = linear_model.predict(xp)
+        linear_model.fit(dates, y)
+        trend_coef = linear_model.predict(dates)
         print("trend_coef", trend_coef)
-        trend_coef_array = np.array(trend_coef).reshape(-1, 1)
-        trend_coef_scaler = preprocessing.StandardScaler().fit(trend_coef_array)
+        trend_coef_array = np.array(trend_coef / np.std(trend_coef)).reshape(-1, 1)
+        trend_coef_scaler = preprocessing.MinMaxScaler().fit(trend_coef_array)
         trend_coef_scaled = pd.Series(trend_coef_scaler.transform(trend_coef_array).flatten())
         print("trend_coef scaled", trend_coef_scaled)
         trend_resid = [y[i] - trend_coef[i] for i in range(0, len(y))]
@@ -400,7 +401,7 @@ class DailySeries2Features:
         trend_return = np.diff(trend_resid, prepend=trend_resid[0]).reshape(-1, 1)
         demeaned_return = trend_return - np.mean(trend_return)
         demeaned_return_scale = demeaned_return / np.std(trend_return)
-        demeaned_return_scaler = preprocessing.StandardScaler().fit(demeaned_return_scale)
+        demeaned_return_scaler = preprocessing.MinMaxScaler().fit(demeaned_return_scale)
         demeaned_return_scaled = pd.Series(demeaned_return_scaler.transform(demeaned_return_scale).flatten())
         technical = pd.concat([trend_coef_scaled, demeaned_return_scaled], axis=1)
         print("demeaned_return", demeaned_return_scaled)
@@ -411,10 +412,12 @@ class DailySeries2Features:
     def _add_rolling_volatility(self, serie):
         """
         rolling volatility of the returns
+        Source: EWM has a min_periods argument, which has the same meaning it does for all the .expanding and .rolling methods
+        https://tedboy.github.io/pandas/computation/computation5.html
         :param data_frame:
         :return:
         """
-        technical = serie.rolling(14).std(ddof=0)
+        technical = serie.ewm(alpha=self.EWMA_VOL_ALPHA, min_periods=14).var()
         return technical
 
 def build_and_persist_features_from_dir( meta_parameters, data_hash,
