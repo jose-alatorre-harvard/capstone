@@ -1,13 +1,11 @@
-import datetime
 import gym
+import pandas as pd
 import numpy as np
 import os
-import pandas as pd
-import quantstats as qs
+import datetime
 from tqdm import tqdm
-
 from lib.Benchmarks import SimulatedAsset
-
+import quantstats as qs
 qs.extend_pandas()
 import matplotlib.pyplot as plt
 import copy
@@ -103,7 +101,6 @@ class RewardFactory:
         :param portfolio_returns:
         :return:
         """
-
         return self.risk_aversion*portfolio_returns.iloc[-1] - (1-self.risk_aversion)*action_variance
 
     def _reward_min_variance(self,portfolio_returns):
@@ -414,16 +411,13 @@ class DeepTradingEnvironment(gym.Env):
 
         only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
         forward_returns_dates = features_instance.forward_returns_dates
-
         rolling_vol = only_features[[col for col in only_features.columns if "rolling_volatility" in col]]
         if detrend == True:
-            detrend = only_features[[col for col in only_features.columns if "trend" in col or "demeaned" in col]]
-
+            detrend = only_features[[col for col in only_features.columns if "detrend" in col or "demeaned" in col]]
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
             #get the lagged returns as features
             only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
             only_features=pd.concat([only_features, detrend],axis=1)
-
         else:
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
             #get the lagged returns as features
@@ -1160,6 +1154,7 @@ class LinearAgent(AgentDataBase):
                     backtest.to_csv('temp_persisted_data/' + model_run + 'training_backtest_actor_critic_traces'+
                                     str(use_traces)+'.csv')
 
+                    plt.figure(figsize=(12, 6))
                     plt.plot(n_iters, average_reward, label=self.reward_function)
                     if self.b_w_set == True:
                         plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
@@ -1167,6 +1162,7 @@ class LinearAgent(AgentDataBase):
                     plt.xlabel("Epochs")
                     plt.ylabel("Reward")
                     plt.show()
+                    plt.close()
 
                     plt.figure(figsize=(12,6))
                     mu_chart = np.array(mu_deterministic)
@@ -1209,49 +1205,59 @@ class LinearAgent(AgentDataBase):
 
                     if plot_gradients == True:
                         plt.figure(figsize=(12, 6))
-                        # colors = cmap(np.linspace(0, 1, 4))
                         tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
-                        if mu_chart.shape[1] == 7:
-                            if detrend == True:
-                                colors = cmap(np.linspace(0, 1, 9))
-                                plt.plot(tmp_mu_asset[:, 119], label="mu asset 1 log return", c=colors[0])
-                                plt.plot(tmp_mu_asset[:, 118], label="mu asset 2 log return", c=colors[1])
-                                plt.plot(tmp_mu_asset[:, 117], label="mu asset 3 log return", c=colors[2])
-                                plt.plot(tmp_mu_asset[:, 14], label="mu asset 1 detrend", c=colors[3])
-                                plt.plot(tmp_mu_asset[:, 12], label="mu asset 2 detrend", c=colors[4])
-                                plt.plot(tmp_mu_asset[:, 10], label="mu asset 3 detrend", c=colors[5])
-                                plt.plot(tmp_mu_asset[:, 13], label="mu asset 1 demeaned residuals", c=colors[6])
-                                plt.plot(tmp_mu_asset[:, 11], label="mu asset 2 demeaned residuals", c=colors[7])
-                                plt.plot(tmp_mu_asset[:, 9], label="mu asset 3 demeaned residuals", c=colors[8])
-                            elif detrend == False:
-                                colors = cmap(np.linspace(0, 1, 7))
-                                plt.plot(tmp_mu_asset[:, 105], label="mu asset 1 log return", c=colors[0])
-                                plt.plot(tmp_mu_asset[:, 104], label="mu asset 2 log return", c=colors[1])
-                                plt.plot(tmp_mu_asset[:, 103], label="mu asset 3 log return", c=colors[2])
-                                plt.plot(tmp_mu_asset[:, 102], label="mu asset 4 log return", c=colors[3])
-                                plt.plot(tmp_mu_asset[:, 101], label="mu asset 5 log return", c=colors[4])
-                                plt.plot(tmp_mu_asset[:, 100], label="mu asset 6 log return", c=colors[5])
-                                plt.plot(tmp_mu_asset[:, 99], label="mu asset 7 log return", c=colors[6])
-                        else:
-                            if detrend == True:
-                                colors = cmap(np.linspace(0, 1, 6))
-                                plt.plot(tmp_mu_asset[:, 34], label="mu asset 1 log return", c=colors[0])
-                                plt.plot(tmp_mu_asset[:, 33], label="mu asset 2 log return", c=colors[1])
-                                plt.plot(tmp_mu_asset[:, 4], label="mu asset 1 detrend", c=colors[2])
-                                plt.plot(tmp_mu_asset[:, 2], label="mu asset 2 detrend", c=colors[3])
-                                plt.plot(tmp_mu_asset[:, 3], label="mu asset 1 demeaned residuals", c=colors[4])
-                                plt.plot(tmp_mu_asset[:, 1], label="mu asset 2 demeaned residuals", c=colors[5])
-                            elif detrend == False:
-                                colors = cmap(np.linspace(0, 1, 2))
-                                plt.plot(tmp_mu_asset[:, 30], label="mu asset 1 log return", c=colors[0])
-                                plt.plot(tmp_mu_asset[:, 29], label="mu asset 2 log return", c=colors[1])
 
-                        plt.title("Gradients")
+                        # save gradients to file
+                        tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + 'mu_gradients_reinforce_baseline_' + str(use_traces) + '.npy'
+                        np.save(tmp_mu_asset_save_path, tmp_mu_asset)
+
+                        feature_column_names = list(self.environment.features.columns)
+                        feature_column_names = [_.replace(".parquet", "") for _ in feature_column_names]
+                        cmap = plt.get_cmap('jet')
+                        colors = cmap(np.linspace(0, 1, 9))
+
+                        # plot log returns, simulated assets must be last to overlay over real asset
+                        plt.figure(figsize=(12, 6))
+                        # iterate backwards
+                        for idx in range(mu_chart.shape[1] - 1, -1, -1):
+                            plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
+
+                            # plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), c=colors[idx], alpha=0.7)
+                        plt.title("Gradients - Log Returns")
                         plt.legend(loc="upper left")
                         plt.xlabel("Epochs")
                         plt.ylabel("Gradient")
                         plt.show()
+                        plt.clf()
                         plt.close()
+
+                        if detrend == True:
+                            # plot demean
+                            plt.figure(figsize=(12, 6))
+                            # iterate backwards                                
+                            for color_idx, idx in enumerate(range(len(feature_column_names) - 3, len(feature_column_names) - 2 - mu_chart.shape[1] * 2, -2)):
+                                color_idx = mu_chart.shape[1] - color_idx - 1
+                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
+                            plt.title("Gradients - demean")
+                            plt.legend(loc="upper left")
+                            plt.xlabel("Epochs")
+                            plt.ylabel("Gradient")
+                            plt.show()
+                            plt.clf()
+                            plt.close()
+                            # plot detrend
+                            plt.figure(figsize=(12, 6))
+                            # iterate backwards                                
+                            for color_idx, idx in enumerate(range(len(feature_column_names) - 2, len(feature_column_names) - 1 - mu_chart.shape[1] * 2, -2)):
+                                color_idx = mu_chart.shape[1] - color_idx - 1
+                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
+                            plt.title("Gradients - detrend")
+                            plt.legend(loc="upper left")
+                            plt.xlabel("Epochs")
+                            plt.ylabel("Gradient")
+                            plt.show()
+                            plt.clf()
+                            plt.close()
 
         return average_weights
 
@@ -1404,55 +1410,60 @@ class LinearAgent(AgentDataBase):
 
                         if plot_gradients == True:
                             plt.figure(figsize=(12, 6))
-                            colors = cmap(np.linspace(0, 1, 4))
                             tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
-                            np.save('theta_mu_hist_gradients.npy', theta_mu_hist_gradients)
-                            # print(tmp_mu_asset)
-                            np.save('tmp_mu_asset.npy', tmp_mu_asset)
 
+                            # save gradients to file
+                            tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + 'mu_gradients_reinforce_baseline_' + str(add_baseline) + '.npy'
+                            np.save(tmp_mu_asset_save_path, tmp_mu_asset)
+                            
+                            feature_column_names = list(self.environment.features.columns)
+                            feature_column_names = [_.replace(".parquet", "") for _ in feature_column_names]
+                            
+                            cmap = plt.get_cmap('jet')
+                            colors = cmap(np.linspace(0, 1, 9))
 
-                            if mu_chart.shape[1] == 7:
-                                if detrend == True:
-                                    colors = cmap(np.linspace(0, 1, 9))
-                                    plt.plot(tmp_mu_asset[:, 119], label="mu asset 1 log return", c=colors[0])
-                                    plt.plot(tmp_mu_asset[:, 118], label="mu asset 2 log return", c=colors[1])
-                                    plt.plot(tmp_mu_asset[:, 117], label="mu asset 3 log return", c=colors[2])
-                                    plt.plot(tmp_mu_asset[:, 14], label="mu asset 1 detrend", c=colors[3])
-                                    plt.plot(tmp_mu_asset[:, 12], label="mu asset 2 detrend", c=colors[4])
-                                    plt.plot(tmp_mu_asset[:, 10], label="mu asset 3 detrend", c=colors[5])
-                                    plt.plot(tmp_mu_asset[:, 13], label="mu asset 1 demeaned residuals", c=colors[6])
-                                    plt.plot(tmp_mu_asset[:, 11], label="mu asset 2 demeaned residuals", c=colors[7])
-                                    plt.plot(tmp_mu_asset[:, 9], label="mu asset 3 demeaned residuals", c=colors[8])
-                                elif detrend == False:
-                                    colors = cmap(np.linspace(0, 1, 7))
-                                    plt.plot(tmp_mu_asset[:, 105], label="mu asset 1 log return", c=colors[0])
-                                    plt.plot(tmp_mu_asset[:, 104], label="mu asset 2 log return", c=colors[1])
-                                    plt.plot(tmp_mu_asset[:, 103], label="mu asset 3 log return", c=colors[2])
-                                    plt.plot(tmp_mu_asset[:, 102], label="mu asset 4 log return", c=colors[3])
-                                    plt.plot(tmp_mu_asset[:, 101], label="mu asset 5 log return", c=colors[4])
-                                    plt.plot(tmp_mu_asset[:, 100], label="mu asset 6 log return", c=colors[5])
-                                    plt.plot(tmp_mu_asset[:, 99], label="mu asset 7 log return", c=colors[6])
-                            else:
-                                if detrend == True:
-                                    colors = cmap(np.linspace(0, 1, 6))
-                                    plt.plot(tmp_mu_asset[:, 34], label="mu asset 1 log return", c=colors[0])
-                                    plt.plot(tmp_mu_asset[:, 33], label="mu asset 2 log return", c=colors[1])
-                                    plt.plot(tmp_mu_asset[:, 4], label="mu asset 1 detrend", c=colors[2])
-                                    plt.plot(tmp_mu_asset[:, 2], label="mu asset 2 detrend", c=colors[3])
-                                    plt.plot(tmp_mu_asset[:, 3], label="mu asset 1 demeaned residuals", c=colors[4])
-                                    plt.plot(tmp_mu_asset[:, 1], label="mu asset 2 demeaned residuals", c=colors[5])
-                                elif detrend == False:
-                                    colors = cmap(np.linspace(0, 1, 2))
-                                    plt.plot(tmp_mu_asset[:, 30], label="mu asset 1 log return", c=colors[0])
-                                    plt.plot(tmp_mu_asset[:, 29], label="mu asset 2 log return", c=colors[1])
-
-
-                            plt.title("Gradients")
+                            # plot log returns, simulated assets must be last to overlay over real asset
+                            plt.figure(figsize=(12, 6))
+                            # iterate backwards
+                            for idx in range(mu_chart.shape[1] - 1, -1, -1):
+                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
+                                # plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), c=colors[idx], alpha=0.7)
+                            plt.title("Gradients - Log Returns")
                             plt.legend(loc="upper left")
                             plt.xlabel("Epochs")
                             plt.ylabel("Gradient")
                             plt.show()
+                            plt.clf()
                             plt.close()
+
+                            if detrend == True:
+                                # plot demean
+                                plt.figure(figsize=(12, 6))
+                                # iterate backwards                                
+                                for color_idx, idx in enumerate(range(len(feature_column_names) - 3, len(feature_column_names) - 2 - mu_chart.shape[1] * 2, -2)):
+                                    color_idx = mu_chart.shape[1] - color_idx - 1
+                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
+                                plt.title("Gradients - demean")
+                                plt.legend(loc="upper left")
+                                plt.xlabel("Epochs")
+                                plt.ylabel("Gradient")
+                                plt.show()
+                                plt.clf()
+                                plt.close()
+
+                                # plot detrend
+                                plt.figure(figsize=(12, 6))
+                                # iterate backwards                                
+                                for color_idx, idx in enumerate(range(len(feature_column_names) - 2, len(feature_column_names) - 1 - mu_chart.shape[1] * 2, -2)):
+                                    color_idx = mu_chart.shape[1] - color_idx - 1
+                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
+                                plt.title("Gradients - detrend")
+                                plt.legend(loc="upper left")
+                                plt.xlabel("Epochs")
+                                plt.ylabel("Gradient")
+                                plt.show()
+                                plt.clf()
+                                plt.close()
 
         return average_weights
 
@@ -1717,7 +1728,7 @@ class DeepAgentPytorch(AgentDataBase):
                         ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
                         for row in range(ws.shape[0]):
                             plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                        plt.ylim(-0.1, 1.1)
+                        plt.ylim(0, 1)
                         plt.legend(loc="upper left")
                         plt.show()
                         plt.close()

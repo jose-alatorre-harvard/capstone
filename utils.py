@@ -416,7 +416,7 @@ class DailySeries2Features:
         :param data_frame:
         :return:
         """
-        technical = serie.ewm(alpha=self.EWMA_VOL_ALPHA, min_periods=14).var()
+        technical = serie.ewm(alpha=self.EWMA_VOL_ALPHA, min_periods=14).std()
         return technical
 
 def build_and_persist_features_from_dir( meta_parameters, data_hash,
