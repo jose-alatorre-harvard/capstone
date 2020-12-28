@@ -1407,7 +1407,7 @@ class LinearAgent(AgentDataBase):
                             colors = cmap(np.linspace(0, 1, 4))
                             tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
                             np.save('theta_mu_hist_gradients.npy', theta_mu_hist_gradients)
-                            print(tmp_mu_asset)
+                            # print(tmp_mu_asset)
                             np.save('tmp_mu_asset.npy', tmp_mu_asset)
 
 

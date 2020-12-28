@@ -20,6 +20,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-1-detrend-Holtz-Winters.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-1-detrend-Holtz-Winters.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/environments/e_greedy.py" beforeDir="false" afterPath="$PROJECT_DIR$/environments/e_greedy.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
@@ -327,21 +328,7 @@
       <workItem from="1608981005922" duration="1081000" />
       <workItem from="1609006755128" duration="3965000" />
       <workItem from="1609038221193" duration="7263000" />
-      <workItem from="1609088965635" duration="18523000" />
-    </task>
-    <task id="LOCAL-00016" summary="train/test implementation">
-      <created>1607245593078</created>
-      <option name="number" value="00016" />
-      <option name="presentableId" value="LOCAL-00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1607245593079</updated>
-    </task>
-    <task id="LOCAL-00017" summary="train/test implementation">
-      <created>1607246167355</created>
-      <option name="number" value="00017" />
-      <option name="presentableId" value="LOCAL-00017" />
-      <option name="project" value="LOCAL" />
-      <updated>1607246167355</updated>
+      <workItem from="1609088965635" duration="21905000" />
     </task>
     <task id="LOCAL-00018" summary="train/test implementation">
       <created>1607246287168</created>
@@ -672,7 +659,21 @@
       <option name="project" value="LOCAL" />
       <updated>1609141290443</updated>
     </task>
-    <option name="localTasksCounter" value="65" />
+    <task id="LOCAL-00065" summary="removed print statements">
+      <created>1609141487497</created>
+      <option name="number" value="00065" />
+      <option name="presentableId" value="LOCAL-00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1609141487497</updated>
+    </task>
+    <task id="LOCAL-00066" summary="Holtz-Winters testing">
+      <created>1609141523083</created>
+      <option name="number" value="00066" />
+      <option name="presentableId" value="LOCAL-00066" />
+      <option name="project" value="LOCAL" />
+      <updated>1609141523083</updated>
+    </task>
+    <option name="localTasksCounter" value="67" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -701,8 +702,6 @@
     <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="update" />
-    <MESSAGE value="integration into master branch" />
     <MESSAGE value="Real_World data demonstration" />
     <MESSAGE value="Updated User Steps for real world data" />
     <MESSAGE value="fix code for handling multiple inputs" />
@@ -726,7 +725,9 @@
     <MESSAGE value="added rolling volatility as feature" />
     <MESSAGE value="fixed detrend calculations" />
     <MESSAGE value="fixed progress bar" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed progress bar" />
+    <MESSAGE value="removed print statements" />
+    <MESSAGE value="Holtz-Winters testing" />
+    <option name="LAST_COMMIT_MESSAGE" value="Holtz-Winters testing" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="WindowStateProjectService">
@@ -747,13 +748,13 @@
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783@0.0.1463.783" timestamp="1608934067572" />
-    <state x="222" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1609141286468">
+    <state x="222" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1609141520774">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367144986" />
     <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483047946" />
-    <state x="222" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1609141286468" />
+    <state x="222" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1609141520774" />
     <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364617930">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
@@ -836,13 +837,13 @@
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="3068" y="124" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343621009" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609141320098">
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609141525448">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344614359" />
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367153713" />
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483052383" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609141320098" />
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609141525448" />
     <state x="2" y="11" width="1479" height="826" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1609139611246">
       <screen x="0" y="0" width="1463" height="783" />
     </state>

@@ -384,21 +384,20 @@ class DailySeries2Features:
         dates = serie_smoothed.index.to_julian_date() - serie_smoothed.index.to_julian_date()[0]
         dates = np.reshape(dates, (len(dates), 1))
         y = serie_smoothed.values
-        # polyfeatures = PolynomialFeatures(degree=4)
-        # xp = polyfeatures.fit_transform(dates)
+        polyfeatures = PolynomialFeatures(degree=4)
+        xp = polyfeatures.fit_transform(dates)
 
         linear_model = LinearRegression()
-        linear_model.fit(dates, y)
-        trend_coef = linear_model.predict(dates)
+        linear_model.fit(xp, y)
+        trend_coef = linear_model.predict(xp)
 
         trend_coef_array = np.array(trend_coef / np.std(trend_coef)).reshape(-1, 1)
         trend_coef_scaler = preprocessing.MinMaxScaler().fit(trend_coef_array)
         trend_coef_scaled = pd.Series(trend_coef_scaler.transform(trend_coef_array).flatten())
 
         trend_resid = [y[i] - trend_coef[i] for i in range(0, len(y))]
-
-
         trend_return = np.diff(trend_resid, prepend=trend_resid[0]).reshape(-1, 1)
+
         demeaned_return = trend_return - np.mean(trend_return)
         demeaned_return_scale = demeaned_return / np.std(trend_return)
         demeaned_return_scaler = preprocessing.MinMaxScaler().fit(demeaned_return_scale)
