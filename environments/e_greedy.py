@@ -413,7 +413,7 @@ class DeepTradingEnvironment(gym.Env):
         print("only features", only_features)
         rolling_vol = only_features[[col for col in only_features.columns if "rolling_volatility" in col]]
         if detrend == True:
-            detrend = only_features[[col for col in only_features.columns if "detrend" in col or "demeaned" in col]]
+            detrend = only_features[[col for col in only_features.columns if "trend" in col or "demeaned" in col]]
 
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
             #get the lagged returns as features

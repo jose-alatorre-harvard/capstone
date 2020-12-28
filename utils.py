@@ -8,8 +8,10 @@ from sklearn.preprocessing import StandardScaler
 from timeseriescv.cross_validation import CombPurgedKFoldCV
 import talib
 import inspect
-from scipy.signal import detrend
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn import preprocessing
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 def get_return_in_period(serie, origin_time_delta, finish_time_delta, forward_limit_time_delta,
                          return_indices=False):
@@ -374,26 +376,35 @@ class DailySeries2Features:
         :param data_frame:
         :return:
         """
-        detrend_result = detrend(serie, axis=- 1, type='linear', bp=0, overwrite_data=False).reshape(-1, 1)
+        holtwinters = ExponentialSmoothing(serie, seasonal=None)
+        fit = holtwinters.fit(optimized=True, remove_bias=True, smoothing_level=0.1, smoothing_slope=0.1)
 
-        scaler = preprocessing.MinMaxScaler().fit(detrend_result)
-        detrend_scaled= scaler.transform(detrend_result)
+        serie_smoothed = fit.predict(start=serie.index[0], end=serie.index[-1])
+        dates = serie_smoothed.index.to_julian_date() - serie_smoothed.index.to_julian_date()[0]
+        dates = np.reshape(dates, (len(dates), 1))
+        y = serie_smoothed.values
+        polyfeatures = PolynomialFeatures(degree=4)
+        xp = polyfeatures.fit_transform(dates)
 
-        technical = pd.Series(detrend_scaled.flatten())
-        technical.index = serie.index
-        return technical
+        linear_model = LinearRegression()
+        linear_model.fit(xp, y)
+        trend_coef = linear_model.predict(xp)
+        print("trend_coef", trend_coef)
+        trend_coef_array = np.array(trend_coef).reshape(-1, 1)
+        trend_coef_scaler = preprocessing.StandardScaler().fit(trend_coef_array)
+        trend_coef_scaled = pd.Series(trend_coef_scaler.transform(trend_coef_array).flatten())
+        print("trend_coef scaled", trend_coef_scaled)
+        trend_resid = [y[i] - trend_coef[i] for i in range(0, len(y))]
+        print("trend_resid", trend_resid)
 
-    def _add_demeaned(self, serie):
-        """
-        demean and scale the returns of the residual
-        :param data_frame:
-        :return:
-        """
-        demeaned_result = detrend(serie, axis=- 1, type='constant', bp=0, overwrite_data=False)
-        demeaned_return = np.diff(demeaned_result, prepend=demeaned_result[0]).reshape(-1, 1)
-        scaler = preprocessing.MinMaxScaler().fit(demeaned_return)
-        demeaned_scaled= scaler.transform(demeaned_return)
-        technical = pd.Series(demeaned_scaled.flatten())
+        trend_return = np.diff(trend_resid, prepend=trend_resid[0]).reshape(-1, 1)
+        demeaned_return = trend_return - np.mean(trend_return)
+        demeaned_return_scale = demeaned_return / np.std(trend_return)
+        demeaned_return_scaler = preprocessing.StandardScaler().fit(demeaned_return_scale)
+        demeaned_return_scaled = pd.Series(demeaned_return_scaler.transform(demeaned_return_scale).flatten())
+        technical = pd.concat([trend_coef_scaled, demeaned_return_scaled], axis=1)
+        print("demeaned_return", demeaned_return_scaled)
+        technical.columns = ["trend_coef", "demeaned_return"]
         technical.index = serie.index
         return technical
 
