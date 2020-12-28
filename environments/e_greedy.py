@@ -1,11 +1,13 @@
+import datetime
 import gym
-import pandas as pd
 import numpy as np
 import os
-import datetime
-from tqdm import tqdm
-from lib.Benchmarks import SimulatedAsset
+import pandas as pd
 import quantstats as qs
+from tqdm import tqdm
+
+from lib.Benchmarks import SimulatedAsset
+
 qs.extend_pandas()
 import matplotlib.pyplot as plt
 import copy
@@ -1208,7 +1210,7 @@ class LinearAgent(AgentDataBase):
                         tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
 
                         # save gradients to file
-                        tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + 'mu_gradients_reinforce_baseline_' + str(use_traces) + '.npy'
+                        tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + 'mu_gradients_actor_critic_' + str(use_traces) + '.npy'
                         np.save(tmp_mu_asset_save_path, tmp_mu_asset)
 
                         feature_column_names = list(self.environment.features.columns)
