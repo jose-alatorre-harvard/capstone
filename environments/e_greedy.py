@@ -1215,6 +1215,7 @@ class LinearAgent(AgentDataBase):
 
                         feature_column_names = list(self.environment.features.columns)
                         feature_column_names = [_.replace(".parquet", "") for _ in feature_column_names]
+                        feature_column_names = [_.replace("trend_coef", "trend") for _ in feature_column_names]
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1, 9))
 
@@ -1234,10 +1235,24 @@ class LinearAgent(AgentDataBase):
                         plt.close()
 
                         if detrend == True:
-                            # plot demean
+                            # plot rolling vol
                             plt.figure(figsize=(12, 6))
                             # iterate backwards                                
-                            for color_idx, idx in enumerate(range(len(feature_column_names) - 3, len(feature_column_names) - 2 - mu_chart.shape[1] * 2, -2)):
+                            for color_idx, idx in enumerate(range(len(feature_column_names) - 2, len(feature_column_names) - mu_chart.shape[1] - 2, -1) ):  
+                                color_idx = mu_chart.shape[1] - color_idx - 1
+                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
+                            plt.title("Gradients - rolling vol")
+                            plt.legend(loc="upper left")
+                            plt.xlabel("Epochs")
+                            plt.ylabel("Gradient")
+                            plt.show()
+                            plt.clf()
+                            plt.close()
+
+                            # plot demeaned
+                            plt.figure(figsize=(12, 6))
+                            # iterate backwards                                
+                            for color_idx, idx in enumerate(range(len(feature_column_names) - 2 - mu_chart.shape[1], len(feature_column_names) - 2 - mu_chart.shape[1] * 3, -2) ):  
                                 color_idx = mu_chart.shape[1] - color_idx - 1
                                 plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
                             plt.title("Gradients - demean")
@@ -1247,13 +1262,14 @@ class LinearAgent(AgentDataBase):
                             plt.show()
                             plt.clf()
                             plt.close()
-                            # plot detrend
+
+                            # plot trend
                             plt.figure(figsize=(12, 6))
                             # iterate backwards                                
-                            for color_idx, idx in enumerate(range(len(feature_column_names) - 2, len(feature_column_names) - 1 - mu_chart.shape[1] * 2, -2)):
+                            for color_idx, idx in enumerate(range(len(feature_column_names) - 3 - mu_chart.shape[1], len(feature_column_names) - 3 - mu_chart.shape[1] * 3, -2)):
                                 color_idx = mu_chart.shape[1] - color_idx - 1
                                 plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-                            plt.title("Gradients - detrend")
+                            plt.title("Gradients - trend")
                             plt.legend(loc="upper left")
                             plt.xlabel("Epochs")
                             plt.ylabel("Gradient")
@@ -1420,7 +1436,7 @@ class LinearAgent(AgentDataBase):
                             
                             feature_column_names = list(self.environment.features.columns)
                             feature_column_names = [_.replace(".parquet", "") for _ in feature_column_names]
-                            
+                            feature_column_names = [_.replace("trend_coef", "trend") for _ in feature_column_names]
                             cmap = plt.get_cmap('jet')
                             colors = cmap(np.linspace(0, 1, 9))
 
@@ -1439,10 +1455,24 @@ class LinearAgent(AgentDataBase):
                             plt.close()
 
                             if detrend == True:
-                                # plot demean
+                                # plot rolling vol
                                 plt.figure(figsize=(12, 6))
                                 # iterate backwards                                
-                                for color_idx, idx in enumerate(range(len(feature_column_names) - 3, len(feature_column_names) - 2 - mu_chart.shape[1] * 2, -2)):
+                                for color_idx, idx in enumerate(range(len(feature_column_names) - 2, len(feature_column_names) - mu_chart.shape[1] - 2, -1) ):  
+                                    color_idx = mu_chart.shape[1] - color_idx - 1
+                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
+                                plt.title("Gradients - rolling vol")
+                                plt.legend(loc="upper left")
+                                plt.xlabel("Epochs")
+                                plt.ylabel("Gradient")
+                                plt.show()
+                                plt.clf()
+                                plt.close()
+
+                                # plot demeaned
+                                plt.figure(figsize=(12, 6))
+                                # iterate backwards                                
+                                for color_idx, idx in enumerate(range(len(feature_column_names) - 2 - mu_chart.shape[1], len(feature_column_names) - 2 - mu_chart.shape[1] * 3, -2) ):  
                                     color_idx = mu_chart.shape[1] - color_idx - 1
                                     plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
                                 plt.title("Gradients - demean")
@@ -1453,13 +1483,13 @@ class LinearAgent(AgentDataBase):
                                 plt.clf()
                                 plt.close()
 
-                                # plot detrend
+                                # plot trend
                                 plt.figure(figsize=(12, 6))
                                 # iterate backwards                                
-                                for color_idx, idx in enumerate(range(len(feature_column_names) - 2, len(feature_column_names) - 1 - mu_chart.shape[1] * 2, -2)):
+                                for color_idx, idx in enumerate(range(len(feature_column_names) - 3 - mu_chart.shape[1], len(feature_column_names) - 3 - mu_chart.shape[1] * 3, -2) ):  
                                     color_idx = mu_chart.shape[1] - color_idx - 1
                                     plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-                                plt.title("Gradients - detrend")
+                                plt.title("Gradients - trend")
                                 plt.legend(loc="upper left")
                                 plt.xlabel("Epochs")
                                 plt.ylabel("Gradient")
