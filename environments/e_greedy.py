@@ -1,11 +1,13 @@
+import datetime
 import gym
-import pandas as pd
 import numpy as np
 import os
-import datetime
-from tqdm import tqdm
-from lib.Benchmarks import SimulatedAsset
+import pandas as pd
 import quantstats as qs
+from tqdm import tqdm
+
+from lib.Benchmarks import SimulatedAsset
+
 qs.extend_pandas()
 import matplotlib.pyplot as plt
 import copy
@@ -16,6 +18,8 @@ from utils import DailyDataFrame2Features
 import torch
 import torch.nn.functional as F
 import math
+from functools import partial
+tqdm = partial(tqdm, position=0, leave=True)
 
 class RewardFactory:
 
@@ -1038,7 +1042,7 @@ class LinearAgent(AgentDataBase):
         average_reward = []
         theta_norm = []
 
-        # pbar = tqdm(total=max_iterations)
+        pbar = tqdm(total=max_iterations)
         theta_mu_hist_gradients = []
         theta_sigma_hist_gradients = []
 
@@ -1124,7 +1128,7 @@ class LinearAgent(AgentDataBase):
             theta_norm.append(theta_diff)
             # print("iteration", iters,theta_diff, end="\r", flush=True)
 
-            # pbar.update(1)
+            pbar.update(1)
             # assign  update_of thetas
             self.theta_mu = copy.deepcopy(new_theta_mu)
             self.theta_sigma = copy.deepcopy(new_theta_sigma)
@@ -1266,7 +1270,7 @@ class LinearAgent(AgentDataBase):
         average_reward=[]
         theta_norm=[]
 
-        # pbar = tqdm(total=max_iterations)
+        pbar = tqdm(total=max_iterations)
         theta_mu_hist_gradients=[]
         theta_sigma_hist_gradients=[]
 
@@ -1325,7 +1329,7 @@ class LinearAgent(AgentDataBase):
             theta_diff=np.linalg.norm(new_full_theta-old_full_theta)
             theta_norm.append(theta_diff)
             # print("iteration", iters,theta_diff, end="\r", flush=True)
-            # pbar.update(1)
+            pbar.update(1)
             #assign  update_of thetas
             self.theta_mu=copy.deepcopy(new_theta_mu)
             self.theta_sigma=copy.deepcopy(new_theta_sigma)
@@ -1606,7 +1610,7 @@ class DeepAgentPytorch(AgentDataBase):
         total_reward = []
         theta_norm = []
         losses = []
-        # pbar = tqdm(total=max_iterations)
+        pbar = tqdm(total=max_iterations)
 
         optimizer = torch.optim.Adam(self.actor_model.parameters(),
                                      lr=0.01)
@@ -1660,7 +1664,7 @@ class DeepAgentPytorch(AgentDataBase):
             # apply gradients
             optimizer.step()
 
-            # pbar.update(1)
+            pbar.update(1)
             iters = iters + 1
             # historical_grads.append(loss_value.grad.numpy())
 
@@ -1742,7 +1746,7 @@ class DeepAgentPytorch(AgentDataBase):
         total_reward=[]
         theta_norm = []
         losses=[]
-        # pbar = tqdm(total=max_iterations)
+        pbar = tqdm(total=max_iterations)
 
         optimizer = torch.optim.Adam(self.actor_model.parameters(),
                                lr=0.01)
@@ -1781,11 +1785,11 @@ class DeepAgentPytorch(AgentDataBase):
             #apply gradients
             optimizer.step()
 
-            # pbar.update(1)
+            pbar.update(1)
             iters = iters + 1
             # historical_grads.append(loss_value.grad.numpy())
 
-            # pbar.set_description("loss "+str(loss_value))
+            pbar.set_description("loss "+str(loss_value))
             losses.append(float(loss_value))
             if record_average_weights == True:
                 average_weights.append(self.environment.state.weight_buffer.mean())
