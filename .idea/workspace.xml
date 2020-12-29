@@ -21,6 +21,22 @@
   <component name="ChangeListManager">
     <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-0-detrend.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-0-detrend.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-10-detrend.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-7ETF-lambda-5-detrend.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-USMV-lambda-0-detrend.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-USMV-lambda-0-detrend.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-USMV-lambda-5-detrend.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-0-AlgoLabels.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-0-detrend.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-0-detrend.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-1-detrend-Holtz-Winters.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-1-detrend-Holtz-Winters.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-10-AlgoLabels.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-15-AlgoLabels.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-5-AlgoLabels.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-5-detrend.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/User Steps for Statistics and Benchmarks.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/User Steps for Statistics and Benchmarks.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/environments/e_greedy.py" beforeDir="false" afterPath="$PROJECT_DIR$/environments/e_greedy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
@@ -53,11 +69,7 @@
   </component>
   <component name="JupyterTrust" id="dfb0f22d-b8d1-46d3-be09-8e2b93d84436">
     <option name="files">
-      <option value="Real-World Data Demonstration-7ETF-lambda-10-detrend.ipynb" />
-      <option value="Real-World Data Demonstration-7ETF-lambda-5-detrend.ipynb" />
-      <option value="Real-World Data Demonstration-MTUM-USMV-lambda-5-detrend.ipynb" />
       <option value="Real-World Data Demonstration-MTUM-simulated-lambda-0-detrend.ipynb" />
-      <option value="Real-World Data Demonstration-MTUM-simulated-lambda-5-detrend.ipynb" />
       <option value="michael_actor_critic_test.ipynb" />
     </option>
   </component>
@@ -72,19 +84,20 @@
     <property name="TODO_SCOPE" value="All Places" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/data_env_MTUM-simulated-USMV" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/data_env_MTUM-EFAV" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\data_env_MTUM-simulated-USMV" />
-      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone" />
-      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\tests" />
-    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\files_to_remove" />
       <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\presentations" />
       <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\data_env_MTUM-EFAV" />
+      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone" />
+      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\data_env_MTUM-simulated-USMV" />
+      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\tests" />
     </key>
   </component>
   <component name="RunManager" selected="Python.Environment">
@@ -325,6 +338,7 @@
       <workItem from="1609006755128" duration="3965000" />
       <workItem from="1609038221193" duration="7263000" />
       <workItem from="1609088965635" duration="26100000" />
+      <workItem from="1609179852191" duration="15868000" />
     </task>
     <task id="LOCAL-00021" summary="updated train/test trial">
       <created>1607373574913</created>
@@ -841,12 +855,12 @@
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367153713" />
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483052383" />
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609148444179" />
-    <state x="2" y="11" width="1479" height="826" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1609139611246">
+    <state x="2" y="11" width="1479" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1609208407164">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2626" y="61" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601161044324" />
     <state x="128" y="-7" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363268828" />
-    <state x="2" y="11" width="1479" height="826" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1463.783@0.0.1463.783" timestamp="1609139611246" />
+    <state x="2" y="11" width="1479" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1463.783@0.0.1463.783" timestamp="1609208407164" />
     <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1609150038311">
       <screen x="0" y="0" width="1463" height="783" />
     </state>

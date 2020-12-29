@@ -6,6 +6,7 @@ import pandas as pd
 import quantstats as qs
 from tqdm import tqdm
 
+from lib.Benchmarks import RollingPortfolios
 from lib.Benchmarks import SimulatedAsset
 
 qs.extend_pandas()
@@ -103,7 +104,7 @@ class RewardFactory:
         :param portfolio_returns:
         :return:
         """
-        return self.risk_aversion*portfolio_returns.iloc[-1] - (1-self.risk_aversion)*action_variance
+        return 1*(self.risk_aversion*portfolio_returns.iloc[-1] - 1*(1-self.risk_aversion)*action_variance)
 
     def _reward_min_variance(self,portfolio_returns):
         """
@@ -413,19 +414,20 @@ class DeepTradingEnvironment(gym.Env):
 
         only_features, only_forward_returns =features_instance.separate_features_from_forward_returns(features=features)
         forward_returns_dates = features_instance.forward_returns_dates
-        rolling_vol = only_features[[col for col in only_features.columns if "rolling_volatility" in col]]
+
         if detrend == True:
-            detrend = only_features[[col for col in only_features.columns if "trend" in col or "demeaned" in col]]
+            detrend = only_features[[col for col in only_features.columns if "hw" in col]]
             only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
-            #get the lagged returns as features
-            only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
-            only_features=pd.concat([only_features, detrend],axis=1)
-        else:
-            only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
-            #get the lagged returns as features
+            only_features = pd.concat([only_features, detrend], axis=1)
+            #get the lagged features
             only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
 
-        only_features = pd.concat([only_features, rolling_vol], axis=1)
+        else:
+            only_features=only_features[[col for col in only_features.columns if "log_return" in col]]
+            #get the lagged features
+            only_features=features_instance.add_lags_to_features(only_features,n_lags=in_bars_count)
+
+
         only_features=only_features.dropna()
 
 
@@ -654,6 +656,7 @@ class AgentDataBase:
             # try/except clause used to account for difference in datetime formats
             train_input_returns = train_input.to_returns().dropna()
             train_input_returns = train_input_returns.loc[(train_input_returns != 0).any(1)]
+
             try:
                 activate_date=pd.Timestamp(self.environment.features.index[0])
                 tmp_weights = self.environment.state.weight_buffer.copy()
@@ -695,6 +698,7 @@ class AgentDataBase:
         else:
             test_input_returns = test_input.to_returns().dropna()
             test_input_returns = test_input_returns.loc[(test_input_returns != 0).any(1)]
+
             activate_date=test_input.index[0]
             tmp_weights = env_test.state.weight_buffer[1:].copy()
             tmp_weights.columns = test_input_returns.columns
@@ -1139,7 +1143,6 @@ class LinearAgent(AgentDataBase):
                         backtest=None
                     backtest, tmp_weights =self.backtest_policy(epoch=iters,backtest=backtest, train_input=train_input)
                     n_cols=len(backtest.columns)
-
                     plt.figure(figsize=(12, 6))
                     for col_counter,col in enumerate(backtest):
                         plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols, label="epoch "+str(col))
@@ -1720,7 +1723,7 @@ class DeepAgentPytorch(AgentDataBase):
                         # Create Plot Backtest
                         if not "backtest" in locals():
                             backtest = None
-                        backtest, tmp_weights = self.backtest_policy(epoch=iters, backtest=backtest, train_input=train_input)
+                        backtest, tmp_weights, input_returns = self.backtest_policy(epoch=iters, backtest=backtest, train_input=train_input)
                         n_cols = len(backtest.columns)
 
                         for col_counter, col in enumerate(backtest):

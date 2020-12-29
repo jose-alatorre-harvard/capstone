@@ -119,7 +119,7 @@ class DailyDataFrame2Features:
         assert n_lags >=1
         for lag in range(n_lags):
             shifted_df=original_features.shift(lag+1)
-            shifted_df.columns=[i+"_lag_"+str(lag) for i in shifted_df.columns]
+            shifted_df.columns=[i+"_lag_"+str(lag+1) for i in shifted_df.columns]
             new_features=pd.concat([new_features,shifted_df],axis=1)
 
         return new_features
@@ -377,47 +377,49 @@ class DailySeries2Features:
         :param data_frame:
         :return:
         """
-        holtwinters = ExponentialSmoothing(serie, seasonal=None)
+        holtwinters = ExponentialSmoothing(serie, trend="add", seasonal=None)
         fit = holtwinters.fit(optimized=True, remove_bias=True, smoothing_level=0.1, smoothing_slope=0.1)
 
-        serie_smoothed = fit.predict(start=serie.index[0], end=serie.index[-1])
-        dates = serie_smoothed.index.to_julian_date() - serie_smoothed.index.to_julian_date()[0]
-        dates = np.reshape(dates, (len(dates), 1))
-        y = serie_smoothed.values
-        polyfeatures = PolynomialFeatures(degree=4)
-        xp = polyfeatures.fit_transform(dates)
+        hw_trend = np.array(fit._results.trend).reshape(-1, 1)
+        hw_level = np.array(fit._results.level).reshape(-1, 1)
+        hw_resid = np.array(fit._results.resid).reshape(-1, 1)
+        print("hw_trend pre scaled", hw_trend)
+        print("hw_level pre scaled", hw_level)
+        print("hw_resid pre scaled", hw_resid)
 
-        linear_model = LinearRegression()
-        linear_model.fit(xp, y)
-        trend_coef = linear_model.predict(xp)
+        trend_scaler = preprocessing.MinMaxScaler().fit(hw_trend)
+        trend_scaled = pd.Series(trend_scaler.transform(hw_trend).flatten())
+        print("hw_trend post scaled", trend_scaled)
 
-        trend_coef_array = np.array(trend_coef / np.std(trend_coef)).reshape(-1, 1)
-        trend_coef_scaler = preprocessing.MinMaxScaler().fit(trend_coef_array)
-        trend_coef_scaled = pd.Series(trend_coef_scaler.transform(trend_coef_array).flatten())
+        level_scaler = preprocessing.MinMaxScaler().fit(hw_level)
+        level_scaled = pd.Series(level_scaler.transform(hw_level).flatten())
+        print("hw_level post scaled", level_scaled)
 
-        trend_resid = [y[i] - trend_coef[i] for i in range(0, len(y))]
-        trend_return = np.diff(trend_resid, prepend=trend_resid[0]).reshape(-1, 1)
+        resid_scaler = preprocessing.MinMaxScaler().fit(hw_resid)
+        resid_scaled = pd.Series(resid_scaler.transform(hw_resid).flatten())
+        print("hw_resid post scaled", resid_scaled)
 
-        demeaned_return = trend_return - np.mean(trend_return)
-        demeaned_return_scale = demeaned_return / np.std(trend_return)
-        demeaned_return_scaler = preprocessing.MinMaxScaler().fit(demeaned_return_scale)
-        demeaned_return_scaled = pd.Series(demeaned_return_scaler.transform(demeaned_return_scale).flatten())
-        technical = pd.concat([trend_coef_scaled, demeaned_return_scaled], axis=1)
+        demeaned_resid = fit._results.resid - np.mean(fit._results.resid)
+        demeaned_return = np.diff(demeaned_resid, prepend=demeaned_resid[0]).reshape(-1, 1)
+        print("demeaned return scaled", demeaned_return)
 
-        technical.columns = ["trend_coef", "demeaned_return"]
+        demeaned_return_scaler = preprocessing.MinMaxScaler().fit(demeaned_return)
+        demeaned_return_scaled = pd.Series(demeaned_return_scaler.transform(demeaned_return).flatten())
+        print("demeaned return post scaled", demeaned_return_scaled)
+
+        volatility_resid =pd.Series(fit._results.resid).ewm(alpha=self.EWMA_VOL_ALPHA, min_periods=14).var().values.reshape(-1, 1)
+        volatility_resid_scaler = preprocessing.MinMaxScaler().fit(volatility_resid)
+        volatility_resid_scaled = pd.Series(volatility_resid_scaler.transform(volatility_resid).flatten())
+        print("volatility pre scaled", volatility_resid)
+        print("volatility post scaled", volatility_resid_scaled)
+
+
+        technical = pd.concat([trend_scaled, level_scaled, resid_scaled, demeaned_return_scaled, volatility_resid_scaled], axis=1)
+
+        technical.columns = ["hw_trend", "hw_level", "hw_resid", "hw_demeaned_return", "hw_volatility"]
         technical.index = serie.index
         return technical
 
-    def _add_rolling_volatility(self, serie):
-        """
-        rolling volatility of the returns
-        Source: EWM has a min_periods argument, which has the same meaning it does for all the .expanding and .rolling methods
-        https://tedboy.github.io/pandas/computation/computation5.html
-        :param data_frame:
-        :return:
-        """
-        technical = serie.ewm(alpha=self.EWMA_VOL_ALPHA, min_periods=14).std()
-        return technical
 
 def build_and_persist_features_from_dir( meta_parameters, data_hash,
                                               data_dir="data_env",):
