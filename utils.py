@@ -378,7 +378,7 @@ class DailySeries2Features:
         :return:
         """
         holtwinters = ExponentialSmoothing(serie, trend="add", seasonal=None)
-        fit = holtwinters.fit(optimized=True, remove_bias=True, smoothing_level=0.1, smoothing_slope=0.1)
+        fit = holtwinters.fit(optimized=True, remove_bias=True, smoothing_level=0.1, smoothing_trend=0.1)
 
         hw_trend = np.array(fit._results.trend).reshape(-1, 1)
         hw_level = np.array(fit._results.level).reshape(-1, 1)

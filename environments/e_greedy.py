@@ -1174,13 +1174,13 @@ class LinearAgent(AgentDataBase):
                     else:
                         plt.title("Backtest Returns vs Epoch Training - {} - Actor Critic".format(model_run))
 
-                    plt.savefig('temp_persisted_data/' + model_run + 'training_backtest_actor_critic_traces'+
+                    plt.savefig('temp_persisted_data/' + model_run + '_training_backtest_actor_critic_traces'+
                                     str(use_traces)+ '.png')
                     plt.show()
                     plt.close()
                     # Backtest plot finishes
 
-                    backtest.to_csv('temp_persisted_data/' + model_run + 'training_backtest_actor_critic_traces'+
+                    backtest.to_csv('temp_persisted_data/' + model_run + '_training_backtest_actor_critic_traces'+
                                     str(use_traces)+'.csv')
 
                     plt.figure(figsize=(12, 6))
@@ -1237,7 +1237,7 @@ class LinearAgent(AgentDataBase):
                         tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
 
                         # save gradients to file
-                        tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + 'mu_gradients_actor_critic_' + str(use_traces) + '.npy'
+                        tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + '_mu_gradients_actor_critic_' + str(use_traces) + '.npy'
                         np.save(tmp_mu_asset_save_path, tmp_mu_asset)
 
                         feature_column_names = list(self.environment.features.columns)
@@ -1440,12 +1440,12 @@ class LinearAgent(AgentDataBase):
                         else:
                             plt.title("Backtest Returns vs Epoch Training - {} - REINFORCE".format(model_run))
 
-                        plt.savefig('temp_persisted_data/' + model_run + 'training_backtest_reinforce_baseline_' +
+                        plt.savefig('temp_persisted_data/' + model_run + '_training_backtest_reinforce_baseline_' +
                                     str(add_baseline) + '.png')
                         plt.show()
                         plt.close()
                         # Backtest plot finishes
-                        backtest.to_csv('temp_persisted_data/' + model_run + 'training_backtest_reinforce_baseline_' + str(add_baseline) + '.csv')
+                        backtest.to_csv('temp_persisted_data/' + model_run + '_training_backtest_reinforce_baseline_' + str(add_baseline) + '.csv')
 
                         plt.figure(figsize=(12, 6))
                         plt.plot(n_iters, average_reward, label=self.reward_function)
@@ -1497,7 +1497,7 @@ class LinearAgent(AgentDataBase):
                             tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
 
                             # save gradients to file
-                            tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + 'mu_gradients_reinforce_baseline_' + str(add_baseline) + '.npy'
+                            tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + '_mu_gradients_reinforce_baseline_' + str(add_baseline) + '.npy'
                             np.save(tmp_mu_asset_save_path, tmp_mu_asset)
                             
                             feature_column_names = list(self.environment.features.columns)
