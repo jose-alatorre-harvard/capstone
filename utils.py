@@ -383,36 +383,25 @@ class DailySeries2Features:
         hw_trend = np.array(fit._results.trend).reshape(-1, 1)
         hw_level = np.array(fit._results.level).reshape(-1, 1)
         hw_resid = np.array(fit._results.resid).reshape(-1, 1)
-        print("hw_trend pre scaled", hw_trend)
-        print("hw_level pre scaled", hw_level)
-        print("hw_resid pre scaled", hw_resid)
 
         trend_scaler = preprocessing.MinMaxScaler().fit(hw_trend)
         trend_scaled = pd.Series(trend_scaler.transform(hw_trend).flatten())
-        print("hw_trend post scaled", trend_scaled)
 
         level_scaler = preprocessing.MinMaxScaler().fit(hw_level)
         level_scaled = pd.Series(level_scaler.transform(hw_level).flatten())
-        print("hw_level post scaled", level_scaled)
 
         resid_scaler = preprocessing.MinMaxScaler().fit(hw_resid)
         resid_scaled = pd.Series(resid_scaler.transform(hw_resid).flatten())
-        print("hw_resid post scaled", resid_scaled)
 
         demeaned_resid = fit._results.resid - np.mean(fit._results.resid)
         demeaned_return = np.diff(demeaned_resid, prepend=demeaned_resid[0]).reshape(-1, 1)
-        print("demeaned return scaled", demeaned_return)
 
         demeaned_return_scaler = preprocessing.MinMaxScaler().fit(demeaned_return)
         demeaned_return_scaled = pd.Series(demeaned_return_scaler.transform(demeaned_return).flatten())
-        print("demeaned return post scaled", demeaned_return_scaled)
 
         volatility_resid =pd.Series(fit._results.resid).ewm(alpha=self.EWMA_VOL_ALPHA, min_periods=14).var().values.reshape(-1, 1)
         volatility_resid_scaler = preprocessing.MinMaxScaler().fit(volatility_resid)
         volatility_resid_scaled = pd.Series(volatility_resid_scaler.transform(volatility_resid).flatten())
-        print("volatility pre scaled", volatility_resid)
-        print("volatility post scaled", volatility_resid_scaled)
-
 
         technical = pd.concat([trend_scaled, level_scaled, resid_scaled, demeaned_return_scaled, volatility_resid_scaled], axis=1)
 
