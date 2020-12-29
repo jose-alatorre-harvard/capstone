@@ -108,8 +108,8 @@ class RewardFactory:
         """
         a=10
         b=150
-        self.reward_R = self.risk_aversion*a*portfolio_returns.iloc[-1]
-        self.reward_vol = (1-self.risk_aversion)*b*action_variance
+        self.reward_R = a*portfolio_returns.iloc[-1]
+        self.reward_vol = b*action_variance
         return self.risk_aversion*a*portfolio_returns.iloc[-1] - (1-self.risk_aversion)*b*action_variance
 
     def _reward_min_variance(self,portfolio_returns):
