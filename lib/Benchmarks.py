@@ -1,8 +1,9 @@
 
 import numpy as np
 import numpy.random as npr
-from tqdm import tqdm
 import pandas as pd
+from tqdm import tqdm
+
 
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Asset Simulation >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -169,7 +170,7 @@ class RollingPortfolios:
         self.prediction_window = prediction_window
 
         if portfolio_type is not None:
-            self.mv_weights = self.fit_mean_variance(portfolio_type=portfolio_type)
+            # self.mv_weights = self.fit_mean_variance(portfolio_type=portfolio_type)
             self.hrp_weights = self.fit_hrp()
 
     def fit_mean_variance(self, portfolio_type="max_return"):

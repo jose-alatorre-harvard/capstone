@@ -33,6 +33,8 @@ class RewardFactory:
         self.percent_commission=percent_commission
         self.risk_aversion=risk_aversion
         self.ext_covariance=ext_covariance
+        self.reward_R = 0
+        self.reward_vol = 0
 
         self.calculate_smooth_covariance(forward_returns_df=forward_returns_df)
 
@@ -104,8 +106,10 @@ class RewardFactory:
         :param portfolio_returns:
         :return:
         """
-        a=1
-        b=1
+        a=10
+        b=150
+        self.reward_R = self.risk_aversion*a*portfolio_returns.iloc[-1]
+        self.reward_vol = (1-self.risk_aversion)*b*action_variance
         return self.risk_aversion*a*portfolio_returns.iloc[-1] - (1-self.risk_aversion)*b*action_variance
 
     def _reward_min_variance(self,portfolio_returns):
@@ -339,13 +343,15 @@ class State:
                                               forward_returns=self.forward_returns,
                                               action_date_index=action_date_index,
                                               reward_function=reward_function)
+        reward_R = self.reward_factory.reward_R
+        reward_vol = self.reward_factory.reward_vol
 
         #reward factory
         done = False
         extra_info = {"action_date":action_date,
             "reward_function":reward_function,
                     "previous_weights":self.weight_buffer.iloc[action_date_index - 1]}
-        return next_observation_date,reward,done,extra_info
+        return next_observation_date,reward,done,extra_info, reward_R, reward_vol
 
     def encode(self, date):
         """
@@ -606,14 +612,14 @@ class DeepTradingEnvironment(gym.Env):
         """
 
         action = action_portfolio_weights
-        observation,reward,done,extra_info= self.state.step(action=action,
+        observation,reward,done,extra_info, reward_R, reward_vol= self.state.step(action=action,
                                                             action_date=action_date,
                                                             reward_function=reward_function,
                                                             pre_indices=pre_indices)
         # obs = self._state.encode()
         obs=observation
         info=extra_info
-        return obs, reward, done, info
+        return obs, reward, done, info, reward_R, reward_vol
 
     def render(self, mode='human', close=False):
         pass
@@ -835,7 +841,7 @@ class AgentDataBase:
                                                           weights_on_date=weights_on_date)
         action_portfolio_weights = self.get_best_action(flat_state=flat_state)
 
-        next_action_date, reward, done, info = self.environment.step(
+        next_action_date, reward, done, info, reward_R, reward_vol = self.environment.step(
             action_portfolio_weights=action_portfolio_weights,reward_function=self.reward_function,
             action_date=action_date,pre_indices=pre_indices)
 
@@ -843,16 +849,17 @@ class AgentDataBase:
 
             print(info)
 
-        return next_action_date,  flat_state ,reward, action_portfolio_weights
+        return next_action_date,  flat_state ,reward, action_portfolio_weights, reward_R, reward_vol
 
     def sample_env_pre_sampled(self,verbose=False):
         # starts in 1 becasue commission depends on initial weights
         start = np.random.choice(range(self.environment.state.in_bars_count + 1, self.latest_posible_index_date))
-        states, actions, rewards = self.sample_env_pre_sampled_from_index(start=start,
+        states, actions, rewards, rewards_R, rewards_vol = self.sample_env_pre_sampled_from_index(start=start,
                                                                             sample_observations=self.sample_observations,
                                                                           pre_sample_date_indices=self.pre_sample_date_indices ,
                                                                           forward_returns_dates=self.environment.forward_returns_dates)
-        return  states, actions, rewards
+        return  states, actions, rewards, rewards_R, rewards_vol
+
     def sample_env_pre_sampled_from_index(self, start, pre_sample_date_indices, sample_observations,
                                           forward_returns_dates, verbose=False):
         """
@@ -865,6 +872,8 @@ class AgentDataBase:
         action_dates = forward_returns_dates.index[dates_indices]
 
         rewards = []
+        rewards_R = []
+        rewards_vol = []
         returns_dates = []
         actions = []
         states = []
@@ -873,7 +882,7 @@ class AgentDataBase:
             action_date = action_dates[counter]
             returns_dates.append(action_date)
 
-            action_date, flat_state, reward, action_portfolio_weights = self._get_sars_by_date(
+            action_date, flat_state, reward, action_portfolio_weights, reward_R, reward_vol = self._get_sars_by_date(
                 action_date=action_date, verbose=False,
                 pre_indices=[dates_indices[counter], dates_indices[counter + 1]])
 
@@ -881,13 +890,15 @@ class AgentDataBase:
             states.append(flat_state)
 
             rewards.append(reward)
+            rewards_R.append(reward_R)
+            rewards_vol.append(reward_vol)
 
             if action_date > self.max_available_obs_date:
                 if verbose:
                     print("Sample reached limit of time series", counter)
                 raise
 
-        return states, actions, rewards
+        return states, actions, rewards, rewards_R, rewards_vol
 
     def set_plot_weights(self,weights,benchmark_G):
 
@@ -914,7 +925,7 @@ class AgentDataBase:
 
             if counter > self.environment.state.in_bars_count:
 
-                next_date, flat_state, reward, action_portfolio_weights = self._get_sars_by_date(
+                next_date, flat_state, reward, action_portfolio_weights, reward_R, reward_vol = self._get_sars_by_date(
                     action_date=action_date, verbose=False)
 
                 states.append(flat_state)
@@ -1031,7 +1042,7 @@ class LinearAgent(AgentDataBase):
                 action_date=start_date
 
             returns_dates.append(action_date)
-            action_date,flat_state,one_period_effective_return,action_portfolio_weights =self._get_sars_by_date(action_date=action_date,verbose=False)
+            action_date,flat_state,one_period_effective_return,action_portfolio_weights, reward_R, reward_vol = self._get_sars_by_date(action_date=action_date,verbose=False)
             actions.append(action_portfolio_weights)
             states.append(flat_state.values)
 
@@ -1073,7 +1084,7 @@ class LinearAgent(AgentDataBase):
             n_iters.append(iters)
 
             # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
-            states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
+            states, actions, rewards, rewards_R, rewards_vol = self.sample_env_pre_sampled(verbose=False)
 
             average_reward.append(np.mean(rewards))
             new_theta_mu = copy.deepcopy(self.theta_mu)
@@ -1350,6 +1361,9 @@ class LinearAgent(AgentDataBase):
         n_iters=[]
         average_weights=[]
         average_reward=[]
+        average_reward_R=[]
+        average_reward_vol=[]
+        average_weighted_sum=[]
         theta_norm=[]
 
         pbar = tqdm(total=max_iterations)
@@ -1364,9 +1378,12 @@ class LinearAgent(AgentDataBase):
             n_iters.append(iters)
 
             # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
-            states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
+            states, actions, rewards, rewards_R, rewards_vol = self.sample_env_pre_sampled(verbose=False)
 
             average_reward.append(np.mean(rewards))
+            average_reward_R.append(np.mean(rewards_R))
+            average_reward_vol.append(np.mean(rewards_vol))
+            average_weighted_sum.append(np.sum([np.mean(rewards_R),np.mean(rewards_vol)]))
             new_theta_mu=copy.deepcopy(self.theta_mu)
             new_theta_sigma=copy.deepcopy(self.theta_sigma)
 
@@ -1449,8 +1466,13 @@ class LinearAgent(AgentDataBase):
                         # Backtest plot finishes
                         backtest.to_csv('temp_persisted_data/' + model_run + '_training_backtest_reinforce_baseline_' + str(add_baseline) + '.csv')
 
+                        # Plot reward components
                         plt.figure(figsize=(12, 6))
                         plt.plot(n_iters, average_reward, label=self.reward_function)
+                        plt.plot(n_iters, average_reward_R, color="green", label="Reward Component")
+                        plt.plot(n_iters, average_reward_vol, color="red", label="Volatility Component")
+                        plt.plot(n_iters, average_weighted_sum, color="black", label="Weighted Sum")
+
                         if self.b_w_set == True:
                             plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                         plt.legend(loc="best")
@@ -1762,7 +1784,7 @@ class DeepAgentPytorch(AgentDataBase):
         V=[]
         while iters < max_iterations:
             n_iters.append(iters)
-            states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
+            states, actions, rewards, rewards_R, rewards_vol = self.sample_env_pre_sampled(verbose=False)
             states = np.array([s.values for s in states]).reshape(self.sample_observations, -1)
             average_reward.append(np.mean(rewards))
             actions = np.array(actions)
@@ -1897,7 +1919,7 @@ class DeepAgentPytorch(AgentDataBase):
             n_iters.append(iters)
 
             # states,actions,period_returns=self.sample_env(observations=observations,verbose=False)
-            states, actions, rewards = self.sample_env_pre_sampled(verbose=False)
+            states, actions, rewards, rewards_R, rewards_vol = self.sample_env_pre_sampled(verbose=False)
             states=np.array([s.values for s in states]).reshape(self.sample_observations,-1)
             average_reward.append(np.mean(rewards))
             # total_reward.extend(rewards)
