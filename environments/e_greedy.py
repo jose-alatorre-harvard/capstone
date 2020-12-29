@@ -933,6 +933,21 @@ class LinearAgent(AgentDataBase):
         self._initialize_linear_parameters()
 
 
+    def _load_benchmark(self, portfolio_df):
+        portfolio_df = portfolio_df
+        portfolio_returns_df = portfolio_df.to_returns().dropna()
+        portfolio_returns_df = portfolio_returns_df["2019-01-01":"2020-01-31"]
+        rp_max_sharpe = RollingPortfolios(
+            prices=portfolio_returns_df, 
+            in_window=14, 
+            prediction_window=7, 
+            portfolio_type='max_sharpe'
+        )
+        rp_max_sharpe_benchmark = ((rp_max_sharpe.hrp_weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
+        rp_max_sharpe_benchmark = rp_max_sharpe_benchmark["2019-02-01":"2020-01-31"]
+        self._benchmark_max_sharpe = rp_max_sharpe_benchmark
+
+
     def _initialize_linear_parameters(self):
         """
         parameters are for mu and sigma
@@ -1146,10 +1161,19 @@ class LinearAgent(AgentDataBase):
                     plt.figure(figsize=(12, 6))
                     for col_counter,col in enumerate(backtest):
                         plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols, label="epoch "+str(col))
+
+                    plt.plot(self._benchmark_max_sharpe, color="black", label="Real Dataset Benchmark - Max Sharpe")    
+
                     plt.gcf().autofmt_xdate()
+                    plt.legend(loc="best")
                     plt.xlabel("Date")
-                    plt.ylabel("Backtest Return")
-                    plt.legend(loc="upper left")
+                    plt.ylabel("Backtest Returns")
+
+                    if use_traces:
+                        plt.title("Backtest Returns vs Epoch Training - {} - Actor Critic with Eligibility Traces".format(model_run))
+                    else:
+                        plt.title("Backtest Returns vs Epoch Training - {} - Actor Critic".format(model_run))
+
                     plt.savefig('temp_persisted_data/' + model_run + 'training_backtest_actor_critic_traces'+
                                     str(use_traces)+ '.png')
                     plt.show()
@@ -1219,6 +1243,8 @@ class LinearAgent(AgentDataBase):
                         feature_column_names = list(self.environment.features.columns)
                         feature_column_names = [_.replace(".parquet", "") for _ in feature_column_names]
                         feature_column_names = [_.replace("trend_coef", "trend") for _ in feature_column_names]
+                        feature_column_names = [_.replace("_hw", "") for _ in feature_column_names]
+
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1, 9))
 
@@ -1227,8 +1253,6 @@ class LinearAgent(AgentDataBase):
                         # iterate backwards
                         for idx in range(mu_chart.shape[1] - 1, -1, -1):
                             plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-
-                            # plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), c=colors[idx], alpha=0.7)
                         plt.title("Gradients - Log Returns")
                         plt.legend(loc="upper left")
                         plt.xlabel("Epochs")
@@ -1238,13 +1262,13 @@ class LinearAgent(AgentDataBase):
                         plt.close()
 
                         if detrend == True:
-                            # plot rolling vol
+                            # plot volatility
                             plt.figure(figsize=(12, 6))
                             # iterate backwards                                
-                            for color_idx, idx in enumerate(range(len(feature_column_names) - 2, len(feature_column_names) - mu_chart.shape[1] - 2, -1) ):  
-                                color_idx = mu_chart.shape[1] - color_idx - 1
-                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-                            plt.title("Gradients - rolling vol")
+                            for idx in range(len(feature_column_names) - 2 - mu_chart.shape[1]  * 6,
+                                             len(feature_column_names) - 2 - mu_chart.shape[1]  * 11, - 5):
+                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+                            plt.title("Gradients - Volatility")
                             plt.legend(loc="upper left")
                             plt.xlabel("Epochs")
                             plt.ylabel("Gradient")
@@ -1252,13 +1276,41 @@ class LinearAgent(AgentDataBase):
                             plt.clf()
                             plt.close()
 
-                            # plot demeaned
+                            # plot demeaned return
                             plt.figure(figsize=(12, 6))
                             # iterate backwards                                
-                            for color_idx, idx in enumerate(range(len(feature_column_names) - 2 - mu_chart.shape[1], len(feature_column_names) - 2 - mu_chart.shape[1] * 3, -2) ):  
-                                color_idx = mu_chart.shape[1] - color_idx - 1
-                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-                            plt.title("Gradients - demean")
+                            for idx in range(len(feature_column_names) - 3 - mu_chart.shape[1]  * 6,
+                                             len(feature_column_names) - 3 - mu_chart.shape[1]  * 11, - 5):
+                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+                            plt.title("Gradients - Demeaned Return")
+                            plt.legend(loc="upper left")
+                            plt.xlabel("Epochs")
+                            plt.ylabel("Gradient")
+                            plt.show()
+                            plt.clf()
+                            plt.close()
+
+                            # plot residuals
+                            plt.figure(figsize=(12, 6))
+                            # iterate backwards                                
+                            for idx in range(len(feature_column_names) - 4 - mu_chart.shape[1]  * 6,
+                                             len(feature_column_names) - 4 - mu_chart.shape[1]  * 11, - 5):
+                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+                            plt.title("Gradients - Residuals")
+                            plt.legend(loc="upper left")
+                            plt.xlabel("Epochs")
+                            plt.ylabel("Gradient")
+                            plt.show()
+                            plt.clf()
+                            plt.close()
+
+                            # plot level
+                            plt.figure(figsize=(12, 6))
+                            # iterate backwards                                
+                            for idx in range(len(feature_column_names) - 5 - mu_chart.shape[1]  * 6,
+                                             len(feature_column_names) - 5 - mu_chart.shape[1]  * 11, - 5):
+                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+                            plt.title("Gradients - Level")
                             plt.legend(loc="upper left")
                             plt.xlabel("Epochs")
                             plt.ylabel("Gradient")
@@ -1269,16 +1321,17 @@ class LinearAgent(AgentDataBase):
                             # plot trend
                             plt.figure(figsize=(12, 6))
                             # iterate backwards                                
-                            for color_idx, idx in enumerate(range(len(feature_column_names) - 3 - mu_chart.shape[1], len(feature_column_names) - 3 - mu_chart.shape[1] * 3, -2)):
-                                color_idx = mu_chart.shape[1] - color_idx - 1
-                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-                            plt.title("Gradients - trend")
+                            for idx in range(len(feature_column_names) - 6 - mu_chart.shape[1]  * 6,
+                                             len(feature_column_names) - 6 - mu_chart.shape[1]  * 11, - 5):
+                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+                            plt.title("Gradients - Trend")
                             plt.legend(loc="upper left")
                             plt.xlabel("Epochs")
                             plt.ylabel("Gradient")
                             plt.show()
                             plt.clf()
                             plt.close()
+
 
         return average_weights
 
@@ -1374,10 +1427,19 @@ class LinearAgent(AgentDataBase):
                         plt.figure(figsize=(12, 6))
                         for col_counter, col in enumerate(backtest):
                             plt.plot(backtest[col], color="blue", alpha=(col_counter + 1) / n_cols, label="epoch "+str(col))
+
+                        plt.plot(self._benchmark_max_sharpe, color="black", label="Real Dataset Benchmark - Max Sharpe")    
+
                         plt.gcf().autofmt_xdate()
+                        plt.legend(loc="best")
                         plt.xlabel("Date")
-                        plt.ylabel("Backtest Return")
-                        plt.legend(loc="upper left")
+                        plt.ylabel("Backtest Returns")
+
+                        if add_baseline:
+                            plt.title("Backtest Returns vs Epoch Training - {} - REINFORCE with Baseline".format(model_run))
+                        else:
+                            plt.title("Backtest Returns vs Epoch Training - {} - REINFORCE".format(model_run))
+
                         plt.savefig('temp_persisted_data/' + model_run + 'training_backtest_reinforce_baseline_' +
                                     str(add_baseline) + '.png')
                         plt.show()
@@ -1426,6 +1488,7 @@ class LinearAgent(AgentDataBase):
                         plt.legend(loc="upper left")
                         plt.xlabel("Epochs")
                         plt.ylabel("Asset Weights")
+                        plt.title("Asset Weights vs Epochs")
                         plt.show()
                         plt.close()
 
@@ -1440,6 +1503,8 @@ class LinearAgent(AgentDataBase):
                             feature_column_names = list(self.environment.features.columns)
                             feature_column_names = [_.replace(".parquet", "") for _ in feature_column_names]
                             feature_column_names = [_.replace("trend_coef", "trend") for _ in feature_column_names]
+                            feature_column_names = [_.replace("_hw", "") for _ in feature_column_names]
+
                             cmap = plt.get_cmap('jet')
                             colors = cmap(np.linspace(0, 1, 9))
 
@@ -1447,8 +1512,7 @@ class LinearAgent(AgentDataBase):
                             plt.figure(figsize=(12, 6))
                             # iterate backwards
                             for idx in range(mu_chart.shape[1] - 1, -1, -1):
-                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-                                # plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), c=colors[idx], alpha=0.7)
+                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
                             plt.title("Gradients - Log Returns")
                             plt.legend(loc="upper left")
                             plt.xlabel("Epochs")
@@ -1458,13 +1522,13 @@ class LinearAgent(AgentDataBase):
                             plt.close()
 
                             if detrend == True:
-                                # plot rolling vol
+                                # plot volatility
                                 plt.figure(figsize=(12, 6))
                                 # iterate backwards                                
-                                for color_idx, idx in enumerate(range(len(feature_column_names) - 2, len(feature_column_names) - mu_chart.shape[1] - 2, -1) ):  
-                                    color_idx = mu_chart.shape[1] - color_idx - 1
-                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-                                plt.title("Gradients - rolling vol")
+                                for idx in range(len(feature_column_names) - 2 - mu_chart.shape[1]  * 6,
+                                                len(feature_column_names) - 2 - mu_chart.shape[1]  * 11, - 5):
+                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+                                plt.title("Gradients - Volatility")
                                 plt.legend(loc="upper left")
                                 plt.xlabel("Epochs")
                                 plt.ylabel("Gradient")
@@ -1472,13 +1536,41 @@ class LinearAgent(AgentDataBase):
                                 plt.clf()
                                 plt.close()
 
-                                # plot demeaned
+                                # plot demeaned return
                                 plt.figure(figsize=(12, 6))
                                 # iterate backwards                                
-                                for color_idx, idx in enumerate(range(len(feature_column_names) - 2 - mu_chart.shape[1], len(feature_column_names) - 2 - mu_chart.shape[1] * 3, -2) ):  
-                                    color_idx = mu_chart.shape[1] - color_idx - 1
-                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-                                plt.title("Gradients - demean")
+                                for idx in range(len(feature_column_names) - 3 - mu_chart.shape[1]  * 6,
+                                                len(feature_column_names) - 3 - mu_chart.shape[1]  * 11, - 5):
+                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+                                plt.title("Gradients - Demeaned Return")
+                                plt.legend(loc="upper left")
+                                plt.xlabel("Epochs")
+                                plt.ylabel("Gradient")
+                                plt.show()
+                                plt.clf()
+                                plt.close()
+
+                                # plot residuals
+                                plt.figure(figsize=(12, 6))
+                                # iterate backwards                                
+                                for idx in range(len(feature_column_names) - 4 - mu_chart.shape[1]  * 6,
+                                                len(feature_column_names) - 4 - mu_chart.shape[1]  * 11, - 5):
+                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+                                plt.title("Gradients - Residuals")
+                                plt.legend(loc="upper left")
+                                plt.xlabel("Epochs")
+                                plt.ylabel("Gradient")
+                                plt.show()
+                                plt.clf()
+                                plt.close()
+
+                                # plot level
+                                plt.figure(figsize=(12, 6))
+                                # iterate backwards                                
+                                for idx in range(len(feature_column_names) - 5 - mu_chart.shape[1]  * 6,
+                                                len(feature_column_names) - 5 - mu_chart.shape[1]  * 11, - 5):
+                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+                                plt.title("Gradients - Level")
                                 plt.legend(loc="upper left")
                                 plt.xlabel("Epochs")
                                 plt.ylabel("Gradient")
@@ -1489,10 +1581,10 @@ class LinearAgent(AgentDataBase):
                                 # plot trend
                                 plt.figure(figsize=(12, 6))
                                 # iterate backwards                                
-                                for color_idx, idx in enumerate(range(len(feature_column_names) - 3 - mu_chart.shape[1], len(feature_column_names) - 3 - mu_chart.shape[1] * 3, -2) ):  
-                                    color_idx = mu_chart.shape[1] - color_idx - 1
-                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-                                plt.title("Gradients - trend")
+                                for idx in range(len(feature_column_names) - 6 - mu_chart.shape[1]  * 6,
+                                                len(feature_column_names) - 6 - mu_chart.shape[1]  * 11, - 5):
+                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+                                plt.title("Gradients - Trend")
                                 plt.legend(loc="upper left")
                                 plt.xlabel("Epochs")
                                 plt.ylabel("Gradient")
@@ -1728,6 +1820,7 @@ class DeepAgentPytorch(AgentDataBase):
 
                         for col_counter, col in enumerate(backtest):
                             plt.plot(backtest[col], color="blue", alpha=(col_counter + 1) / n_cols, label="epoch"+str(col))
+                            
                         plt.gcf().autofmt_xdate()
                         plt.xlabel("Date")
                         plt.ylabel("Backtest Return")
