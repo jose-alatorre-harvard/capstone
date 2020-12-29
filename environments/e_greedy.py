@@ -163,6 +163,7 @@ class State:
         self.include_previous_weights=include_previous_weights
         self.forward_returns_dates=forward_returns_dates
         self.in_bars_count=in_bars_count
+        self.risk_aversion = risk_aversion
         self._set_helper_functions()
         self._set_objective_function_parameters(objective_parameters)
 
@@ -1068,6 +1069,10 @@ class LinearAgent(AgentDataBase):
         n_iters = []
         average_weights = []
         average_reward = []
+        average_reward_R=[]
+        average_reward_vol=[]
+        average_weighted_sum=[]
+        risk_aversion = self.environment.state.risk_aversion
         theta_norm = []
 
         pbar = tqdm(total=max_iterations)
@@ -1087,6 +1092,9 @@ class LinearAgent(AgentDataBase):
             states, actions, rewards, rewards_R, rewards_vol = self.sample_env_pre_sampled(verbose=False)
 
             average_reward.append(np.mean(rewards))
+            average_reward_R.append(np.mean(rewards_R))
+            average_reward_vol.append(np.mean(rewards_vol))
+            average_weighted_sum.append(np.sum([risk_aversion*np.mean(rewards_R),(1-risk_aversion)*np.mean(rewards_vol)]))
             new_theta_mu = copy.deepcopy(self.theta_mu)
             new_theta_sigma = copy.deepcopy(self.theta_sigma)
 
@@ -1196,13 +1204,30 @@ class LinearAgent(AgentDataBase):
                     backtest.to_csv('temp_persisted_data/' + model_run + '_training_backtest_actor_critic_traces'+
                                     str(use_traces)+'.csv')
 
-                    plt.figure(figsize=(12, 6))
-                    plt.plot(n_iters, average_reward, label=self.reward_function)
+
+                    fig, ax = plt.subplots(nrows=4, ncols=1, sharex=True, sharey=True)
+                    fig.set_figheight(12)
+                    fig.set_figwidth(12)
+                    ax[0].plot(n_iters, average_reward, label=self.reward_function+" mean: {} vol: {}".format(np.round(np.mean(average_reward), 2), np.round(np.std(average_reward), 2)))
+                    ax[0].legend(loc="upper right")
+                    ax[0].set_ylabel("Reward")
+                    ax[1].plot(n_iters, average_reward_R, color="green", label="Reward Component mean: {} vol: {}".format(np.round(np.mean(average_reward_R), 2), np.round(np.std(average_reward_R), 2)))
+                    ax[1].legend(loc="upper right")
+                    ax[1].set_ylabel("Reward")
+                    ax[2].plot(n_iters, average_reward_vol, color="red", label="Volatility Component mean: {} vol: {}".format(np.round(np.mean(average_reward_vol), 2), np.round(np.std(average_reward_vol), 2)))
+                    ax[2].legend(loc="upper right")
+                    ax[2].set_ylabel("Reward")
+                    ax[3].plot(n_iters, average_weighted_sum, color="black", label="Weighted Sum mean: {} vol: {}".format(np.round(np.mean(average_weighted_sum), 2), np.round(np.std(average_weighted_sum), 2)))
+                    ax[3].legend(loc="upper right")
+                    ax[3].set_ylabel("Reward")
+
                     if self.b_w_set == True:
                         plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                     plt.legend(loc="best")
                     plt.xlabel("Epochs")
-                    plt.ylabel("Reward")
+                    fig.suptitle("Reward Function and Components", fontsize=16)
+                    fig.savefig('temp_persisted_data/' + model_run + '_reward_actor_crtic_' +
+                                str(use_traces) + '.png')
                     plt.show()
                     plt.close()
 
@@ -1364,6 +1389,7 @@ class LinearAgent(AgentDataBase):
         average_reward_R=[]
         average_reward_vol=[]
         average_weighted_sum=[]
+        risk_aversion = self.environment.state.risk_aversion
         theta_norm=[]
 
         pbar = tqdm(total=max_iterations)
@@ -1383,7 +1409,7 @@ class LinearAgent(AgentDataBase):
             average_reward.append(np.mean(rewards))
             average_reward_R.append(np.mean(rewards_R))
             average_reward_vol.append(np.mean(rewards_vol))
-            average_weighted_sum.append(np.sum([np.mean(rewards_R),np.mean(rewards_vol)]))
+            average_weighted_sum.append(np.sum([risk_aversion*np.mean(rewards_R),(1-risk_aversion)*np.mean(rewards_vol)]))
             new_theta_mu=copy.deepcopy(self.theta_mu)
             new_theta_sigma=copy.deepcopy(self.theta_sigma)
 
@@ -1467,18 +1493,40 @@ class LinearAgent(AgentDataBase):
                         backtest.to_csv('temp_persisted_data/' + model_run + '_training_backtest_reinforce_baseline_' + str(add_baseline) + '.csv')
 
                         # Plot reward components
-                        plt.figure(figsize=(12, 6))
-                        plt.plot(n_iters, average_reward, label=self.reward_function)
-                        plt.plot(n_iters, average_reward_R, color="green", label="Reward Component")
-                        plt.plot(n_iters, average_reward_vol, color="red", label="Volatility Component")
-                        plt.plot(n_iters, average_weighted_sum, color="black", label="Weighted Sum")
+                        fig, ax = plt.subplots(nrows=4, ncols=1, sharex=True, sharey=True)
+                        fig.set_figheight(12)
+                        fig.set_figwidth(12)
+                        ax[0].plot(n_iters, average_reward, label=self.reward_function + " mean: {} vol: {}".format(
+                            np.round(np.mean(average_reward), 2), np.round(np.std(average_reward), 2)))
+                        ax[0].legend(loc="upper right")
+                        ax[0].set_ylabel("Reward")
+                        ax[1].plot(n_iters, average_reward_R, color="green",
+                                   label="Reward Component mean: {} vol: {}".format(
+                                       np.round(np.mean(average_reward_R), 2), np.round(np.std(average_reward_R), 2)))
+                        ax[1].legend(loc="upper right")
+                        ax[1].set_ylabel("Reward")
+                        ax[2].plot(n_iters, average_reward_vol, color="red",
+                                   label="Volatility Component mean: {} vol: {}".format(
+                                       np.round(np.mean(average_reward_vol), 2),
+                                       np.round(np.std(average_reward_vol), 2)))
+                        ax[2].legend(loc="upper right")
+                        ax[2].set_ylabel("Reward")
+                        ax[3].plot(n_iters, average_weighted_sum, color="black",
+                                   label="Weighted Sum mean: {} vol: {}".format(
+                                       np.round(np.mean(average_weighted_sum), 2),
+                                       np.round(np.std(average_weighted_sum), 2)))
+                        ax[3].legend(loc="upper right")
+                        ax[3].set_ylabel("Reward")
 
                         if self.b_w_set == True:
                             plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                         plt.legend(loc="best")
                         plt.xlabel("Epochs")
-                        plt.ylabel("Reward")
+                        fig.suptitle("Reward Function and Components", fontsize=16)
+                        fig.savefig('temp_persisted_data/' + model_run + '_reward_reinforce_baseline_' +
+                                    str(add_baseline) + '.png')
                         plt.show()
+                        plt.close()
 
                         plt.figure(figsize=(12, 6))
                         mu_chart = np.array(mu_deterministic)
@@ -1770,6 +1818,10 @@ class DeepAgentPytorch(AgentDataBase):
         average_weights = []
         average_reward = []
         total_reward = []
+        average_reward_R=[]
+        average_reward_vol=[]
+        average_weighted_sum=[]
+        risk_aversion = self.environment.state.risk_aversion
         theta_norm = []
         losses = []
         pbar = tqdm(total=max_iterations)
@@ -1787,6 +1839,9 @@ class DeepAgentPytorch(AgentDataBase):
             states, actions, rewards, rewards_R, rewards_vol = self.sample_env_pre_sampled(verbose=False)
             states = np.array([s.values for s in states]).reshape(self.sample_observations, -1)
             average_reward.append(np.mean(rewards))
+            average_reward_R.append(np.mean(rewards_R))
+            average_reward_vol.append(np.mean(rewards_vol))
+            average_weighted_sum.append(np.sum([risk_aversion*np.mean(rewards_R),(1-risk_aversion)*np.mean(rewards_vol)]))
             actions = np.array(actions)
             advantages=[]
             states_tensor = torch.FloatTensor(states)
@@ -1885,7 +1940,32 @@ class DeepAgentPytorch(AgentDataBase):
                         plt.show()
                         plt.close()
 
-                    plt.plot(n_iters, average_reward, label=self.reward_function)
+                    fig, ax = plt.subplots(nrows=4, ncols=1, sharex=True, sharey=True)
+                    fig.set_figheight(12)
+                    fig.set_figwidth(12)
+                    ax[0].plot(n_iters, average_reward, label=self.reward_function+" mean: {} vol: {}".format(np.round(np.mean(average_reward), 2), np.round(np.std(average_reward), 2)))
+                    ax[0].legend(loc="upper right")
+                    ax[0].set_ylabel("Reward")
+                    ax[1].plot(n_iters, average_reward_R, color="green", label="Reward Component mean: {} vol: {}".format(np.round(np.mean(average_reward_R), 2), np.round(np.std(average_reward_R), 2)))
+                    ax[1].legend(loc="upper right")
+                    ax[1].set_ylabel("Reward")
+                    ax[2].plot(n_iters, average_reward_vol, color="red", label="Volatility Component mean: {} vol: {}".format(np.round(np.mean(average_reward_vol), 2), np.round(np.std(average_reward_vol), 2)))
+                    ax[2].legend(loc="upper right")
+                    ax[2].set_ylabel("Reward")
+                    ax[3].plot(n_iters, average_weighted_sum, color="black", label="Weighted Sum mean: {} vol: {}".format(np.round(np.mean(average_weighted_sum), 2), np.round(np.std(average_weighted_sum), 2)))
+                    ax[3].legend(loc="upper right")
+                    ax[3].set_ylabel("Reward")
+
+                    if self.b_w_set == True:
+                        plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+                    plt.legend(loc="best")
+                    plt.xlabel("Epochs")
+                    fig.suptitle("Reward Function and Components", fontsize=16)
+                    fig.savefig('temp_persisted_data/' + model_run + '_reward_actor_crtic_' +
+                                str(use_traces) + '.png')
+                    plt.show()
+                    plt.close()
+
                     plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
                     plt.legend(loc="best")
                     plt.show()
@@ -1923,6 +2003,7 @@ class DeepAgentPytorch(AgentDataBase):
             states=np.array([s.values for s in states]).reshape(self.sample_observations,-1)
             average_reward.append(np.mean(rewards))
             # total_reward.extend(rewards)
+
             actions=np.array(actions)
             Gs=[]
 
