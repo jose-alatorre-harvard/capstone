@@ -946,21 +946,50 @@ class LinearAgent(AgentDataBase):
 
         self._initialize_linear_parameters()
 
+        # plot metadata
+        self.tick_size  = 14  # tick size
+        self.label_size = 18  # x, y size
+        self.title_size = 22  # title size
 
-    def _load_benchmark(self, portfolio_df):
-        portfolio_df = portfolio_df
+
+    def _run_benchmarks(self, portfolio_df, df_start, df_end, benchmark_start):
+        portfolio_df = portfolio_df[portfolio_df.index >= df_start]
+        portfolio_df = portfolio_df[portfolio_df.index <= df_end]
+        portfolio_df = portfolio_df.dropna()
         portfolio_returns_df = portfolio_df.to_returns().dropna()
-        portfolio_returns_df = portfolio_returns_df["2019-01-01":"2020-01-31"]
+
+        rp_max_return = RollingPortfolios(
+            prices=portfolio_df, 
+            in_window=14, 
+            prediction_window=7, 
+            portfolio_type='max_return'
+        )
+
         rp_max_sharpe = RollingPortfolios(
             prices=portfolio_returns_df, 
             in_window=14, 
             prediction_window=7, 
             portfolio_type='max_sharpe'
         )
-        rp_max_sharpe_benchmark = ((rp_max_sharpe.hrp_weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
-        rp_max_sharpe_benchmark = rp_max_sharpe_benchmark["2019-02-01":"2020-01-31"]
-        self._benchmark_max_sharpe = rp_max_sharpe_benchmark
 
+        rp_min_volatility = RollingPortfolios(
+            prices=portfolio_returns_df, 
+            in_window=14, 
+            prediction_window=7, 
+            portfolio_type='min_volatility'
+        )
+        rp_max_return_benchmark     = ((rp_max_return.mv_weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
+        rp_max_sharpe_benchmark     = ((rp_max_sharpe.mv_weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
+        rp_min_volatility_benchmark = ((rp_min_volatility.mv_weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
+
+        rp_max_return_benchmark     = rp_max_return_benchmark[benchmark_start:df_end]
+        rp_max_sharpe_benchmark     = rp_max_sharpe_benchmark[benchmark_start:df_end]
+        rp_min_volatility_benchmark = rp_min_volatility_benchmark[benchmark_start:df_end]
+
+        return rp_max_return_benchmark, rp_max_sharpe_benchmark, rp_min_volatility_benchmark
+
+    def _load_benchmark(self, portfolio_df, df_start='2019-01-15', df_end='2020-02-01', benchmark_start="2019-02-01"):
+        self._benchmark_max_return, self._benchmark_max_sharpe, self._benchmark_min_volatility = self._run_benchmarks(portfolio_df, df_start, df_end, benchmark_start)
 
     def _initialize_linear_parameters(self):
         """
@@ -1056,6 +1085,113 @@ class LinearAgent(AgentDataBase):
 
         return states,actions,pd.concat(period_returns, axis=0)
 
+    def plot_backtest(self, backtest, backtest_plot_title, backtest_save_path):
+        n_cols = len(backtest.columns)
+        plt.figure(figsize=(12, 6))
+        for col_counter, col in enumerate(backtest):
+            col_return = round((backtest[col][-1] - 1) * 100, 2)
+            col_volatility = round(backtest[col].std() * 100, 2)
+            plt.plot(backtest[col], color="blue", alpha=(col_counter + 1) / n_cols, 
+            label="Epoch: {}, Return: {}%, Volatility: {}%".format(str(col), str(col_return), str(col_volatility)))
+
+        plt.plot(
+            self._benchmark_max_return, color="black", 
+            label="Real Dataset Benchmark - Max Return, Return: {}%, Volatility: {}%".format(
+            round((self._benchmark_max_return[-1] - 1) * 100, 2),
+            round(self._benchmark_max_return.std() * 100, 2)))    
+        plt.plot(self._benchmark_max_sharpe, color="orange",
+            label="Real Dataset Benchmark - Max Sharpe, Return: {}%, Volatility: {}%".format(
+                round((self._benchmark_max_sharpe[-1] - 1) * 100, 2),
+                round(self._benchmark_max_sharpe.std() * 100, 2)))
+        plt.plot(self._benchmark_min_volatility, color="green", 
+            label="Real Dataset Benchmark - Min Volatility, Return: {}%, Volatility: {}%".format(
+            round((self._benchmark_min_volatility[-1] - 1) * 100, 2),
+            round(self._benchmark_min_volatility.std() * 100, 2)))
+
+        plt.gcf().autofmt_xdate()
+        plt.legend(loc="upper left")
+        plt.xlabel("Date", fontsize=self.label_size)
+        plt.ylabel("Backtest Returns", fontsize=self.label_size)
+        plt.xticks(fontsize=self.tick_size)
+        plt.yticks(fontsize=self.tick_size)
+        plt.title(backtest_plot_title, fontsize=self.title_size)
+        plt.savefig(backtest_save_path)
+        plt.show()
+        plt.close()
+
+    def plot_reward_components(self, n_iters, average_reward, average_reward_R, average_reward_vol, iters, reward_save_path):
+        fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, sharey=True)
+        fig.set_figheight(12)
+        fig.set_figwidth(12)
+        ax[0].plot(n_iters, average_reward, label=self.reward_function + " mean: {} vol: {}".format(
+            np.round(np.mean(average_reward), 2), np.round(np.std(average_reward), 2)))
+        ax[0].legend(loc="upper right")
+        ax[0].set_ylabel("Reward", fontsize=self.label_size)
+        ax[1].plot(n_iters, average_reward_R, color="green",
+                    label="Reward Component mean: {} vol: {}".format(
+                        np.round(np.mean(average_reward_R), 2), np.round(np.std(average_reward_R), 2)))
+        ax[1].legend(loc="upper right")
+        ax[1].set_ylabel("Reward", fontsize=self.label_size)
+        ax[2].plot(n_iters, average_reward_vol, color="red",
+                    label="Volatility Component mean: {} vol: {}".format(
+                        np.round(np.mean(average_reward_vol), 2),
+                        np.round(np.std(average_reward_vol), 2)))
+        ax[2].legend(loc="upper right")
+        ax[2].set_ylabel("Reward", fontsize=self.label_size)
+
+        if self.b_w_set == True:
+            plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
+        plt.legend(loc="best")
+        plt.xlabel("Epochs", fontsize=self.label_size)
+        plt.xticks(fontsize=self.tick_size)
+        fig.suptitle("Reward Function and Components", fontsize=self.title_size)
+        fig.savefig(reward_save_path)
+        plt.show()
+        plt.close()
+
+    def plot_asset_weights(self, column_names, mu_chart, sigma_chart, colors, x_range, asset_weight_save_path):
+        for i in range(mu_chart.shape[1]):
+            if mu_chart.shape[1] == 7 or mu_chart.shape[1] == 2:
+                symbol = column_names
+            else:
+                symbol = range(mu_chart.shape[1])
+
+            tmp_mu_plot = mu_chart[:, i]
+            tmp_sigma_plot = sigma_chart[:, i]
+            s_plus = tmp_mu_plot + tmp_sigma_plot
+            s_minus = tmp_mu_plot - tmp_sigma_plot
+            plt.plot(mu_chart[:, i], label="Asset " + symbol[i], c=colors[i])
+            if mu_chart.shape[1] == 2:
+                plt.fill_between([i for i in range(s_plus.shape[0])], s_plus, s_minus, color=colors[i], alpha=.2)
+
+        if self.b_w_set==True:
+            ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
+            for row in range(ws.shape[0]):
+                plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
+        plt.ylim(-0.1, 1.1)
+        plt.legend(loc="upper left")
+        plt.xlabel("Epochs", fontsize=self.label_size)
+        plt.ylabel("Asset Weights", fontsize=self.label_size)
+        plt.title("Asset Weights vs Epochs", fontsize=self.title_size)
+        plt.savefig(asset_weight_save_path)
+        plt.show()
+        plt.close()
+
+    def plot_gradients(self, tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path):
+        plt.figure(figsize=(12, 6))
+        # iterate backwards
+        for idx in range_iter:
+            plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
+        plt.legend(loc="upper left")
+        plt.title(plot_title, fontsize=self.title_size)
+        plt.xlabel("Epochs", fontsize=self.label_size)
+        plt.ylabel("Gradient", fontsize=self.label_size)
+        plt.savefig(gradients_save_path)
+        plt.show()
+        plt.clf()
+        plt.close()
+
+
 
     def ACTOR_CRITIC_FIT(self, alpha=.01, gamma=.99, theta_threshold=.001, max_iterations=10000, plot_gradients=True, plot_every=2000, detrend=False
                       , record_average_weights=True, alpha_critic=.01,l_trace=.3,l_trace_critic=.3,use_traces=False, train_input = None, model_run=None, verbose=True):
@@ -1063,6 +1199,25 @@ class LinearAgent(AgentDataBase):
         performs the Actor-Critic Policy Gradient Model with option to add eligibility traces
         :return:
         """
+        if model_run == None:
+                raise Exception("Parameter Model Run Should Not Be None")
+
+        # create directory for models_info if it does not exist
+        models_info_dir = os.path.join(os.getcwd(), 'models_info') 
+        if not os.path.exists(models_info_dir):
+            os.mkdir(models_info_dir)
+            
+        # create directory for current model_run if it does not exist
+        self.model_run_dir = os.path.join(models_info_dir, model_run)
+        if not os.path.exists(self.model_run_dir):
+            os.mkdir(self.model_run_dir)
+
+        # create directory for current model if it does not exist
+        self.model_run_dir = os.path.join(self.model_run_dir, "Actor Critic{}".format(" with Eligibility Traces" if use_traces else ""))
+        if not os.path.exists(self.model_run_dir):
+            os.mkdir(self.model_run_dir)
+
+
         theta_diff = 1000
         observations = self.sample_observations
         iters = 0
@@ -1178,58 +1333,17 @@ class LinearAgent(AgentDataBase):
                     if not "backtest" in locals():
                         backtest=None
                     backtest, tmp_weights =self.backtest_policy(epoch=iters,backtest=backtest, train_input=train_input)
-                    n_cols=len(backtest.columns)
-                    plt.figure(figsize=(12, 6))
-                    for col_counter,col in enumerate(backtest):
-                        plt.plot(backtest[col],color="blue",alpha=(col_counter+1)/n_cols, label="epoch "+str(col))
+                    
+                    backtest_plot_title = "Backtest Returns vs Epoch Training - {} - Actor Critic{}".format(model_run, " with Eligibility Traces" if use_traces else "")
+                    backtest_save_path = "{}/{}_training_backtest_actor_critic{}.png".format(self.model_run_dir, model_run, "_with_eligibility_traces" if use_traces else "")
+                    self.plot_backtest(backtest, backtest_plot_title, backtest_save_path)
 
-                    plt.plot(self._benchmark_max_sharpe, color="black", label="Real Dataset Benchmark - Max Sharpe")    
+                    # # Backtest plot finishes
+                    # backtest.to_csv('temp_persisted_data/' + model_run + '_training_backtest_actor_critic_traces'+ str(use_traces)+'.csv')
 
-                    plt.gcf().autofmt_xdate()
-                    plt.legend(loc="best")
-                    plt.xlabel("Date")
-                    plt.ylabel("Backtest Returns")
-
-                    if use_traces:
-                        plt.title("Backtest Returns vs Epoch Training - {} - Actor Critic with Eligibility Traces".format(model_run))
-                    else:
-                        plt.title("Backtest Returns vs Epoch Training - {} - Actor Critic".format(model_run))
-
-                    plt.savefig('temp_persisted_data/' + model_run + '_training_backtest_actor_critic_traces'+
-                                    str(use_traces)+ '.png')
-                    plt.show()
-                    plt.close()
-                    # Backtest plot finishes
-
-                    backtest.to_csv('temp_persisted_data/' + model_run + '_training_backtest_actor_critic_traces'+
-                                    str(use_traces)+'.csv')
-
-
-                    fig, ax = plt.subplots(nrows=4, ncols=1, sharex=True, sharey=True)
-                    fig.set_figheight(12)
-                    fig.set_figwidth(12)
-                    ax[0].plot(n_iters, average_reward, label=self.reward_function+" mean: {} vol: {}".format(np.round(np.mean(average_reward), 2), np.round(np.std(average_reward), 2)))
-                    ax[0].legend(loc="upper right")
-                    ax[0].set_ylabel("Reward")
-                    ax[1].plot(n_iters, average_reward_R, color="green", label="Reward Component mean: {} vol: {}".format(np.round(np.mean(average_reward_R), 2), np.round(np.std(average_reward_R), 2)))
-                    ax[1].legend(loc="upper right")
-                    ax[1].set_ylabel("Reward")
-                    ax[2].plot(n_iters, average_reward_vol, color="red", label="Volatility Component mean: {} vol: {}".format(np.round(np.mean(average_reward_vol), 2), np.round(np.std(average_reward_vol), 2)))
-                    ax[2].legend(loc="upper right")
-                    ax[2].set_ylabel("Reward")
-                    ax[3].plot(n_iters, average_weighted_sum, color="black", label="Weighted Sum mean: {} vol: {}".format(np.round(np.mean(average_weighted_sum), 2), np.round(np.std(average_weighted_sum), 2)))
-                    ax[3].legend(loc="upper right")
-                    ax[3].set_ylabel("Reward")
-
-                    if self.b_w_set == True:
-                        plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
-                    plt.legend(loc="best")
-                    plt.xlabel("Epochs")
-                    fig.suptitle("Reward Function and Components", fontsize=16)
-                    fig.savefig('temp_persisted_data/' + model_run + '_reward_actor_crtic_' +
-                                str(use_traces) + '.png')
-                    plt.show()
-                    plt.close()
+                    # Plot reward components
+                    reward_save_path = "{}/{}_reward_actor_critic{}.png".format(self.model_run_dir, model_run, "_with_eligibility_traces" if use_traces else "")
+                    self.plot_reward_components(n_iters, average_reward, average_reward_R, average_reward_vol, iters, reward_save_path)
 
                     plt.figure(figsize=(12,6))
                     mu_chart = np.array(mu_deterministic)
@@ -1241,42 +1355,19 @@ class LinearAgent(AgentDataBase):
 
                     column_names = list(train_input.columns)
                     column_names = list(map(lambda x: x if x != 'simulated_asset' else 'Simulated Asset', column_names))
-                    for i in range(mu_chart.shape[1]):
-                        if mu_chart.shape[1] == 7 or mu_chart.shape[1] == 2:
-                            symbol = column_names
-                        else:
-                            symbol = range(mu_chart.shape[1])
 
-                        tmp_mu_plot = mu_chart[:, i]
-                        tmp_sigma_plot = sigma_chart[:, i]
-                        s_plus = tmp_mu_plot + tmp_sigma_plot
-                        s_minus = tmp_mu_plot - tmp_sigma_plot
-                        plt.plot(mu_chart[:, i], label="Asset " + symbol[i], c=colors[i])
-                        if mu_chart.shape[1] == 2:
-                            plt.fill_between([i for i in range(s_plus.shape[0])], s_plus, s_minus, color=colors[i],
-                                         alpha=.2)
+                    # Plot Asset Weights
+                    asset_weight_save_path = "{}/{}_asset_weights_actor_critic{}.png".format(self.model_run_dir, model_run, "_with_eligibility_traces" if use_traces else "")
+                    self.plot_asset_weights(column_names, mu_chart, sigma_chart, colors, x_range, asset_weight_save_path)
 
-                    if self.b_w_set == True:
-                        ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
-                        for row in range(ws.shape[0]):
-                            plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                    plt.ylim(-0.1, 1.1)
-                    plt.legend(loc="upper left")
-                    plt.xlabel("Epochs")
-                    plt.ylabel("Asset Weights")
-                    plt.show()
-                    plt.plot(V,label="Value Function")
-                    plt.legend(loc="upper left")
-                    plt.show()
-                    plt.close()
 
                     if plot_gradients == True:
                         plt.figure(figsize=(12, 6))
                         tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
 
-                        # save gradients to file
-                        tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + '_mu_gradients_actor_critic_' + str(use_traces) + '.npy'
-                        np.save(tmp_mu_asset_save_path, tmp_mu_asset)
+                        # # save gradients to file
+                        # tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + '_mu_gradients_actor_critic_' + str(use_traces) + '.npy'
+                        # np.save(tmp_mu_asset_save_path, tmp_mu_asset)
 
                         feature_column_names = list(self.environment.features.columns)
                         feature_column_names = [_.replace(".parquet", "") for _ in feature_column_names]
@@ -1286,90 +1377,52 @@ class LinearAgent(AgentDataBase):
                         cmap = plt.get_cmap('jet')
                         colors = cmap(np.linspace(0, 1, 9))
 
-                        # plot log returns, simulated assets must be last to overlay over real asset
-                        plt.figure(figsize=(12, 6))
-                        # iterate backwards
-                        for idx in range(mu_chart.shape[1] - 1, -1, -1):
-                            plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]), alpha=0.7)
-                        plt.title("Gradients - Log Returns")
-                        plt.legend(loc="upper left")
-                        plt.xlabel("Epochs")
-                        plt.ylabel("Gradient")
-                        plt.show()
-                        plt.clf()
-                        plt.close()
+                        # plot log returns
+                        range_iter = range(mu_chart.shape[1] - 1, -1, -1)
+                        plot_title = "Gradients - Log Returns"
+                        gradients_save_path = "{}/{}_gradients_log_returns_actor_critic{}.png".format(
+                            self.model_run_dir, model_run, "_with_eligibility_traces" if use_traces else "")
+                        self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
-                        if detrend == True:
-                            # plot volatility
-                            plt.figure(figsize=(12, 6))
-                            # iterate backwards                                
-                            for idx in range(len(feature_column_names) - 2 - mu_chart.shape[1]  * 6,
-                                             len(feature_column_names) - 2 - mu_chart.shape[1]  * 11, - 5):
-                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                            plt.title("Gradients - Volatility")
-                            plt.legend(loc="upper left")
-                            plt.xlabel("Epochs")
-                            plt.ylabel("Gradient")
-                            plt.show()
-                            plt.clf()
-                            plt.close()
+                        # plot volatility
+                        range_iter = range(len(feature_column_names) - 2 - mu_chart.shape[1] * 6, 
+                                        len(feature_column_names) - 2 - mu_chart.shape[1]  * 11, - 5)
+                        plot_title = "Gradients - Volatility"
+                        gradients_save_path = "{}/{}_gradients_volatility_actor_critic{}.png".format(
+                            self.model_run_dir, model_run, "_with_eligibility_traces" if use_traces else "")
+                        self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
-                            # plot demeaned return
-                            plt.figure(figsize=(12, 6))
-                            # iterate backwards                                
-                            for idx in range(len(feature_column_names) - 3 - mu_chart.shape[1]  * 6,
-                                             len(feature_column_names) - 3 - mu_chart.shape[1]  * 11, - 5):
-                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                            plt.title("Gradients - Demeaned Return")
-                            plt.legend(loc="upper left")
-                            plt.xlabel("Epochs")
-                            plt.ylabel("Gradient")
-                            plt.show()
-                            plt.clf()
-                            plt.close()
+                        # plot demeaned return
+                        range_iter = range(len(feature_column_names) - 3 - mu_chart.shape[1] * 6,
+                                        len(feature_column_names) - 3 - mu_chart.shape[1]  * 11, - 5)
+                        plot_title = "Gradients - Demeaned Return"
+                        gradients_save_path = "{}/{}_gradients_demeaned_returns_actor_critic{}.png".format(
+                            self.model_run_dir, model_run, "_with_eligibility_traces" if use_traces else "")
+                        self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
-                            # plot residuals
-                            plt.figure(figsize=(12, 6))
-                            # iterate backwards                                
-                            for idx in range(len(feature_column_names) - 4 - mu_chart.shape[1]  * 6,
-                                             len(feature_column_names) - 4 - mu_chart.shape[1]  * 11, - 5):
-                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                            plt.title("Gradients - Residuals")
-                            plt.legend(loc="upper left")
-                            plt.xlabel("Epochs")
-                            plt.ylabel("Gradient")
-                            plt.show()
-                            plt.clf()
-                            plt.close()
+                        # plot residuals
+                        range_iter = range(len(feature_column_names) - 4 - mu_chart.shape[1] * 6,
+                                        len(feature_column_names) - 4 - mu_chart.shape[1]  * 11, - 5)
+                        plot_title = "Gradients - Residuals"
+                        gradients_save_path = "{}/{}_gradients_residuals_actor_critic{}.png".format(
+                            self.model_run_dir, model_run, "_with_eligibility_traces" if use_traces else "")
+                        self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
-                            # plot level
-                            plt.figure(figsize=(12, 6))
-                            # iterate backwards                                
-                            for idx in range(len(feature_column_names) - 5 - mu_chart.shape[1]  * 6,
-                                             len(feature_column_names) - 5 - mu_chart.shape[1]  * 11, - 5):
-                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                            plt.title("Gradients - Level")
-                            plt.legend(loc="upper left")
-                            plt.xlabel("Epochs")
-                            plt.ylabel("Gradient")
-                            plt.show()
-                            plt.clf()
-                            plt.close()
+                        # plot level
+                        range_iter = range(len(feature_column_names) - 5 - mu_chart.shape[1] * 6,
+                                        len(feature_column_names) - 5 - mu_chart.shape[1]  * 11, - 5)
+                        plot_title = "Gradients - Level"
+                        gradients_save_path = "{}/{}_gradients_level_actor_critic{}.png".format(
+                            self.model_run_dir, model_run, "_with_eligibility_traces" if use_traces else "")
+                        self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
-                            # plot trend
-                            plt.figure(figsize=(12, 6))
-                            # iterate backwards                                
-                            for idx in range(len(feature_column_names) - 6 - mu_chart.shape[1]  * 6,
-                                             len(feature_column_names) - 6 - mu_chart.shape[1]  * 11, - 5):
-                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                            plt.title("Gradients - Trend")
-                            plt.legend(loc="upper left")
-                            plt.xlabel("Epochs")
-                            plt.ylabel("Gradient")
-                            plt.show()
-                            plt.clf()
-                            plt.close()
-
+                        # plot trend
+                        range_iter = range(len(feature_column_names) - 6 - mu_chart.shape[1] * 6,
+                                        len(feature_column_names) - 6 - mu_chart.shape[1]  * 11, - 5)
+                        plot_title = "Gradients - Trend"
+                        gradients_save_path = "{}/{}_gradients_trend_actor_critic{}.png".format(
+                            self.model_run_dir, model_run, "_with_eligibility_traces" if use_traces else "")
+                        self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
         return average_weights
 
@@ -1380,6 +1433,24 @@ class LinearAgent(AgentDataBase):
         performs the REINFORCE Policy Gradient Method with option to run the REINFORCE with baseline Policy Gradient Method
         :return:
         """
+        if model_run == None:
+            raise Exception("Parameter Model Run Should Not Be None")
+
+        # create directory for models_info if it does not exist
+        models_info_dir = os.path.join(os.getcwd(), 'models_info') 
+        if not os.path.exists(models_info_dir):
+            os.mkdir(models_info_dir)
+            
+        # create directory for current model_run if it does not exist
+        self.model_run_dir = os.path.join(models_info_dir, model_run)
+        if not os.path.exists(self.model_run_dir):
+            os.mkdir(self.model_run_dir)
+
+        # create directory for current model if it does not exist
+        self.model_run_dir = os.path.join(self.model_run_dir, "REINFORCE{}".format(" with Baseline" if add_baseline else ""))
+        if not os.path.exists(self.model_run_dir):
+            os.mkdir(self.model_run_dir)
+
         theta_diff=1000
         observations=self.sample_observations
         iters=0
@@ -1468,66 +1539,18 @@ class LinearAgent(AgentDataBase):
                         if not "backtest" in locals():
                             backtest = None
                         backtest, tmp_weights = self.backtest_policy(epoch=iters, backtest=backtest, train_input=train_input)
-                        n_cols = len(backtest.columns)
-                        plt.figure(figsize=(12, 6))
-                        for col_counter, col in enumerate(backtest):
-                            plt.plot(backtest[col], color="blue", alpha=(col_counter + 1) / n_cols, label="epoch "+str(col))
 
-                        plt.plot(self._benchmark_max_sharpe, color="black", label="Real Dataset Benchmark - Max Sharpe")    
+                        backtest_plot_title = "Backtest Returns vs Epoch Training - {} - REINFORCE{}".format(model_run, " with Baseline" if add_baseline else "")
+                        backtest_save_path = "{}/{}_training_backtest_reinforce{}.png".format(self.model_run_dir, model_run, "_with_baseline" if add_baseline else "")
+                        self.plot_backtest(backtest, backtest_plot_title, backtest_save_path)
 
-                        plt.gcf().autofmt_xdate()
-                        plt.legend(loc="best")
-                        plt.xlabel("Date")
-                        plt.ylabel("Backtest Returns")
-
-                        if add_baseline:
-                            plt.title("Backtest Returns vs Epoch Training - {} - REINFORCE with Baseline".format(model_run))
-                        else:
-                            plt.title("Backtest Returns vs Epoch Training - {} - REINFORCE".format(model_run))
-
-                        plt.savefig('temp_persisted_data/' + model_run + '_training_backtest_reinforce_baseline_' +
-                                    str(add_baseline) + '.png')
-                        plt.show()
-                        plt.close()
-                        # Backtest plot finishes
-                        backtest.to_csv('temp_persisted_data/' + model_run + '_training_backtest_reinforce_baseline_' + str(add_baseline) + '.csv')
+                        # # Backtest plot finishes
+                        # backtest.to_csv('temp_persisted_data/' + model_run + '_training_backtest_reinforce_baseline_' + str(add_baseline) + '.csv')
 
                         # Plot reward components
-                        fig, ax = plt.subplots(nrows=4, ncols=1, sharex=True, sharey=True)
-                        fig.set_figheight(12)
-                        fig.set_figwidth(12)
-                        ax[0].plot(n_iters, average_reward, label=self.reward_function + " mean: {} vol: {}".format(
-                            np.round(np.mean(average_reward), 2), np.round(np.std(average_reward), 2)))
-                        ax[0].legend(loc="upper right")
-                        ax[0].set_ylabel("Reward")
-                        ax[1].plot(n_iters, average_reward_R, color="green",
-                                   label="Reward Component mean: {} vol: {}".format(
-                                       np.round(np.mean(average_reward_R), 2), np.round(np.std(average_reward_R), 2)))
-                        ax[1].legend(loc="upper right")
-                        ax[1].set_ylabel("Reward")
-                        ax[2].plot(n_iters, average_reward_vol, color="red",
-                                   label="Volatility Component mean: {} vol: {}".format(
-                                       np.round(np.mean(average_reward_vol), 2),
-                                       np.round(np.std(average_reward_vol), 2)))
-                        ax[2].legend(loc="upper right")
-                        ax[2].set_ylabel("Reward")
-                        ax[3].plot(n_iters, average_weighted_sum, color="black",
-                                   label="Weighted Sum mean: {} vol: {}".format(
-                                       np.round(np.mean(average_weighted_sum), 2),
-                                       np.round(np.std(average_weighted_sum), 2)))
-                        ax[3].legend(loc="upper right")
-                        ax[3].set_ylabel("Reward")
-
-                        if self.b_w_set == True:
-                            plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
-                        plt.legend(loc="best")
-                        plt.xlabel("Epochs")
-                        fig.suptitle("Reward Function and Components", fontsize=16)
-                        fig.savefig('temp_persisted_data/' + model_run + '_reward_reinforce_baseline_' +
-                                    str(add_baseline) + '.png')
-                        plt.show()
-                        plt.close()
-
+                        reward_save_path = "{}/{}_reward_reinforce{}.png".format(self.model_run_dir, model_run, "_with_baseline" if add_baseline else "")
+                        self.plot_reward_components(n_iters, average_reward, average_reward_R, average_reward_vol, iters, reward_save_path)
+    
                         plt.figure(figsize=(12, 6))
                         mu_chart = np.array(mu_deterministic)
                         sigma_chart = np.array(sigma_deterministic)
@@ -1538,39 +1561,17 @@ class LinearAgent(AgentDataBase):
 
                         column_names = list(train_input.columns)
                         column_names = list(map(lambda x: x if x != 'simulated_asset' else 'Simulated Asset', column_names))
-                        for i in range(mu_chart.shape[1]):
-                            if mu_chart.shape[1] == 7 or mu_chart.shape[1] == 2:
-                                symbol = column_names
-                            else:
-                                symbol = range(mu_chart.shape[1])
-
-                            tmp_mu_plot = mu_chart[:, i]
-                            tmp_sigma_plot = sigma_chart[:, i]
-                            s_plus = tmp_mu_plot + tmp_sigma_plot
-                            s_minus = tmp_mu_plot - tmp_sigma_plot
-                            plt.plot(mu_chart[:, i], label="Asset " + symbol[i], c=colors[i])
-                            if mu_chart.shape[1] == 2:
-                                plt.fill_between([i for i in range(s_plus.shape[0])], s_plus, s_minus, color=colors[i], alpha=.2)
-
-                        if  self.b_w_set==True:
-                            ws = np.repeat(self._benchmark_weights.reshape(-1, 1), len(x_range), axis=1)
-                            for row in range(ws.shape[0]):
-                                plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
-                        plt.ylim(-0.1, 1.1)
-                        plt.legend(loc="upper left")
-                        plt.xlabel("Epochs")
-                        plt.ylabel("Asset Weights")
-                        plt.title("Asset Weights vs Epochs")
-                        plt.show()
-                        plt.close()
-
+                        
+                        # Plot Asset Weights
+                        asset_weight_save_path = "{}/{}_asset_weights_reinforce{}.png".format(self.model_run_dir, model_run, "_with_baseline" if add_baseline else "")
+                        self.plot_asset_weights(column_names, mu_chart, sigma_chart, colors, x_range, asset_weight_save_path)
+    
                         if plot_gradients == True:
-                            plt.figure(figsize=(12, 6))
                             tmp_mu_asset = np.array([i[0, :] for i in theta_mu_hist_gradients])
 
-                            # save gradients to file
-                            tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + '_mu_gradients_reinforce_baseline_' + str(add_baseline) + '.npy'
-                            np.save(tmp_mu_asset_save_path, tmp_mu_asset)
+                            # # save gradients to file
+                            # tmp_mu_asset_save_path = 'temp_persisted_data/' + model_run + '_mu_gradients_reinforce_baseline_' + str(add_baseline) + '.npy'
+                            # np.save(tmp_mu_asset_save_path, tmp_mu_asset)
                             
                             feature_column_names = list(self.environment.features.columns)
                             feature_column_names = [_.replace(".parquet", "") for _ in feature_column_names]
@@ -1580,89 +1581,51 @@ class LinearAgent(AgentDataBase):
                             cmap = plt.get_cmap('jet')
                             colors = cmap(np.linspace(0, 1, 9))
 
-                            # plot log returns, simulated assets must be last to overlay over real asset
-                            plt.figure(figsize=(12, 6))
-                            # iterate backwards
-                            for idx in range(mu_chart.shape[1] - 1, -1, -1):
-                                plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                            plt.title("Gradients - Log Returns")
-                            plt.legend(loc="upper left")
-                            plt.xlabel("Epochs")
-                            plt.ylabel("Gradient")
-                            plt.show()
-                            plt.clf()
-                            plt.close()
+                            # plot log returns
+                            range_iter = range(mu_chart.shape[1] - 1, -1, -1)
+                            plot_title = "Gradients - Log Returns"
+                            gradients_save_path = "{}/{}_gradients_log_returns_reinforce{}.png".format(self.model_run_dir, model_run, "_with_baseline" if add_baseline else "")
+                            self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
-                            if detrend == True:
-                                # plot volatility
-                                plt.figure(figsize=(12, 6))
-                                # iterate backwards                                
-                                for idx in range(len(feature_column_names) - 2 - mu_chart.shape[1]  * 6,
-                                                len(feature_column_names) - 2 - mu_chart.shape[1]  * 11, - 5):
-                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                                plt.title("Gradients - Volatility")
-                                plt.legend(loc="upper left")
-                                plt.xlabel("Epochs")
-                                plt.ylabel("Gradient")
-                                plt.show()
-                                plt.clf()
-                                plt.close()
+                            # plot volatility
+                            range_iter = range(len(feature_column_names) - 2 - mu_chart.shape[1] * 6, 
+                                            len(feature_column_names) - 2 - mu_chart.shape[1]  * 11, - 5)
+                            plot_title = "Gradients - Volatility"
+                            gradients_save_path = "{}/{}_gradients_volatility_reinforce{}.png".format(
+                                self.model_run_dir, model_run, "_with_baseline" if add_baseline else "")
+                            self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
-                                # plot demeaned return
-                                plt.figure(figsize=(12, 6))
-                                # iterate backwards                                
-                                for idx in range(len(feature_column_names) - 3 - mu_chart.shape[1]  * 6,
-                                                len(feature_column_names) - 3 - mu_chart.shape[1]  * 11, - 5):
-                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                                plt.title("Gradients - Demeaned Return")
-                                plt.legend(loc="upper left")
-                                plt.xlabel("Epochs")
-                                plt.ylabel("Gradient")
-                                plt.show()
-                                plt.clf()
-                                plt.close()
+                            # plot demeaned return
+                            range_iter = range(len(feature_column_names) - 3 - mu_chart.shape[1] * 6,
+                                            len(feature_column_names) - 3 - mu_chart.shape[1]  * 11, - 5)
+                            plot_title = "Gradients - Demeaned Return"
+                            gradients_save_path = "{}/{}_gradients_demeaned_returns_reinforce{}.png".format(
+                                self.model_run_dir, model_run, "_with_baseline" if add_baseline else "")
+                            self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
-                                # plot residuals
-                                plt.figure(figsize=(12, 6))
-                                # iterate backwards                                
-                                for idx in range(len(feature_column_names) - 4 - mu_chart.shape[1]  * 6,
-                                                len(feature_column_names) - 4 - mu_chart.shape[1]  * 11, - 5):
-                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                                plt.title("Gradients - Residuals")
-                                plt.legend(loc="upper left")
-                                plt.xlabel("Epochs")
-                                plt.ylabel("Gradient")
-                                plt.show()
-                                plt.clf()
-                                plt.close()
+                            # plot residuals
+                            range_iter = range(len(feature_column_names) - 4 - mu_chart.shape[1] * 6,
+                                            len(feature_column_names) - 4 - mu_chart.shape[1]  * 11, - 5)
+                            plot_title = "Gradients - Residuals"
+                            gradients_save_path = "{}/{}_gradients_residuals_reinforce{}.png".format(
+                                self.model_run_dir, model_run, "_with_baseline" if add_baseline else "")
+                            self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
-                                # plot level
-                                plt.figure(figsize=(12, 6))
-                                # iterate backwards                                
-                                for idx in range(len(feature_column_names) - 5 - mu_chart.shape[1]  * 6,
-                                                len(feature_column_names) - 5 - mu_chart.shape[1]  * 11, - 5):
-                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                                plt.title("Gradients - Level")
-                                plt.legend(loc="upper left")
-                                plt.xlabel("Epochs")
-                                plt.ylabel("Gradient")
-                                plt.show()
-                                plt.clf()
-                                plt.close()
+                            # plot level
+                            range_iter = range(len(feature_column_names) - 5 - mu_chart.shape[1] * 6,
+                                            len(feature_column_names) - 5 - mu_chart.shape[1]  * 11, - 5)
+                            plot_title = "Gradients - Level"
+                            gradients_save_path = "{}/{}_gradients_level_reinforce{}.png".format(
+                                self.model_run_dir, model_run, "_with_baseline" if add_baseline else "")
+                            self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
-                                # plot trend
-                                plt.figure(figsize=(12, 6))
-                                # iterate backwards                                
-                                for idx in range(len(feature_column_names) - 6 - mu_chart.shape[1]  * 6,
-                                                len(feature_column_names) - 6 - mu_chart.shape[1]  * 11, - 5):
-                                    plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-                                plt.title("Gradients - Trend")
-                                plt.legend(loc="upper left")
-                                plt.xlabel("Epochs")
-                                plt.ylabel("Gradient")
-                                plt.show()
-                                plt.clf()
-                                plt.close()
+                            # plot trend
+                            range_iter = range(len(feature_column_names) - 6 - mu_chart.shape[1] * 6,
+                                            len(feature_column_names) - 6 - mu_chart.shape[1]  * 11, - 5)
+                            plot_title = "Gradients - Trend"
+                            gradients_save_path = "{}/{}_gradients_trend_reinforce{}.png".format(
+                                self.model_run_dir, model_run, "_with_baseline" if add_baseline else "")
+                            self.plot_gradients(tmp_mu_asset, range_iter, feature_column_names, plot_title, gradients_save_path)
 
         return average_weights
 
