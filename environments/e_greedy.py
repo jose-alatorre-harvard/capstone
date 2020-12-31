@@ -953,9 +953,8 @@ class LinearAgent(AgentDataBase):
 
 
     def _run_benchmarks(self, portfolio_df, df_start, df_end, benchmark_start):
-        portfolio_df = portfolio_df[portfolio_df.index >= df_start]
-        portfolio_df = portfolio_df[portfolio_df.index <= df_end]
-        portfolio_df = portfolio_df.dropna()
+        portfolio_df = portfolio_df[df_start:df_end]
+
         portfolio_returns_df = portfolio_df.to_returns().dropna()
 
         rp_max_return = RollingPortfolios(
@@ -966,21 +965,21 @@ class LinearAgent(AgentDataBase):
         )
 
         rp_max_sharpe = RollingPortfolios(
-            prices=portfolio_returns_df, 
+            prices=portfolio_df, 
             in_window=14, 
             prediction_window=7, 
             portfolio_type='max_sharpe'
         )
 
         rp_min_volatility = RollingPortfolios(
-            prices=portfolio_returns_df, 
+            prices=portfolio_df, 
             in_window=14, 
             prediction_window=7, 
             portfolio_type='min_volatility'
         )
-        rp_max_return_benchmark     = ((rp_max_return.mv_weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
-        rp_max_sharpe_benchmark     = ((rp_max_sharpe.mv_weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
-        rp_min_volatility_benchmark = ((rp_min_volatility.mv_weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
+        rp_max_return_benchmark     = ((rp_max_return.weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
+        rp_max_sharpe_benchmark     = ((rp_max_sharpe.weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
+        rp_min_volatility_benchmark = ((rp_min_volatility.weights * portfolio_returns_df).sum(axis=1) + 1).cumprod()
 
         rp_max_return_benchmark     = rp_max_return_benchmark[benchmark_start:df_end]
         rp_max_sharpe_benchmark     = rp_max_sharpe_benchmark[benchmark_start:df_end]
@@ -988,8 +987,10 @@ class LinearAgent(AgentDataBase):
 
         return rp_max_return_benchmark, rp_max_sharpe_benchmark, rp_min_volatility_benchmark
 
+    # 17 for 7etf, 15 for 2etf
     def _load_benchmark(self, portfolio_df, df_start='2019-01-15', df_end='2020-02-01', benchmark_start="2019-02-01"):
-        self._benchmark_max_return, self._benchmark_max_sharpe, self._benchmark_min_volatility = self._run_benchmarks(portfolio_df, df_start, df_end, benchmark_start)
+        self._benchmark_max_return, self._benchmark_max_sharpe, self._benchmark_min_volatility = \
+            self._run_benchmarks(portfolio_df, df_start, df_end, benchmark_start)
 
     def _initialize_linear_parameters(self):
         """

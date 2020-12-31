@@ -173,16 +173,51 @@ class RollingPortfolios:
         self.in_window = in_window
         self.prediction_window = prediction_window
 
-        if portfolio_type is not None:
-            self.mv_weights = self.fit_mean_variance(portfolio_type=portfolio_type)
-            # self.hrp_weights = self.fit_hrp()
+        # self.mv_weights = self.fit_mean_variance(portfolio_type=portfolio_type)
+        self.weights = self.compute_benchmark_weights(portfolio_type=portfolio_type)
+
+    def compute_benchmark_weights(self, portfolio_type):
+        from pypfopt.efficient_frontier import EfficientFrontier
+        from pypfopt.cla import CLA
+        from pypfopt import risk_models
+        from pypfopt import expected_returns
+        
+        start_index = self.in_window
+        end_index = len(self.prices.index) - self.prediction_window
+        benchmark_weights = pd.DataFrame(index=self.prices.index, columns=self.prices.columns)
+        for i in tqdm(range(start_index, end_index, self.prediction_window), desc="computing benchmark {}".format(portfolio_type)):
+            tmp_df = self.prices[i - self.in_window:i]
+            mu = expected_returns.mean_historical_return(tmp_df)
+            sigma = risk_models.sample_cov(tmp_df)
+            # ef = EfficientFrontier(mu, sigma)
+            cla = CLA(mu, sigma)
+            if portfolio_type == "max_return":
+            #     tmp = pd.DataFrame(tmp_df.iloc[-1] / tmp_df.iloc[0]).T
+            #     tmp = tmp.eq(tmp.max(axis=1), axis=0).astype(int)
+            #     w = tmp.iloc[0]
+            # elif portfolio_type == "test_max_return":
+            #     # https://pyportfolioopt.readthedocs.io/en/latest/OtherOptimisers.html#pypfopt.cla.CLA.efficient_frontier
+            #     # return list, std list, weight list
+                ef = cla.efficient_frontier()
+                w = ef[2][0].ravel()
+            elif portfolio_type == "min_volatility":
+                w = cla.min_volatility()
+            elif portfolio_type == "max_sharpe":
+                w = cla.max_sharpe()
+            else:
+                raise NotImplementedError
+            benchmark_weights.iloc[i] = w
+
+        benchmark_weights = benchmark_weights.fillna(method="ffill")
+
+        return benchmark_weights
+
 
     def fit_mean_variance(self, portfolio_type="max_return"):
         """
         fits a historical mean variance portfolio optimizer
         :return:
         """
-        from pypfopt.efficient_frontier import EfficientFrontier
         from pypfopt.expected_returns import mean_historical_return
         from pypfopt.risk_models import CovarianceShrinkage
         from pypfopt import risk_models
@@ -191,18 +226,18 @@ class RollingPortfolios:
         start_index = self.in_window
         end_index = len(self.prices.index) - self.prediction_window
         benchmark_weights = pd.DataFrame(index=self.prices.index, columns=self.prices.columns)
-        for i in tqdm(range(start_index, end_index, self.prediction_window), desc="computing benchmark {}".format(portfolio_type)):
+        for i in tqdm(range(start_index, end_index, self.prediction_window)):
             tmp_df = self.prices[i - self.in_window:i]
             mu = mean_historical_return(tmp_df)
             S = risk_models.sample_cov(tmp_df)
             cla = CLA(mu, S)
-            ef = EfficientFrontier(mu, S)
             if portfolio_type == "max_return":
-                w = ef.max_quadratic_utility()
+                ef = cla.efficient_frontier()
+                w = ef[2][0].ravel()
             elif portfolio_type == "max_sharpe":
-                w = cla.min_volatility()
-            elif portfolio_type == "min_volatility":
                 w = cla.max_sharpe()
+            elif portfolio_type == "min_volatility":
+                w = cla.min_volatility()
             else:
                 raise NotImplementedError
 
