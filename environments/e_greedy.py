@@ -106,11 +106,11 @@ class RewardFactory:
         :param portfolio_returns:
         :return:
         """
-        a=10
-        b=150
-        self.reward_R = a*portfolio_returns.iloc[-1]
-        self.reward_vol = b*action_variance
-        return self.risk_aversion*a*portfolio_returns.iloc[-1] - (1-self.risk_aversion)*b*action_variance
+        norm_R=10 # normalization constants set so reward and vol components are approximately equivalent in risk_aversion = 0.5 case
+        norm_vol=150
+        self.reward_R = norm_R*portfolio_returns.iloc[-1]
+        self.reward_vol = norm_vol*action_variance
+        return self.risk_aversion*norm_R*portfolio_returns.iloc[-1] - (1-self.risk_aversion)*norm_vol*action_variance
 
     def _reward_min_variance(self,portfolio_returns):
         """

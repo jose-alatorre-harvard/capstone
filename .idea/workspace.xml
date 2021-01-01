@@ -21,7 +21,8 @@
   <component name="ChangeListManager">
     <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-Full_Portfolio-lambda-0.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration-Full_Portfolio-lambda-0.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-1-detrend-Holtz-Winters.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/environments/e_greedy.py" beforeDir="false" afterPath="$PROJECT_DIR$/environments/e_greedy.py" afterDir="false" />
     </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
@@ -849,14 +850,14 @@
     <state x="2626" y="61" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601161044324" />
     <state x="128" y="-7" width="1496" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363268828" />
     <state x="2" y="11" width="1479" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1463.783@0.0.1463.783" timestamp="1609208407164" />
-    <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1609219683258">
+    <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1609435515219">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="459" y="255" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1280.680/2560.0.1680.1010@0.0.1280.680" timestamp="1601339463972" />
     <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601341272345" />
     <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608053778890" />
     <state x="3162" y="379" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608481306700" />
-    <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783@0.0.1463.783" timestamp="1609219683258" />
+    <state x="524" y="294" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1463.783@0.0.1463.783" timestamp="1609435515219" />
     <state x="2204" y="300" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/1680.0.1463.800/0.0.1680.1010@1680.0.1463.800" timestamp="1601787823614" />
     <state x="91" y="0" width="1252" height="749" key="dock-window-1" timestamp="1604346235360">
       <screen x="0" y="0" width="1463" height="783" />
