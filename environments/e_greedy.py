@@ -947,8 +947,9 @@ class LinearAgent(AgentDataBase):
         self._initialize_linear_parameters()
 
         # plot metadata
-        self.tick_size  = 14  # tick size
+        self.tick_size  = 18  # tick size
         self.label_size = 18  # x, y size
+        self.legend_size = 20 # legend size
         self.title_size = 22  # title size
 
 
@@ -1110,7 +1111,7 @@ class LinearAgent(AgentDataBase):
             round(self._benchmark_min_volatility.std() * 100, 2)))
 
         plt.gcf().autofmt_xdate()
-        plt.legend(loc="upper left")
+        plt.legend(loc="upper left", fontsize=12)
         plt.xlabel("Date", fontsize=self.label_size)
         plt.ylabel("Backtest Returns", fontsize=self.label_size)
         plt.xticks(fontsize=self.tick_size)
@@ -1126,25 +1127,29 @@ class LinearAgent(AgentDataBase):
         fig.set_figwidth(12)
         ax[0].plot(n_iters, average_reward, label=self.reward_function + " mean: {} vol: {}".format(
             np.round(np.mean(average_reward), 2), np.round(np.std(average_reward), 2)))
-        ax[0].legend(loc="upper right")
+        ax[0].legend(loc="upper right", fontsize = self.legend_size)
         ax[0].set_ylabel("Reward", fontsize=self.label_size)
+        ax[0].tick_params(axis='both', which='major', labelsize=self.tick_size)
         ax[1].plot(n_iters, average_reward_R, color="green",
                     label="Reward Component mean: {} vol: {}".format(
                         np.round(np.mean(average_reward_R), 2), np.round(np.std(average_reward_R), 2)))
-        ax[1].legend(loc="upper right")
+        ax[1].legend(loc="upper right", fontsize = self.legend_size)
         ax[1].set_ylabel("Reward", fontsize=self.label_size)
+        ax[1].tick_params(axis='both', which='major', labelsize=self.tick_size)
         ax[2].plot(n_iters, average_reward_vol, color="red",
                     label="Volatility Component mean: {} vol: {}".format(
                         np.round(np.mean(average_reward_vol), 2),
                         np.round(np.std(average_reward_vol), 2)))
-        ax[2].legend(loc="upper right")
+        ax[2].legend(loc="upper right", fontsize = self.legend_size)
         ax[2].set_ylabel("Reward", fontsize=self.label_size)
+        ax[2].tick_params(axis='both', which='major', labelsize=self.tick_size)
 
         if self.b_w_set == True:
             plt.plot(n_iters, [self._benchmark_G for i in range(iters)])
-        plt.legend(loc="best")
+        plt.legend(loc="best", fontsize = self.legend_size)
         plt.xlabel("Epochs", fontsize=self.label_size)
         plt.xticks(fontsize=self.tick_size)
+        plt.yticks(fontsize=self.tick_size)
         fig.suptitle("Reward Function and Components", fontsize=self.title_size)
         fig.savefig(reward_save_path)
         plt.show()
@@ -1170,7 +1175,9 @@ class LinearAgent(AgentDataBase):
             for row in range(ws.shape[0]):
                 plt.plot(x_range, ws[row, :], label="benchmark_return" + str(row))
         plt.ylim(-0.1, 1.1)
-        plt.legend(loc="upper left")
+        plt.legend(loc="upper left", fontsize = self.legend_size)
+        plt.xticks(fontsize=self.tick_size)
+        plt.yticks(fontsize=self.tick_size)
         plt.xlabel("Epochs", fontsize=self.label_size)
         plt.ylabel("Asset Weights", fontsize=self.label_size)
         plt.title("Asset Weights vs Epochs", fontsize=self.title_size)
@@ -1183,8 +1190,10 @@ class LinearAgent(AgentDataBase):
         # iterate backwards
         for idx in range_iter:
             plt.plot(tmp_mu_asset[:, idx], label="mu {}".format(feature_column_names[idx]))
-        plt.legend(loc="upper left")
+        plt.legend(loc="upper left", fontsize = self.legend_size)
         plt.title(plot_title, fontsize=self.title_size)
+        plt.xticks(fontsize=self.tick_size)
+        plt.yticks(fontsize=self.tick_size)
         plt.xlabel("Epochs", fontsize=self.label_size)
         plt.ylabel("Gradient", fontsize=self.label_size)
         plt.savefig(gradients_save_path)

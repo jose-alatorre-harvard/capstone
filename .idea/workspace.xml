@@ -21,9 +21,26 @@
   <component name="ChangeListManager">
     <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration-MTUM-simulated-lambda-1-detrend-Holtz-Winters.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.ipynb_checkpoints/capstone_simulation_demonstration-Copy1-checkpoint.ipynb" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/environments/e_greedy.py" beforeDir="false" afterPath="$PROJECT_DIR$/environments/e_greedy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_asset_weights_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_asset_weights_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_demeaned_returns_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_demeaned_returns_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_level_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_level_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_log_returns_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_log_returns_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_residuals_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_residuals_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_trend_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_trend_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_volatility_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_volatility_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_reward_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_reward_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_training_backtest_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_training_backtest_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_asset_weights_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_asset_weights_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_demeaned_returns_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_demeaned_returns_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_level_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_level_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_log_returns_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_log_returns_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_residuals_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_residuals_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_trend_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_trend_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_volatility_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_volatility_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_reward_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_reward_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_training_backtest_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_training_backtest_reinforce.png" afterDir="false" />
     </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
@@ -328,13 +345,6 @@
       <workItem from="1609179852191" duration="24896000" />
       <workItem from="1609227418507" duration="2406000" />
       <workItem from="1609264141631" duration="11413000" />
-    </task>
-    <task id="LOCAL-00028" summary="update">
-      <created>1608364036638</created>
-      <option name="number" value="00028" />
-      <option name="presentableId" value="LOCAL-00028" />
-      <option name="project" value="LOCAL" />
-      <updated>1608364036638</updated>
     </task>
     <task id="LOCAL-00029" summary="integration into master branch">
       <created>1608364602150</created>
@@ -672,7 +682,14 @@
       <option name="project" value="LOCAL" />
       <updated>1609269831526</updated>
     </task>
-    <option name="localTasksCounter" value="77" />
+    <task id="LOCAL-00077" summary="plots reward function components">
+      <created>1609462842250</created>
+      <option name="number" value="00077" />
+      <option name="presentableId" value="LOCAL-00077" />
+      <option name="project" value="LOCAL" />
+      <updated>1609462842251</updated>
+    </task>
+    <option name="localTasksCounter" value="78" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -747,13 +764,13 @@
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783@0.0.1463.783" timestamp="1608934067572" />
-    <state x="222" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1609269828613">
+    <state x="222" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1609462838684">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367144986" />
     <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483047946" />
-    <state x="222" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1609269828613" />
+    <state x="222" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1609462838684" />
     <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364617930">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
@@ -811,14 +828,14 @@
     <state x="2928" y="152" key="MultipleFileMergeDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344576333" />
     <state x="320" y="118" key="MultipleFileMergeDialog/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608055102350" />
     <state x="2928" y="152" key="MultipleFileMergeDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363932781" />
-    <state x="377" y="50" key="RollbackChangesDialog" timestamp="1609146155612">
+    <state x="377" y="50" key="RollbackChangesDialog" timestamp="1609472588189">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="330" y="44" key="RollbackChangesDialog/0.0.1280.680/2560.0.1680.1010@0.0.1280.680" timestamp="1601340731653" />
     <state x="2993" y="65" key="RollbackChangesDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601342989532" />
     <state x="377" y="50" key="RollbackChangesDialog/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606612438572" />
     <state x="2993" y="64" key="RollbackChangesDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608443595565" />
-    <state x="377" y="50" key="RollbackChangesDialog/0.0.1463.783@0.0.1463.783" timestamp="1609146155612" />
+    <state x="377" y="50" key="RollbackChangesDialog/0.0.1463.783@0.0.1463.783" timestamp="1609472588189" />
     <state x="3113" y="95" key="SettingsEditor" timestamp="1605937621854">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
@@ -837,13 +854,13 @@
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="3068" y="124" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343621009" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609269833191">
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609462846730">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344614359" />
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367153713" />
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483052383" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609269833191" />
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609462846730" />
     <state x="2" y="11" width="1479" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1609208407164">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
