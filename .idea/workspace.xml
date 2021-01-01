@@ -19,10 +19,29 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
+    <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="adjust font size">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.ipynb_checkpoints/capstone_simulation_demonstration-Copy1-checkpoint.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/environments/e_greedy.py" beforeDir="false" afterPath="$PROJECT_DIR$/environments/e_greedy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_asset_weights_actor_critic_with_eligibility_traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_asset_weights_actor_critic_with_eligibility_traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_demeaned_returns_actor_critic_with_eligibility_traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_demeaned_returns_actor_critic_with_eligibility_traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_level_actor_critic_with_eligibility_traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_level_actor_critic_with_eligibility_traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_log_returns_actor_critic_with_eligibility_traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_log_returns_actor_critic_with_eligibility_traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_residuals_actor_critic_with_eligibility_traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_residuals_actor_critic_with_eligibility_traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_trend_actor_critic_with_eligibility_traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_trend_actor_critic_with_eligibility_traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_volatility_actor_critic_with_eligibility_traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_gradients_volatility_actor_critic_with_eligibility_traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_reward_actor_critic_with_eligibility_traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_reward_actor_critic_with_eligibility_traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_test_backtest_plot_Actor-Critic with Eligibility Traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_test_backtest_plot_Actor-Critic with Eligibility Traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_training_backtest_actor_critic_with_eligibility_traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic with Eligibility Traces/MTUM-EFAV_lambda_0_training_backtest_actor_critic_with_eligibility_traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_asset_weights_actor_critic.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_asset_weights_actor_critic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_demeaned_returns_actor_critic.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_demeaned_returns_actor_critic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_level_actor_critic.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_level_actor_critic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_log_returns_actor_critic.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_log_returns_actor_critic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_residuals_actor_critic.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_residuals_actor_critic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_trend_actor_critic.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_trend_actor_critic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_volatility_actor_critic.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_gradients_volatility_actor_critic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_reward_actor_critic.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_reward_actor_critic.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_test_backtest_plot_Actor-Critic without Eligibility Traces.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_test_backtest_plot_Actor-Critic without Eligibility Traces.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_training_backtest_actor_critic.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/Actor Critic/MTUM-EFAV_lambda_0_training_backtest_actor_critic.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_asset_weights_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_asset_weights_reinforce_with_baseline.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_demeaned_returns_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_demeaned_returns_reinforce_with_baseline.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_level_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_level_reinforce_with_baseline.png" afterDir="false" />
@@ -31,6 +50,7 @@
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_trend_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_trend_reinforce_with_baseline.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_volatility_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_gradients_volatility_reinforce_with_baseline.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_reward_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_reward_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_test_backtest_plot_REINFORCE with Baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_test_backtest_plot_REINFORCE with Baseline.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_training_backtest_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE with Baseline/MTUM-EFAV_lambda_0_training_backtest_reinforce_with_baseline.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_asset_weights_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_asset_weights_reinforce.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_demeaned_returns_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_demeaned_returns_reinforce.png" afterDir="false" />
@@ -40,7 +60,27 @@
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_trend_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_trend_reinforce.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_volatility_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_gradients_volatility_reinforce.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_reward_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_reward_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_test_backtest_plot_REINFORCE.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_test_backtest_plot_REINFORCE.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_training_backtest_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_0/REINFORCE/MTUM-EFAV_lambda_0_training_backtest_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_asset_weights_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_asset_weights_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_demeaned_returns_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_demeaned_returns_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_level_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_level_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_log_returns_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_log_returns_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_residuals_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_residuals_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_trend_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_trend_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_volatility_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_gradients_volatility_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_reward_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_reward_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_training_backtest_reinforce_with_baseline.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE with Baseline/MTUM-EFAV_lambda_1_training_backtest_reinforce_with_baseline.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_asset_weights_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_asset_weights_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_demeaned_returns_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_demeaned_returns_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_level_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_level_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_log_returns_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_log_returns_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_residuals_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_residuals_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_trend_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_trend_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_volatility_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_gradients_volatility_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_reward_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_reward_reinforce.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_test_backtest_plot_REINFORCE.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_test_backtest_plot_REINFORCE.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_training_backtest_reinforce.png" beforeDir="false" afterPath="$PROJECT_DIR$/models_info/MTUM-EFAV_lambda_1/REINFORCE/MTUM-EFAV_lambda_1_training_backtest_reinforce.png" afterDir="false" />
     </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
@@ -345,13 +385,6 @@
       <workItem from="1609179852191" duration="24896000" />
       <workItem from="1609227418507" duration="2406000" />
       <workItem from="1609264141631" duration="11413000" />
-    </task>
-    <task id="LOCAL-00029" summary="integration into master branch">
-      <created>1608364602150</created>
-      <option name="number" value="00029" />
-      <option name="presentableId" value="LOCAL-00029" />
-      <option name="project" value="LOCAL" />
-      <updated>1608364602150</updated>
     </task>
     <task id="LOCAL-00030" summary="master branch consolidation">
       <created>1608365166912</created>
@@ -689,7 +722,14 @@
       <option name="project" value="LOCAL" />
       <updated>1609462842251</updated>
     </task>
-    <option name="localTasksCounter" value="78" />
+    <task id="LOCAL-00078" summary="adjust font size for plots">
+      <created>1609473830736</created>
+      <option name="number" value="00078" />
+      <option name="presentableId" value="LOCAL-00078" />
+      <option name="project" value="LOCAL" />
+      <updated>1609473830741</updated>
+    </task>
+    <option name="localTasksCounter" value="79" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -718,7 +758,6 @@
     <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="formatting update" />
     <MESSAGE value="master branch integration" />
     <MESSAGE value="code formatting improvements" />
     <MESSAGE value="master branch consolidation" />
@@ -743,7 +782,8 @@
     <MESSAGE value="updated formatting" />
     <MESSAGE value="updated notebook" />
     <MESSAGE value="plots reward function components" />
-    <option name="LAST_COMMIT_MESSAGE" value="plots reward function components" />
+    <MESSAGE value="adjust font size for plots" />
+    <option name="LAST_COMMIT_MESSAGE" value="adjust font size for plots" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="WindowStateProjectService">
@@ -764,13 +804,13 @@
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783@0.0.1463.783" timestamp="1608934067572" />
-    <state x="222" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1609462838684">
+    <state x="222" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1609473827085">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367144986" />
     <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483047946" />
-    <state x="222" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1609462838684" />
+    <state x="222" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1609473827085" />
     <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364617930">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
@@ -854,13 +894,13 @@
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="3068" y="124" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343621009" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609462846730">
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609473833501">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344614359" />
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367153713" />
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483052383" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609462846730" />
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609473833501" />
     <state x="2" y="11" width="1479" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1609208407164">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
