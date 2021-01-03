@@ -20,16 +20,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/capstone.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/capstone.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DEMO1-practice.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/DEMO1-practice.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Functional Prototype Demo 1 - Epsilon Greedy Quants.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/Functional Prototype Demo 1 - Epsilon Greedy Quants.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Functional_Prototype_Demo_1.slides.html" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/Functional_Prototype_Demo_1.slides.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/REINFORCE.slides.html" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/REINFORCE.slides.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/presentation_functional_demo1_data.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/presentation_functional_demo1_data.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/presentation_functional_demo1_data.slides.html" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/presentation_functional_demo1_data.slides.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_env_MTUM-EFAV/EFAV.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-EFAV/EFAV.parquet" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_env_MTUM-EFAV/MTUM.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-EFAV/MTUM.parquet" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_env_MTUM-USMV/MTUM.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-USMV/MTUM.parquet" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_env_MTUM-USMV/USMV.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-USMV/USMV.parquet" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/MTUM.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-simulated-USMV/MTUM.parquet" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-simulated-USMV/simulated_asset.parquet" afterDir="false" />
     </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
@@ -336,13 +332,6 @@
       <workItem from="1609227418507" duration="2406000" />
       <workItem from="1609264141631" duration="11413000" />
       <workItem from="1609554989481" duration="1476000" />
-    </task>
-    <task id="LOCAL-00031" summary="master branch consolidation">
-      <created>1608366076110</created>
-      <option name="number" value="00031" />
-      <option name="presentableId" value="LOCAL-00031" />
-      <option name="project" value="LOCAL" />
-      <updated>1608366076110</updated>
     </task>
     <task id="LOCAL-00032" summary="master branch consolidation">
       <created>1608366901004</created>
@@ -680,7 +669,14 @@
       <option name="project" value="LOCAL" />
       <updated>1609479455583</updated>
     </task>
-    <option name="localTasksCounter" value="80" />
+    <task id="LOCAL-00080" summary="master branch integration">
+      <created>1609633728504</created>
+      <option name="number" value="00080" />
+      <option name="presentableId" value="LOCAL-00080" />
+      <option name="project" value="LOCAL" />
+      <updated>1609633728504</updated>
+    </task>
+    <option name="localTasksCounter" value="81" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -845,13 +841,13 @@
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="3068" y="124" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343621009" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609479466054">
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609634083234">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344614359" />
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367153713" />
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483052383" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609479466054" />
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609634083234" />
     <state x="2" y="11" width="1479" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1609208407164">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
