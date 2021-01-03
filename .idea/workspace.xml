@@ -19,12 +19,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration/Real-World Data Detrending.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration/Real-World Data Demonstration-Full_Portfolio-lambda-0.5.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration/Real-World Data Demonstration-Full_Portfolio-lambda-0.5.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/User Steps for Real-World Data.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/User Steps for Real-World Data.ipynb" afterDir="false" />
-    </list>
+    <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="" />
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -330,20 +325,6 @@
       <workItem from="1609227418507" duration="2406000" />
       <workItem from="1609264141631" duration="11413000" />
       <workItem from="1609554989481" duration="1476000" />
-    </task>
-    <task id="LOCAL-00034" summary="master branch consolidation">
-      <created>1608367045574</created>
-      <option name="number" value="00034" />
-      <option name="presentableId" value="LOCAL-00034" />
-      <option name="project" value="LOCAL" />
-      <updated>1608367045574</updated>
-    </task>
-    <task id="LOCAL-00035" summary="Real_World data demonstration">
-      <created>1608367109972</created>
-      <option name="number" value="00035" />
-      <option name="presentableId" value="LOCAL-00035" />
-      <option name="project" value="LOCAL" />
-      <updated>1608367109972</updated>
     </task>
     <task id="LOCAL-00036" summary="master branch consolidation">
       <created>1608367147550</created>
@@ -674,7 +655,21 @@
       <option name="project" value="LOCAL" />
       <updated>1609634267711</updated>
     </task>
-    <option name="localTasksCounter" value="83" />
+    <task id="LOCAL-00083" summary="Updated backtest plot function">
+      <created>1609635012501</created>
+      <option name="number" value="00083" />
+      <option name="presentableId" value="LOCAL-00083" />
+      <option name="project" value="LOCAL" />
+      <updated>1609635012501</updated>
+    </task>
+    <task id="LOCAL-00084" summary="master branch integration">
+      <created>1609635077831</created>
+      <option name="number" value="00084" />
+      <option name="presentableId" value="LOCAL-00084" />
+      <option name="project" value="LOCAL" />
+      <updated>1609635077831</updated>
+    </task>
+    <option name="localTasksCounter" value="85" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -703,7 +698,6 @@
     <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="master branch consolidation" />
     <MESSAGE value="updated README.md" />
     <MESSAGE value="updated data requirements description" />
     <MESSAGE value="updated description of notebook" />
@@ -727,6 +721,7 @@
     <MESSAGE value="plots reward function components" />
     <MESSAGE value="adjust font size for plots" />
     <MESSAGE value="adjust font size" />
+    <MESSAGE value="Updated backtest plot function" />
     <MESSAGE value="master branch integration" />
     <option name="LAST_COMMIT_MESSAGE" value="master branch integration" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
@@ -749,13 +744,13 @@
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783@0.0.1463.783" timestamp="1608934067572" />
-    <state x="21" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1609634256972">
+    <state x="21" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1609635075381">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367144986" />
     <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483047946" />
-    <state x="21" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1609634256972" />
+    <state x="21" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1609635075381" />
     <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364617930">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
@@ -813,14 +808,14 @@
     <state x="2928" y="152" key="MultipleFileMergeDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344576333" />
     <state x="320" y="118" key="MultipleFileMergeDialog/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608055102350" />
     <state x="2928" y="152" key="MultipleFileMergeDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608363932781" />
-    <state x="377" y="50" key="RollbackChangesDialog" timestamp="1609472588189">
+    <state x="377" y="50" key="RollbackChangesDialog" timestamp="1609634968425">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="330" y="44" key="RollbackChangesDialog/0.0.1280.680/2560.0.1680.1010@0.0.1280.680" timestamp="1601340731653" />
     <state x="2993" y="65" key="RollbackChangesDialog/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601342989532" />
     <state x="377" y="50" key="RollbackChangesDialog/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606612438572" />
     <state x="2993" y="64" key="RollbackChangesDialog/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608443595565" />
-    <state x="377" y="50" key="RollbackChangesDialog/0.0.1463.783@0.0.1463.783" timestamp="1609472588189" />
+    <state x="377" y="50" key="RollbackChangesDialog/0.0.1463.783@0.0.1463.783" timestamp="1609634968425" />
     <state x="3113" y="95" key="SettingsEditor" timestamp="1605937621854">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
@@ -839,13 +834,13 @@
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="3068" y="124" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343621009" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609634312924">
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609635081474">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344614359" />
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367153713" />
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483052383" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609634312924" />
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609635081474" />
     <state x="2" y="11" width="1479" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1609208407164">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
