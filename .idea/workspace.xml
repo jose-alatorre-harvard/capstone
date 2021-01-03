@@ -20,12 +20,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="430f6d37-030a-4584-a00f-e2e7d543c97d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/data_env_MTUM-EFAV/EFAV.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-EFAV/EFAV.parquet" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_MTUM-EFAV/MTUM.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-EFAV/MTUM.parquet" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_MTUM-USMV/MTUM.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-USMV/MTUM.parquet" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_MTUM-USMV/USMV.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-USMV/USMV.parquet" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/MTUM.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-simulated-USMV/MTUM.parquet" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_env_MTUM-simulated-USMV/simulated_asset.parquet" beforeDir="false" afterPath="$PROJECT_DIR$/FilesToDelete/data_env_MTUM-simulated-USMV/simulated_asset.parquet" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Real-World Data Demonstration/Real-World Data Detrending.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Real-World Data Demonstration/Real-World Data Demonstration-Full_Portfolio-lambda-0.5.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Real-World Data Demonstration/Real-World Data Demonstration-Full_Portfolio-lambda-0.5.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/User Steps for Real-World Data.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/User Steps for Real-World Data.ipynb" afterDir="false" />
     </list>
     <list id="116bf5dd-68d8-4b58-af67-30e5c6ef25b2" name="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;" comment="Revert &quot;creates DeepTradingEnvironment with features which user can specify&quot;&#10;&#10;This reverts commit a16e0756" />
     <option name="SHOW_DIALOG" value="false" />
@@ -59,7 +57,6 @@
   <component name="JupyterTrust" id="dfb0f22d-b8d1-46d3-be09-8e2b93d84436">
     <option name="files">
       <option value="FilesToDelete\michael_actor_critic_test.ipynb" />
-      <option value="Real-World Data Demonstration-MTUM-simulated-lambda-0-detrend.ipynb" />
     </option>
   </component>
   <component name="ProjectId" id="1hFfhxRapFYzto28JMwzGLFnXg1" />
@@ -84,6 +81,7 @@
       <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\tests" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\Real-World Data Demonstration" />
       <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\FilesToDelete" />
       <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\files_to_remove" />
       <recent name="C:\Users\micha\OneDrive\Documents\CSCI E-599a Data Science Capstone\capstone\presentations" />
@@ -332,20 +330,6 @@
       <workItem from="1609227418507" duration="2406000" />
       <workItem from="1609264141631" duration="11413000" />
       <workItem from="1609554989481" duration="1476000" />
-    </task>
-    <task id="LOCAL-00032" summary="master branch consolidation">
-      <created>1608366901004</created>
-      <option name="number" value="00032" />
-      <option name="presentableId" value="LOCAL-00032" />
-      <option name="project" value="LOCAL" />
-      <updated>1608366901004</updated>
-    </task>
-    <task id="LOCAL-00033" summary="master branch consolidation">
-      <created>1608366976341</created>
-      <option name="number" value="00033" />
-      <option name="presentableId" value="LOCAL-00033" />
-      <option name="project" value="LOCAL" />
-      <updated>1608366976341</updated>
     </task>
     <task id="LOCAL-00034" summary="master branch consolidation">
       <created>1608367045574</created>
@@ -676,7 +660,21 @@
       <option name="project" value="LOCAL" />
       <updated>1609633728504</updated>
     </task>
-    <option name="localTasksCounter" value="81" />
+    <task id="LOCAL-00081" summary="master branch integration">
+      <created>1609634096308</created>
+      <option name="number" value="00081" />
+      <option name="presentableId" value="LOCAL-00081" />
+      <option name="project" value="LOCAL" />
+      <updated>1609634096308</updated>
+    </task>
+    <task id="LOCAL-00082" summary="master branch integration">
+      <created>1609634267711</created>
+      <option name="number" value="00082" />
+      <option name="presentableId" value="LOCAL-00082" />
+      <option name="project" value="LOCAL" />
+      <updated>1609634267711</updated>
+    </task>
+    <option name="localTasksCounter" value="83" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -751,13 +749,13 @@
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1606617490667" />
     <state x="3084" y="307" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1607975746703" />
     <state x="456" y="238" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1463.783@0.0.1463.783" timestamp="1608934067572" />
-    <state x="222" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1609633724307">
+    <state x="21" y="0" width="1027" height="1010" key="CommitChangelistDialog2" timestamp="1609634256972">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2972" y="45" width="894" height="820" key="CommitChangelistDialog2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343711143" />
     <state x="359" y="0" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367144986" />
     <state x="2972" y="0" width="1027" height="1010" key="CommitChangelistDialog2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483047946" />
-    <state x="222" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1609633724307" />
+    <state x="21" y="0" key="CommitChangelistDialog2/0.0.1463.783@0.0.1463.783" timestamp="1609634256972" />
     <state x="2652" y="92" width="1382" height="659" key="DiffContextDialog" timestamp="1608364617930">
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
@@ -841,13 +839,13 @@
       <screen x="2560" y="0" width="1680" height="1010" />
     </state>
     <state x="3068" y="124" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601343621009" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609634083234">
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2" timestamp="1609634312924">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1280.680/2560.0.1680.1010@2560.0.1680.1010" timestamp="1601344614359" />
     <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@0.0.1463.783" timestamp="1608367153713" />
     <state x="2867" y="110" key="Vcs.Push.Dialog.v2/0.0.1463.783/2560.0.1680.1010@2560.0.1680.1010" timestamp="1608483052383" />
-    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609634083234" />
+    <state x="267" y="85" key="Vcs.Push.Dialog.v2/0.0.1463.783@0.0.1463.783" timestamp="1609634312924" />
     <state x="2" y="11" width="1479" height="826" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1609208407164">
       <screen x="0" y="0" width="1463" height="783" />
     </state>
